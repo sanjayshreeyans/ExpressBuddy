@@ -1,0 +1,124 @@
+import { RiveScript } from '@rive-app/react-canvas';
+
+interface VisemeData {
+  time: number;
+  viseme: number;
+}
+
+interface RiveInputs {
+  [key: string]: any;
+}
+
+interface VisemePlaybackControllerOptions {
+  riveInputs: RiveInputs;
+  transitionDuration?: number;
+  setSpeakingState?: boolean;
+  manualSpeakingStateControl?: boolean;
+}
+
+export class VisemePlaybackController {
+  private riveInputs: RiveInputs;
+  private transitionDuration: number;
+  private setSpeakingState: boolean;
+  private manualSpeakingStateControl: boolean;
+  private visemes: VisemeData[] = [];
+  private playbackStartTime: number | null = null;
+  private animationFrameId: number | null = null;
+  private isPlaying = false;
+
+  constructor(options: VisemePlaybackControllerOptions) {
+    this.riveInputs = options.riveInputs;
+    this.transitionDuration = options.transitionDuration || 50;
+    this.setSpeakingState = options.setSpeakingState || false;
+    this.manualSpeakingStateControl = options.manualSpeakingStateControl || false;
+  }
+
+  add(visemes: VisemeData[]) {
+    this.visemes = visemes;
+  }
+
+  play(options?: { callback?: () => void }) {
+    if (this.isPlaying) {
+      return;
+    }
+
+    this.isPlaying = true;
+    this.playbackStartTime = performance.now();
+
+    if (this.setSpeakingState && !this.manualSpeakingStateControl) {
+      this.riveInputs.isSpeaking.value = true;
+    }
+
+    this.animate();
+
+    if (options?.callback) {
+      options.callback();
+    }
+  }
+
+  pause() {
+    this.isPlaying = false;
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+  }
+
+  reset() {
+    this.pause();
+    this.visemes = [];
+    this.playbackStartTime = null;
+
+    if (this.setSpeakingState && !this.manualSpeakingStateControl) {
+      this.riveInputs.isSpeaking.value = false;
+    }
+
+    // Reset viseme values
+    for (let i = 0; i <= 21; i++) {
+      if (this.riveInputs[`viseme_${i}`]) {
+        this.riveInputs[`viseme_${i}`].value = 0;
+      }
+    }
+  }
+
+  private animate = () => {
+    if (!this.isPlaying || !this.playbackStartTime) {
+      return;
+    }
+
+    const elapsedTime = (performance.now() - this.playbackStartTime) / 1000;
+    const currentViseme = this.findCurrentViseme(elapsedTime);
+
+    if (currentViseme) {
+      this.updateRiveInputs(currentViseme.viseme);
+    }
+
+    this.animationFrameId = requestAnimationFrame(this.animate);
+  };
+
+  private findCurrentViseme(elapsedTime: number): VisemeData | null {
+    if (this.visemes.length === 0) {
+      return null;
+    }
+
+    let currentViseme: VisemeData | null = null;
+    for (const viseme of this.visemes) {
+      if (viseme.time <= elapsedTime) {
+        currentViseme = viseme;
+      } else {
+        break;
+      }
+    }
+
+    return currentViseme;
+  }
+
+  private updateRiveInputs(activeViseme: number) {
+    for (let i = 0; i <= 21; i++) {
+      if (this.riveInputs[`viseme_${i}`]) {
+        const targetValue = i === activeViseme ? 100 : 0;
+        this.riveInputs[`viseme_${i}`].value += (targetValue - this.riveInputs[`viseme_${i}`].value) / (this.transitionDuration / 16.67);
+      }
+    }
+  }
+}
