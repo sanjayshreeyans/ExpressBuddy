@@ -16,8 +16,10 @@
 
 import "./App.scss";
 import { LiveAPIProvider } from "./contexts/LiveAPIContext";
-import MainInterface from "./components/main-interface/MainInterface";
+import MainInterfaceWithAvatar from "./components/main-interface/MainInterfaceWithAvatar";
 import { LiveClientOptions } from "./types";
+import { StagewiseToolbar } from "@stagewise/toolbar-react";
+import { ReactPlugin } from "@stagewise-plugins/react";
 
 const API_KEY = process.env.REACT_APP_GEMINI_API_KEY as string;
 if (typeof API_KEY !== "string") {
@@ -31,8 +33,9 @@ const apiOptions: LiveClientOptions = {
 function App() {
   return (
     <div className="App">
+      <StagewiseToolbar config={{ plugins: [ReactPlugin] }} />
       <LiveAPIProvider options={apiOptions}>
-        <MainInterface />
+        <MainInterfaceWithAvatar />
       </LiveAPIProvider>
     </div>
   );

@@ -23,6 +23,7 @@ interface StoreLoggerState {
   logs: StreamingLog[];
   log: (streamingLog: StreamingLog) => void;
   clearLogs: () => void;
+  clearModelResponses: () => void;
 }
 
 export const useLoggerStore = create<StoreLoggerState>((set, get) => ({
@@ -30,6 +31,38 @@ export const useLoggerStore = create<StoreLoggerState>((set, get) => ({
   logs: [], //mockLogs,
   log: ({ date, type, message }: StreamingLog) => {
     set((state) => {
+      // Clear previous model responses when a new model turn starts
+      if (type === "server.content" && 
+          typeof message === "object" && 
+          message && 
+          "serverContent" in message && 
+          message.serverContent && 
+          "modelTurn" in message.serverContent) {
+        // Filter out previous model responses but keep user messages and other types
+        const filteredLogs = state.logs.filter(log => {
+          if (log.type === "server.content" && 
+              typeof log.message === "object" && 
+              log.message && 
+              "serverContent" in log.message && 
+              log.message.serverContent && 
+              "modelTurn" in log.message.serverContent) {
+            return false; // Remove previous model responses
+          }
+          return true; // Keep all other logs
+        });
+        
+        return {
+          logs: [
+            ...filteredLogs.slice(-(get().maxLogs - 1)),
+            {
+              date,
+              type,
+              message,
+            } as StreamingLog,
+          ],
+        };
+      }
+
       const prevLog = state.logs.at(-1);
       if (prevLog && prevLog.type === type && prevLog.message === message) {
         return {
@@ -61,5 +94,22 @@ export const useLoggerStore = create<StoreLoggerState>((set, get) => ({
     console.log("clear log");
     set({ logs: [] });
   },
+  
+  clearModelResponses: () => {
+    set((state) => ({
+      logs: state.logs.filter(log => {
+        if (log.type === "server.content" && 
+            typeof log.message === "object" && 
+            log.message && 
+            "serverContent" in log.message && 
+            log.message.serverContent && 
+            "modelTurn" in log.message.serverContent) {
+          return false; // Remove model responses
+        }
+        return true; // Keep all other logs
+      })
+    }));
+  },
+  
   setMaxLogs: (n: number) => set({ maxLogs: n }),
 }));

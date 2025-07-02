@@ -1,346 +1,142 @@
-.main-interface {
+/**
+ * Copyright 2024 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// ============================================================================
+// Main Application Layout
+// Establishes the primary full-screen structure.
+// ============================================================================
+.avatar-interface {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  width: 100%;
-  background: var(--Neutral-15);
-  color: var(--gray-300);
-}
-
-.main-content {
-  display: flex;
-  flex: 1;
-  gap: 1rem;
-  padding: 1rem;
+  width: 100vw;
+  background: #f4f7f9;
+  color: #202124;
   overflow: hidden;
 }
 
-.video-section {
-  flex: 1;
+// ============================================================================
+// Header & Footer Sections
+// These are fixed-height sections at the top and bottom.
+// ============================================================================
+.header-section {
+  flex-shrink: 0; // Prevents this section from shrinking
+  padding: 1rem 2rem;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 0;
-  position: relative;
-}
-
-.video-feed {
-  width: 100%;
-  height: 100%;
-  max-width: 100%;
-  max-height: 100%;
-  border-radius: 16px;
-  object-fit: cover;
-  background: var(--Neutral-20);
-  
-  &.hidden {
-    display: none;
-  }
-}
-
-.video-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px dashed var(--gray-600);
-  border-radius: 16px;
-  background: var(--Neutral-20);
-  min-height: 300px;
-}
-
-.placeholder-content {
-  text-align: center;
-  color: var(--gray-500);
-  
-  .material-symbols-outlined {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-    opacity: 0.5;
-  }
-  
-  p {
-    margin: 0.5rem 0;
-    font-size: 1.1rem;
-    
-    &.placeholder-hint {
-      font-size: 0.9rem;
-      opacity: 0.7;
-    }
-  }
-}
-
-.ai-responses-section {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: var(--Neutral-20);
-  border-radius: 16px;
-  overflow: hidden;
-  min-width: 400px;
-  max-width: 50%;
-}
-
-.responses-header {
-  display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 1rem;
-  background: var(--Neutral-10);
-  border-bottom: 1px solid var(--border-stroke);
-  
-  h3 {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text);
-  }
-  
-  .connection-status {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    
-    .status-indicator {
-      font-size: 0.9rem;
-      color: var(--gray-500);
-      
-      &.connected {
-        color: var(--accent-green);
-      }
-    }
-  }
-}
-
-.responses-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0;
-  min-height: 0;
-  
-  .logger {
-    height: 100%;
-    
-    .logger-list {
-      padding: 0;
-      margin: 0;
-      list-style: none;
-      
-      .plain-log {
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid var(--Neutral-30);
-        
-        &.source-server {
-          background: var(--Neutral-15);
-        }
-        
-        .timestamp {
-          font-size: 0.8rem;
-          color: var(--gray-500);
-          margin-right: 0.5rem;
-        }
-        
-        .source {
-          font-size: 0.8rem;
-          color: var(--accent-blue);
-          margin-right: 0.5rem;
-        }
-        
-        .message {
-          flex: 1;
-          
-          .rich-log {
-            &.model-turn {
-              .role-model {
-                color: var(--accent-green);
-                font-size: 0.9rem;
-                margin: 0 0 0.5rem 0;
-                font-weight: 600;
-              }
-              
-              .part-text {
-                margin: 0.25rem 0;
-                line-height: 1.4;
-                color: var(--text);
-                white-space: pre-wrap;
-                word-wrap: break-word;
-              }
-            }
-            
-            &.client-content {
-              .roler-user {
-                color: var(--accent-blue);
-                font-size: 0.9rem;
-                margin: 0 0 0.5rem 0;
-                font-weight: 600;
-              }
-              
-              .part-text {
-                margin: 0.25rem 0;
-                line-height: 1.4;
-                color: var(--gray-200);
-                white-space: pre-wrap;
-                word-wrap: break-word;
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-.chat-input-container {
-  border-top: 1px solid var(--border-stroke);
-  background: var(--Neutral-10);
-  padding: 1rem;
-  
-  &.disabled {
-    opacity: 0.6;
-    pointer-events: none;
-  }
-}
-
-.input-wrapper {
-  display: flex;
-  gap: 0.5rem;
-  align-items: flex-end;
-}
-
-.chat-input {
-  flex: 1;
-  background: var(--Neutral-20);
-  border: 1px solid var(--border-stroke);
-  border-radius: 8px;
-  padding: 0.75rem;
-  color: var(--text);
-  font-family: var(--font-family);
-  font-size: 0.9rem;
-  resize: none;
-  min-height: 40px;
-  max-height: 120px;
-  
-  &:focus {
-    outline: none;
-    border-color: var(--accent-blue);
-  }
-  
-  &::placeholder {
-    color: var(--gray-500);
-  }
-  
-  &:disabled {
-    background: var(--Neutral-30);
-    color: var(--gray-600);
-    cursor: not-allowed;
-  }
-}
-
-.send-button {
-  background: var(--accent-blue);
-  border: none;
-  border-radius: 8px;
-  padding: 0.75rem;
-  color: var(--Neutral-00);
-  cursor: pointer;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  min-width: 44px;
-  height: 44px;
-  transition: background-color 0.2s ease;
-  
-  &:hover:not(.disabled) {
-    background: var(--accent-blue-active);
+  border-bottom: 1px solid #e0e0e0;
+
+  .app-title h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #1a73e8;
   }
-  
-  &.disabled {
-    background: var(--gray-600);
-    cursor: not-allowed;
-  }
-  
-  .material-symbols-outlined {
-    font-size: 1.2rem;
+
+  .app-title p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #5f6368;
   }
 }
 
 .controls-section {
-  padding: 1rem;
-  background: var(--Neutral-10);
-  border-top: 1px solid var(--border-stroke);
+  flex-shrink: 0; // Prevents this section from shrinking
+  padding: 0.5rem;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid #e0e0e0;
 }
 
-/* Responsive design */
-@media (max-width: 1200px) {
-  .main-content {
-    flex-direction: column;
-  }
-  
-  .ai-responses-section {
-    max-width: none;
-    min-width: 0;
-    min-height: 400px;
-  }
-  
-  .video-section {
-    min-height: 300px;
-  }
+
+// ============================================================================
+// Main Content & Avatar Sizing (THE CRITICAL PART)
+// This section defines the flexible content area and the avatar's size.
+// ============================================================================
+.main-content-area {
+  flex-grow: 1; // This is KEY: makes this area fill all available vertical space.
+  width: 100%;
+  display: flex;
+  justify-content: center; // Center horizontally
+  align-items: center; // Center vertically
+  min-height: 0; // A critical flexbox fix to prevent content overflow issues.
 }
 
-@media (max-width: 768px) {
-  .main-content {
-    padding: 0.5rem;
-    gap: 0.5rem;
+.panda-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/*
+ * PRIMARY FIX FOR THE "TINY AVATAR"
+ * This rule gives the avatar a large, explicitly square container.
+*/
+.panda-container {
+  // Establishes a positioning context for the Rive canvas inside.
+  position: relative;
+  // Prevents this container from shrinking inside its parent flex container.
+  flex-shrink: 0;
+
+  // Define a responsive width.
+  width: clamp(350px, 40vw, 450px);
+
+  // CRITICAL FIX: Force a 1:1 (square) aspect ratio.
+  // This makes the height dynamically equal to the responsive width, giving the
+  // Rive canvas a stable, non-zero area to render in. This is the most
+  // robust way to solve the "height: 24px" problem.
+  aspect-ratio: 1 / 1;
+}
+
+
+// ============================================================================
+// UI Status Indicators (Bubbles, Captions)
+// ============================================================================
+.panda-status {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.status-bubble {
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  background-color: #ffffff;
+  border: 1px solid #dadce0;
+  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+  transition: all 0.2s ease-in-out;
+
+  &.listening { color: #1a73e8; border-color: #8ab4f8; }
+  &.thinking, &.processing, &.buffering { color: #f29900; border-color: #fdcb6e; }
+  &.speaking { color: #1e8e3e; border-color: #81c995; }
+}
+
+.connection-status .status-bubble {
+  box-shadow: none;
+  font-weight: normal;
+  &.connected {
+    background-color: #e6f4ea;
+    color: #1e8e3e;
+    border-color: transparent;
   }
-  
-  .controls-section {
-    padding: 0.5rem;
-  }
-  
-  .video-placeholder {
-    min-height: 200px;
-  }
-  
-  .placeholder-content {
-    .material-symbols-outlined {
-      font-size: 3rem;
-    }
-    
-    p {
-      font-size: 1rem;
-      
-      &.placeholder-hint {
-        font-size: 0.8rem;
-      }
-    }
-  }
-  
-  .ai-responses-section {
-    min-height: 350px;
-    min-width: 0;
-  }
-  
-  .responses-header {
-    padding: 0.75rem;
-    
-    h3 {
-      font-size: 1rem;
-    }
-  }
-  
-  .chat-input-container {
-    padding: 0.75rem;
-  }
-  
-  .chat-input {
-    font-size: 0.9rem;
-    padding: 0.6rem;
-  }
-  
-  .send-button {
-    min-width: 40px;
-    height: 40px;
-    padding: 0.6rem;
+  &.disconnected {
+    background-color: #fce8e6;
+    color: #d93025;
+    border-color: transparent;
   }
 }

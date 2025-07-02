@@ -16,6 +16,7 @@ export default function ResponseModalitySelector() {
     value: string;
     label: string;
   } | null>(responseOptions[1]); // Index 1 is "text"
+  const [isDirty, setIsDirty] = useState(false);
 
   const updateConfig = useCallback(
     (modality: "audio" | "text") => {
@@ -31,8 +32,11 @@ export default function ResponseModalitySelector() {
 
   // Force text modality on component mount
   useEffect(() => {
-    updateConfig("text");
-  }, [updateConfig]);
+    if (!isDirty) {
+      updateConfig("text");
+      setIsDirty(true);
+    }
+  }, [isDirty, updateConfig]);
 
   return (
     <div className="select-group">

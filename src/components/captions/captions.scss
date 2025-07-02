@@ -1,0 +1,145 @@
+/* Captions Component Styles */
+.captions-overlay {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  max-width: 80%;
+  width: auto;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.caption {
+  background: rgba(10, 10, 15, 0.85);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+  transform: translateY(0);
+  
+  &.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  &.fading {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.caption-text {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.6;
+  text-align: center;
+  color: #f0f0f0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  letter-spacing: 0.5px;
+  max-width: 800px;
+  word-wrap: break-word;
+}
+
+.caption-history {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  opacity: 0.6;
+}
+
+.caption-history-item {
+  background: rgba(0, 0, 0, 0.5);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.7);
+  }
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.caption.visible {
+  animation: slideUp 0.5s ease;
+}
+
+.caption.fading {
+  animation: slideDown 0.5s ease;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .captions-overlay {
+    max-width: 90%;
+    bottom: 100px;
+  }
+  
+  .caption-text {
+    font-size: 1rem;
+    padding: 0.75rem 1.5rem;
+  }
+  
+  .caption-history-item {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .captions-overlay {
+    max-width: 95%;
+    bottom: 90px;
+  }
+  
+  .caption {
+    padding: 0.75rem 1.25rem;
+  }
+  
+  .caption-text {
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+  
+  .caption-history {
+    margin-top: 0.75rem;
+    gap: 0.4rem;
+  }
+}
