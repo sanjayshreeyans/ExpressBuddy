@@ -22,13 +22,10 @@ import Captions from "../captions/Captions";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import { useLoggerStore } from "../../lib/store-logger";
 import { useResponseBuffer } from "../../hooks/useResponseBuffer";
-import { AvatarState, PlaybackState } from "../../types/avatar";
+import { AvatarState } from "../../types/avatar";
 import "./main-interface.scss";
 import {
-  FunctionDeclaration,
-  LiveServerToolCall,
   Modality,
-  Type,
 } from "@google/genai";
 
 export default function MainInterfaceWithAvatar() {
@@ -43,11 +40,6 @@ export default function MainInterfaceWithAvatar() {
     status: 'idle',
     isBuffering: false,
     hasGeneratedContent: false
-  });
-  const [playbackState, setPlaybackState] = useState<PlaybackState>({
-    isPlaying: false,
-    currentTime: 0,
-    duration: 0
   });
   const [currentAvatarSubtitle, setCurrentAvatarSubtitle] = useState<string>('');
 
@@ -80,7 +72,7 @@ Compensate for No Facial Expressions: Since you cannot show expressions yet, you
 Instead of just smiling, say: "That makes me smile so big!"
 Instead of looking surprised, say: "Wow! I'm so surprised to hear that!"
 Instead of looking thoughtful, say: "Hmm, that's a really interesting thought. I'm thinking about that."
-
+YOU HAVE TO PROVIDE SOLUTIONS TO THE CHILD'S PROBLEMS. ASK THEM ABOUT HOW THEY DEALT WITH ______ AND THEN SUGGEST YOUR OWN SOLUTION. GIVE THEM OPTIONS LIKE MULTIPLE WAYS TO SOLVE A PROBLEM. FOR EXAMPLE, IF THEY SAY THEY ARE SAD, ASK THEM HOW THEY DEALT WITH IT AND THEN SUGGEST YOUR OWN SOLUTION LIKE "SOME PEOPLE LIKE TO TALK TO A FRIEND OR FAMILY MEMBER WHEN THEY ARE SAD. OTHERS LIKE TO DRAW OR LISTEN TO MUSIC. WHAT DO YOU THINK WOULD HELP YOU FEEL BETTER?"
 [ YOUR ENGAGING CUE ]
 You are Piko. You are about to start a conversation with your friend. Begin with a warm, simple greeting and ask them how their day is going to kickstart the conversation. Remember to be curious and kind.
 YOU ARE PART OF **ExpressBuddy** is a first-of-its-kind mobile app that uses a cartoon-style AI avatar to help children with autism, speech delays, or social anxiety improve nonverbal communication and social-emotional skills. The app creates a safe, engaging space where students can practice eye contact, emotion recognition, conversation turn-taking, and verbal expression. Powered by speech-to-text models and an emotion-aware LLM, the avatar responds naturally with animated facial expressions and social cues.
@@ -91,7 +83,7 @@ Designed for use in elementary and middle school classrooms, **ExpressBuddy** su
     // Set the configuration for the Live API client.
     if (setConfig) {
       setConfig({
-        responseModalities: [Modality.TEXT],
+        responseModalities: [Modality.AUDIO],
         systemInstruction: {
           parts: [{ text: systemPrompt }],
         },
@@ -99,11 +91,18 @@ Designed for use in elementary and middle school classrooms, **ExpressBuddy** su
     }
   }, [setConfig]); // This effect runs once when setConfig is available.
 
-  // Send the video stream to the Gemini Live client when it changes.
+  // Set the video stream to the video element for display purposes
   useEffect(() => {
-    if (client) {
+    if (videoRef.current && videoStream) {
+      console.log('MainInterface: Setting video srcObject:', { 
+        streamId: videoStream.id,
+        tracks: videoStream.getVideoTracks().length 
+      });
+      videoRef.current.srcObject = videoStream;
+    } else {
+      console.log('MainInterface: Video stream cleared or video element not ready');
     }
-  }, [videoStream, client]);
+  }, [videoStream]);
 
   // Set up logging and handle streaming content for the avatar
   useEffect(() => {
@@ -142,10 +141,6 @@ Designed for use in elementary and middle school classrooms, **ExpressBuddy** su
     setAvatarState(state);
   }, []);
 
-  const handlePlaybackStateChange = useCallback((state: PlaybackState) => {
-    setPlaybackState(state);
-  }, []);
-
   const handleAvatarSubtitleChange = useCallback((subtitle: string) => {
     setCurrentAvatarSubtitle(subtitle);
   }, []);
@@ -170,9 +165,22 @@ Designed for use in elementary and middle school classrooms, **ExpressBuddy** su
           autoPlay
           playsInline
           muted
-          style={{ display: 'none' }}
-          className="hidden-video-feed"
+          className={cn("video-feed", {
+            hidden: !videoRef.current || !videoStream,
+            placeholder: !videoStream,
+          })}
+          style={{ 
+            width: '320px',
+            height: '240px',
+            position: 'absolute',
+            // Like render dont render the video feed
+            top: 0,
+            left: 0,
+            opacity: 0,
+            backgroundColor: '#000'
+          }}
         />
+
 
         <div className="panda-stage">
           <ExpressBuddyAvatar
@@ -181,7 +189,6 @@ Designed for use in elementary and middle school classrooms, **ExpressBuddy** su
             isStreamComplete={buffer.isComplete}
             completeText={buffer.completeText}
             onAvatarStateChange={handleAvatarStateChange}
-            onPlaybackStateChange={handlePlaybackStateChange}
             onCurrentSubtitleChange={handleAvatarSubtitleChange}
           />
 

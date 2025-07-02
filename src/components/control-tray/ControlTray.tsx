@@ -111,6 +111,10 @@ function ControlTray({
 
   useEffect(() => {
     if (videoRef.current) {
+      console.log('ControlTray: Setting video srcObject:', { 
+        hasStream: !!activeVideoStream,
+        streamId: activeVideoStream?.id 
+      });
       videoRef.current.srcObject = activeVideoStream;
     }
 
@@ -121,6 +125,21 @@ function ControlTray({
       const canvas = renderCanvasRef.current;
 
       if (!video || !canvas) {
+        console.log('ControlTray: Video frame send skipped - missing elements:', { video: !!video, canvas: !!canvas });
+        return;
+      }
+
+      // Check video readiness
+      if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) {
+        console.log('ControlTray: Video not ready yet:', { 
+          readyState: video.readyState, 
+          width: video.videoWidth, 
+          height: video.videoHeight,
+          srcObject: !!video.srcObject 
+        });
+        if (connected) {
+          timeoutId = window.setTimeout(sendVideoFrame, 100);
+        }
         return;
       }
 
@@ -128,10 +147,20 @@ function ControlTray({
       canvas.width = video.videoWidth * 0.25;
       canvas.height = video.videoHeight * 0.25;
       if (canvas.width + canvas.height > 0) {
-        ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-        const base64 = canvas.toDataURL("image/jpeg", 1.0);
-        const data = base64.slice(base64.indexOf(",") + 1, Infinity);
-        client.sendRealtimeInput([{ mimeType: "image/jpeg", data }]);
+        try {
+          ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+          const base64 = canvas.toDataURL("image/jpeg", 1.0);
+          const data = base64.slice(base64.indexOf(",") + 1, Infinity);
+          console.log('ControlTray: Sending video frame:', { 
+            width: canvas.width, 
+            height: canvas.height, 
+            dataLength: data.length,
+            videoReadyState: video.readyState 
+          });
+          client.sendRealtimeInput([{ mimeType: "image/jpeg", data }]);
+        } catch (error) {
+          console.error('ControlTray: Error drawing video frame:', error);
+        }
       }
       if (connected) {
         timeoutId = window.setTimeout(sendVideoFrame, 1000 / 0.5);
@@ -149,15 +178,38 @@ function ControlTray({
   const changeStreams = (next?: UseMediaStreamResult) => async () => {
     if (next) {
       const mediaStream = await next.start();
+      console.log('ControlTray: Starting new video stream:', { 
+        streamId: mediaStream.id, 
+        tracks: mediaStream.getVideoTracks().length 
+      });
       setActiveVideoStream(mediaStream);
       onVideoStreamChange(mediaStream);
     } else {
+      console.log('ControlTray: Stopping video stream');
       setActiveVideoStream(null);
       onVideoStreamChange(null);
     }
 
     videoStreams.filter((msr) => msr !== next).forEach((msr) => msr.stop());
   };
+
+  // Automatically start webcam on mount
+  useEffect(() => {
+    let started = false;
+    if (supportsVideo && webcam && !activeVideoStream) {
+      webcam.start().then((mediaStream: MediaStream) => {
+        if (mediaStream && !started) {
+          setActiveVideoStream(mediaStream);
+          onVideoStreamChange(mediaStream);
+          started = true;
+        }
+      }).catch((err: any) => {
+        console.warn('Could not start webcam automatically:', err);
+      });
+    }
+    // No cleanup needed; user can still stop video via UI
+    // eslint-disable-next-line
+  }, []);
 
   return (
     <section className="control-tray">
