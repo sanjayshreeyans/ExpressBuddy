@@ -21,6 +21,7 @@ import { AudioStreamer } from "../lib/audio-streamer";
 import { audioContext } from "../lib/utils";
 import VolMeterWorket from "../lib/worklets/vol-meter";
 import { LiveConnectConfig } from "@google/genai";
+import { VisemeTranscriptionService, VisemeData, SubtitleData } from "../lib/viseme-transcription-service";
 
 export type UseLiveAPIResults = {
   client: GenAILiveClient;
@@ -32,16 +33,22 @@ export type UseLiveAPIResults = {
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
   volume: number;
+  visemeService: VisemeTranscriptionService;
+  currentVisemes: VisemeData[];
+  currentSubtitles: SubtitleData[];
 };
 
 export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   const client = useMemo(() => new GenAILiveClient(options), [options]);
   const audioStreamerRef = useRef<AudioStreamer | null>(null);
+  const visemeService = useMemo(() => new VisemeTranscriptionService(), []);
 
-  const [model, setModel] = useState<string>("models/gemini-2.0-flash-exp");
+  const [model, setModel] = useState<string>("models/gemini-live-2.5-flash-preview");
   const [config, setConfig] = useState<LiveConnectConfig>({});
   const [connected, setConnected] = useState(false);
   const [volume, setVolume] = useState(0);
+  const [currentVisemes, setCurrentVisemes] = useState<VisemeData[]>([]);
+  const [currentSubtitles, setCurrentSubtitles] = useState<SubtitleData[]>([]);
 
   // register audio for streaming server -> speakers
   useEffect(() => {
@@ -59,6 +66,31 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     }
   }, [audioStreamerRef]);
 
+  // Setup viseme service callbacks
+  useEffect(() => {
+    visemeService.setCallbacks({
+      onVisemes: (visemes, subtitles) => {
+        setCurrentVisemes(visemes);
+        setCurrentSubtitles(subtitles);
+      },
+      onStreamingChunk: (chunkText, visemes) => {
+        // Update visemes in real-time for streaming chunks
+        setCurrentVisemes(visemes);
+      },
+      onError: (error) => {
+        console.error("Viseme service error:", error);
+      },
+      onConnected: (sessionId) => {
+        console.log("Viseme service connected with session:", sessionId);
+      },
+      onFinalResults: (response) => {
+        console.log("Final viseme results:", response);
+        setCurrentVisemes(response.visemes);
+        setCurrentSubtitles(response.subtitles);
+      }
+    });
+  }, [visemeService]);
+
   useEffect(() => {
     const onOpen = () => {
       setConnected(true);
@@ -74,8 +106,15 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
 
     const stopAudioStreamer = () => audioStreamerRef.current?.stop();
 
-    const onAudio = (data: ArrayBuffer) =>
-      audioStreamerRef.current?.addPCM16(new Uint8Array(data));
+    const onAudio = (data: ArrayBuffer) => {
+      const audioData = new Uint8Array(data);
+      
+      // Send to audio streamer for playback
+      audioStreamerRef.current?.addPCM16(audioData);
+      
+      // Send to viseme service for transcription (ultra fast processing)
+      visemeService.sendAudioChunk(audioData);
+    };
 
     client
       .on("error", onError)
@@ -100,13 +139,26 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       throw new Error("config has not been set");
     }
     client.disconnect();
+    
+    // Connect viseme service first for ultra-fast processing
+    try {
+      await visemeService.connect();
+      console.log("Viseme service connected successfully");
+    } catch (error) {
+      console.warn("Viseme service connection failed:", error);
+      // Continue even if viseme service fails
+    }
+    
     await client.connect(model, config);
-  }, [client, config, model]);
+  }, [client, config, model, visemeService]);
 
   const disconnect = useCallback(async () => {
     client.disconnect();
+    visemeService.disconnect();
     setConnected(false);
-  }, [setConnected, client]);
+    setCurrentVisemes([]);
+    setCurrentSubtitles([]);
+  }, [setConnected, client, visemeService]);
 
   return {
     client,
@@ -118,5 +170,8 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     connect,
     disconnect,
     volume,
+    visemeService,
+    currentVisemes,
+    currentSubtitles,
   };
 }

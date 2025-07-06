@@ -17,7 +17,7 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import cn from "classnames";
 import ControlTray from "../control-tray/ControlTray";
-import { ExpressBuddyAvatar } from "../avatar/ExpressBuddyAvatar";
+import { RealtimeExpressBuddyAvatar } from "../avatar/RealtimeExpressBuddyAvatar";
 import Captions from "../captions/Captions";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import { useLoggerStore } from "../../lib/store-logger";
@@ -33,7 +33,7 @@ export default function MainInterfaceWithAvatar() {
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
 
   // FIX: Destructure `setConfig` from the context to send the system prompt.
-  const { connected, client, setConfig } = useLiveAPIContext();
+  const { connected, client, setConfig, visemeService, currentVisemes, currentSubtitles } = useLiveAPIContext();
   const { log } = useLoggerStore();
 
   const [avatarState, setAvatarState] = useState<AvatarState>({
@@ -83,6 +83,7 @@ Designed for use in elementary and middle school classrooms, **ExpressBuddy** su
     // Set the configuration for the Live API client.
     if (setConfig) {
       setConfig({
+
         responseModalities: [Modality.AUDIO],
         systemInstruction: {
           parts: [{ text: systemPrompt }],
@@ -183,11 +184,11 @@ Designed for use in elementary and middle school classrooms, **ExpressBuddy** su
 
 
         <div className="panda-stage">
-          <ExpressBuddyAvatar
+          <RealtimeExpressBuddyAvatar
             className="panda-container"
-            streamingText={accumulatedText}
-            isStreamComplete={buffer.isComplete}
-            completeText={buffer.completeText}
+            visemes={currentVisemes}
+            subtitles={currentSubtitles}
+            visemeService={visemeService}
             onAvatarStateChange={handleAvatarStateChange}
             onCurrentSubtitleChange={handleAvatarSubtitleChange}
           />
