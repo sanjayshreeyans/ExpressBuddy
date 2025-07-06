@@ -95,38 +95,34 @@ export const RealtimeExpressBuddyAvatar: React.FC<RealtimeExpressBuddyAvatarProp
       // For real-time streaming, immediately start processing new visemes
       console.log('Received real-time visemes:', visemes.length);
       
-      // Don't reset if we're already playing - just add new visemes
-      if (!isPlaying) {
-        playbackControllerRef.current.reset();
-      }
+      // Always reset when new visemes arrive to ensure correct timing for each chunk
+      playbackControllerRef.current.reset();
       
       // Add new visemes to the queue
       playbackControllerRef.current.add(visemes);
       
-      if (!isPlaying) {
-        // Start playback immediately for new visemes
-        visemeStartTime.current = performance.now();
-        setIsPlaying(true);
+      // Always start fresh playback for new chunk
+      visemeStartTime.current = performance.now();
+      setIsPlaying(true);
+      
+      // Start the playback controller
+      playbackControllerRef.current.play({});
+      
+      // Start our timing loop
+      const animate = () => {
+        const elapsed = (performance.now() - visemeStartTime.current) / 1000;
+        setCurrentTime(elapsed);
         
-        // Start the playback controller
-        playbackControllerRef.current.play({});
-        
-        // Start our timing loop
-        const animate = () => {
-          const elapsed = (performance.now() - visemeStartTime.current) / 1000;
-          setCurrentTime(elapsed);
-          
-          // Continue animation if still playing and we have visemes
-          if (isPlaying && visemes.length > 0) {
-            animationFrameRef.current = requestAnimationFrame(animate);
-          } else if (elapsed > 5.0) {
-            // Auto-stop after 5 seconds of no new visemes
-            setIsPlaying(false);
-          }
-        };
-        
-        animationFrameRef.current = requestAnimationFrame(animate);
-      }
+        // Continue animation if still playing and we have visemes
+        if (isPlaying && visemes.length > 0) {
+          animationFrameRef.current = requestAnimationFrame(animate);
+        } else if (elapsed > 5.0) {
+          // Auto-stop after 5 seconds of no new visemes
+          setIsPlaying(false);
+        }
+      };
+      
+      animationFrameRef.current = requestAnimationFrame(animate);
     } else if (isPlaying) {
       // If no visemes and we're playing, stop after a short delay
       setTimeout(() => {

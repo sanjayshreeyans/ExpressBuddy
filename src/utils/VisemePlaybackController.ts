@@ -50,8 +50,21 @@ export class VisemePlaybackController {
   add(visemes: VisemeData[]): void {
     // Clear existing visemes first to prevent duplication
     this._chunks.length = 0;
-    this._chunks.push(...visemes);
-    console.log(`Added ${visemes.length} visemes to playback queue (duration: ${this.audioDuration ? this.audioDuration * 1000 : 'unknown'}ms)`);
+    
+    if (visemes.length > 0) {
+      // Normalize viseme offsets to start from 0 for this chunk
+      const firstOffset = visemes[0].offset;
+      const normalizedVisemes = visemes.map(viseme => ({
+        ...viseme,
+        offset: viseme.offset - firstOffset
+      }));
+      
+      this._chunks.push(...normalizedVisemes);
+      console.log(`Added ${visemes.length} visemes to playback queue (normalized from ${firstOffset}ms, duration: ${this.audioDuration ? this.audioDuration * 1000 : 'unknown'}ms)`);
+      console.log(`First viseme offset: ${normalizedVisemes[0]?.offset}ms, Last: ${normalizedVisemes[normalizedVisemes.length - 1]?.offset}ms`);
+    } else {
+      console.log('No visemes to add to playback queue');
+    }
   }
 
   /**

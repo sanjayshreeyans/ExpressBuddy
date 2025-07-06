@@ -75,7 +75,7 @@ function ControlTray({
   const renderCanvasRef = useRef<HTMLCanvasElement>(null);
   const connectButtonRef = useRef<HTMLButtonElement>(null);
 
-  const { client, connected, connect, disconnect, volume } =
+  const { client, connected, connect, disconnect, volume, isBuffering, enableChunking, setEnableChunking } =
     useLiveAPIContext();
 
   useEffect(() => {
@@ -228,6 +228,32 @@ function ControlTray({
 
         <div className="action-button no-action outlined">
           <AudioPulse volume={volume} active={connected} hover={false} />
+        </div>
+        
+        {/* Simple Audio Mode Controls */}
+        <div className="chunk-controls">
+          <div className="chunk-mode-toggle">
+            <button
+              className={`action-button ${enableChunking ? 'connected' : ''}`}
+              onClick={() => setEnableChunking(!enableChunking)}
+              disabled={!connected}
+              title={enableChunking ? "Waterfall mode: Wait for complete audio, then sync with visemes" : "Immediate mode: Stream audio as received (legacy)"}
+            >
+              <span className="material-symbols-outlined">
+                {enableChunking ? 'sync' : 'flash_on'}
+              </span>
+            </button>
+            <span className="mode-label">
+              {enableChunking ? 'Sync' : 'Stream'}
+            </span>
+          </div>
+          
+          {isBuffering && (
+            <div className="buffering-indicator">
+              <span className="material-symbols-outlined">schedule</span>
+              <span>Processing...</span>
+            </div>
+          )}
         </div>
 
         {supportsVideo && (

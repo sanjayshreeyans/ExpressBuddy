@@ -36,6 +36,15 @@ export type UseLiveAPIResults = {
   visemeService: VisemeTranscriptionService;
   currentVisemes: VisemeData[];
   currentSubtitles: SubtitleData[];
+  // Ultra-fast monitoring and debugging utilities
+  getPacketStatistics: () => any;
+  logPerformanceReport: () => any;
+  // Simple audio control
+  isBuffering: boolean;
+  enableChunking: boolean;
+  setEnableChunking: (enabled: boolean) => void;
+  forceProcessAudio: () => void;
+  replayLastAudio: () => void;
 };
 
 export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
@@ -46,9 +55,141 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   const [model, setModel] = useState<string>("models/gemini-live-2.5-flash-preview");
   const [config, setConfig] = useState<LiveConnectConfig>({});
   const [connected, setConnected] = useState(false);
+  // Ref to track up-to-date connection status inside callbacks
+  const connectedRef = useRef(false);
   const [volume, setVolume] = useState(0);
   const [currentVisemes, setCurrentVisemes] = useState<VisemeData[]>([]);
   const [currentSubtitles, setCurrentSubtitles] = useState<SubtitleData[]>([]);
+  
+  // Audio control
+  const [isBuffering, setIsBuffering] = useState<boolean>(false);
+  const [enableChunking, setEnableChunking] = useState<boolean>(true); // Allow disabling chunking for compatibility
+  
+  // Audio buffer for waterfall processing
+  const audioBufferRef = useRef<Uint8Array[]>([]);
+  const chunkStartTimeRef = useRef<number | null>(null);
+  const bufferedAudioDataRef = useRef<{ audio: Uint8Array; timestamp: number }[]>([]);
+  const pendingCompleteAudioRef = useRef<Uint8Array | null>(null);
+  const autoSendTimeoutRef = useRef<number | null>(null);
+  const isProcessingAudioRef = useRef<boolean>(false); // Prevent double processing
+  const lastCompleteAudioRef = useRef<Uint8Array | null>(null); // Store last audio for replay
+  
+  // Ultra-fast audio packet tracking and monitoring
+  const packetSequenceRef = useRef(0);
+  const audioStartTimeRef = useRef<number | null>(null);
+  const lastPacketTimeRef = useRef<number>(0);
+  const packetStatsRef = useRef({
+    totalPackets: 0,
+    totalBytes: 0,
+    droppedPackets: 0,
+    averageLatency: 0,
+    maxLatency: 0,
+    minLatency: Infinity
+  });
+
+  // **WATERFALL AUDIO PROCESSING** - Process complete audio response from Gemini
+  const processCompleteAudio = useCallback(async () => {
+    // Prevent double processing
+    if (isProcessingAudioRef.current) {
+      console.warn("⚠️ Audio processing already in progress, skipping duplicate call");
+      return;
+    }
+    
+    if (audioBufferRef.current.length === 0) {
+      console.warn("⚠️ No audio data to process in complete response");
+      return;
+    }
+    
+    isProcessingAudioRef.current = true;
+    const startTime = performance.now();
+    
+    // Combine all buffered audio into a single chunk
+    const totalLength = audioBufferRef.current.reduce((sum, chunk) => sum + chunk.length, 0);
+    const combinedAudio = new Uint8Array(totalLength);
+    let offset = 0;
+    
+    for (const chunk of audioBufferRef.current) {
+      combinedAudio.set(chunk, offset);
+      offset += chunk.length;
+    }
+    
+    console.log(`🔄 Combined ${audioBufferRef.current.length} audio packets into ${(combinedAudio.length / 1024).toFixed(2)} KB for backend processing`);
+    
+    try {
+      // **STEP 1: Send complete audio to backend for viseme processing**
+      await visemeService.sendAudioChunk(combinedAudio);
+      console.log(`✅ Complete audio sent to viseme service (${(combinedAudio.length / 1024).toFixed(2)} KB)`);
+      
+      // **STEP 2: Wait for viseme response and then play audio with sync**
+      // The viseme response will trigger the viseme callbacks, and then we play the audio
+      // Store the audio for synchronized playback when visemes arrive
+      pendingCompleteAudioRef.current = combinedAudio;
+      lastCompleteAudioRef.current = combinedAudio; // Keep for potential replay
+      
+    } catch (error) {
+      console.error("❌ Failed to process complete audio:", error);
+      
+      // **FALLBACK: Play audio immediately without visemes**
+      console.log("🔄 Falling back to immediate audio playback without sync");
+      audioStreamerRef.current?.addPCM16(combinedAudio);
+      lastCompleteAudioRef.current = combinedAudio; // Keep for potential replay
+    } finally {
+      // **STEP 3: Clean up buffers and timeout**
+      audioBufferRef.current = [];
+      bufferedAudioDataRef.current = [];
+      chunkStartTimeRef.current = null;
+      setIsBuffering(false);
+      isProcessingAudioRef.current = false; // Reset processing flag
+      
+      // Clear any pending auto-send timeout
+      if (autoSendTimeoutRef.current) {
+        clearTimeout(autoSendTimeoutRef.current);
+        autoSendTimeoutRef.current = null;
+      }
+      
+      const processingTime = performance.now() - startTime;
+      console.log(`⚡ Complete audio processing took ${processingTime.toFixed(2)}ms`);
+    }
+  }, [visemeService]);
+
+  // **MANUAL FORCE SEND** - For emergency use when auto-detection fails
+  const forceProcessAudio = useCallback(() => {
+    console.log("🔧 Manual force: Processing buffered audio");
+    if (enableChunking && audioBufferRef.current.length > 0) {
+      processCompleteAudio();
+    } else if (enableChunking) {
+      console.warn("⚠️ No audio data buffered to force process");
+    } else {
+      console.warn("⚠️ Force process only works in waterfall (sync) mode");
+    }
+  }, [enableChunking, processCompleteAudio]);
+
+  // **REPLAY AUDIO** - Replay the last complete audio file for debugging
+  const replayLastAudio = useCallback(() => {
+    if (lastCompleteAudioRef.current) {
+      console.log("🔄 Replaying last complete audio file");
+      audioStreamerRef.current?.addPCM16(lastCompleteAudioRef.current);
+    } else {
+      console.warn("⚠️ No audio available for replay");
+    }
+  }, []);
+
+  // **WATERFALL COMPLETION HANDLER** - Process complete audio response
+  const onGeminiResponseComplete = useCallback(() => {
+    // **CRITICAL FIX**: Don't stop audio streamer here - let the audio play through
+    // audioStreamerRef.current?.stop(); // REMOVED: This was causing audio to cut off
+    
+    // Clear auto-send timeout since we got a completion event
+    if (autoSendTimeoutRef.current) {
+      clearTimeout(autoSendTimeoutRef.current);
+      autoSendTimeoutRef.current = null;
+    }
+    
+    if (enableChunking && audioBufferRef.current.length > 0) {
+      console.log(`🎯 Gemini response complete! Processing full audio (${audioBufferRef.current.length} packets)`);
+      processCompleteAudio();
+    }
+  }, [enableChunking, processCompleteAudio]);
 
   // register audio for streaming server -> speakers
   useEffect(() => {
@@ -70,21 +211,73 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   useEffect(() => {
     visemeService.setCallbacks({
       onVisemes: (visemes, subtitles) => {
+        const now = performance.now();
+        const latency = audioStartTimeRef.current ? now - audioStartTimeRef.current : 0;
+        
+        // Update latency statistics
+        const stats = packetStatsRef.current;
+        stats.averageLatency = (stats.averageLatency * stats.totalPackets + latency) / (stats.totalPackets + 1);
+        stats.maxLatency = Math.max(stats.maxLatency, latency);
+        stats.minLatency = Math.min(stats.minLatency, latency);
+        
+        console.log(`🎯 Viseme/Subtitle sync complete - Latency: ${latency.toFixed(2)}ms, Visemes: ${visemes.length}, Subtitles: ${subtitles.length}`);
+        
         setCurrentVisemes(visemes);
         setCurrentSubtitles(subtitles);
+        
+        // **WATERFALL: Play audio immediately when visemes are ready**
+        if (enableChunking && pendingCompleteAudioRef.current) {
+          console.log(`🎵 Starting synchronized audio + viseme playback (${(pendingCompleteAudioRef.current.length / 1024).toFixed(2)} KB)`);
+          
+          // **CRITICAL**: Start audio playback immediately to sync with visemes
+          audioStreamerRef.current?.addPCM16(pendingCompleteAudioRef.current);
+          pendingCompleteAudioRef.current = null;
+          
+          console.log(`✅ Audio and visemes synchronized successfully`);
+        }
       },
       onStreamingChunk: (chunkText, visemes) => {
-        // Update visemes in real-time for streaming chunks
+        const now = performance.now();
+        const latency = audioStartTimeRef.current ? now - audioStartTimeRef.current : 0;
+        
+        console.log(`⚡ Real-time streaming chunk - Latency: ${latency.toFixed(2)}ms, Text: "${chunkText}", Visemes: ${visemes.length}`);
+        
+        // Update visemes in real-time for streaming chunks (ultra-fast response)
         setCurrentVisemes(visemes);
       },
       onError: (error) => {
-        console.error("Viseme service error:", error);
+        console.error("❌ Viseme service error:", error);
+        packetStatsRef.current.droppedPackets++;
       },
       onConnected: (sessionId) => {
-        console.log("Viseme service connected with session:", sessionId);
+        console.log("✅ Viseme service connected with session:", sessionId);
+        // Reset packet tracking on new connection
+        packetSequenceRef.current = 0;
+        audioStartTimeRef.current = null;
+        lastPacketTimeRef.current = 0;
+        packetStatsRef.current = {
+          totalPackets: 0,
+          totalBytes: 0,
+          droppedPackets: 0,
+          averageLatency: 0,
+          maxLatency: 0,
+          minLatency: Infinity
+        };
       },
       onFinalResults: (response) => {
-        console.log("Final viseme results:", response);
+        const now = performance.now();
+        const latency = audioStartTimeRef.current ? now - audioStartTimeRef.current : 0;
+        
+        console.log("🏁 Final viseme results received:", {
+          latency: `${latency.toFixed(2)}ms`,
+          visemeCount: response.visemeCount,
+          subtitleCount: response.subtitles.length,
+          processingTime: response.state_tracking.processing_time,
+          totalWords: response.state_tracking.total_words,
+          totalPhonemes: response.state_tracking.total_phonemes,
+          duration: response.state_tracking.duration
+        });
+        
         setCurrentVisemes(response.visemes);
         setCurrentSubtitles(response.subtitles);
       }
@@ -94,33 +287,135 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   useEffect(() => {
     const onOpen = () => {
       setConnected(true);
+      connectedRef.current = true; // track via ref
     };
 
     const onClose = () => {
       setConnected(false);
+      connectedRef.current = false;
     };
 
     const onError = (error: ErrorEvent) => {
       console.error("error", error);
     };
 
-    const stopAudioStreamer = () => audioStreamerRef.current?.stop();
+    const stopAudioStreamer = () => {
+      // **CRITICAL FIX**: Don't stop audio in completion events - let audio play through naturally
+      // audioStreamerRef.current?.stop(); // REMOVED: This was causing audio to cut off
+      console.log("🎵 Audio streamer allowed to continue playing");
+    };
+    
+    // **WATERFALL COMPLETION HANDLER** - Process complete audio response
+    const onGeminiResponseComplete = () => {
+      stopAudioStreamer(); // This now does nothing - just logs
+      
+      if (enableChunking && audioBufferRef.current.length > 0) {
+        console.log(`🎯 Gemini response complete! Processing full audio (${audioBufferRef.current.length} packets)`);
+        processCompleteAudio();
+      }
+    };
 
     const onAudio = (data: ArrayBuffer) => {
+      const now = performance.now();
       const audioData = new Uint8Array(data);
       
-      // Send to audio streamer for playback
-      audioStreamerRef.current?.addPCM16(audioData);
+      // **CRITICAL: Ultra-fast audio packet forwarding and tracking**
+      packetSequenceRef.current++;
+      const packetId = packetSequenceRef.current;
+      const packetSize = audioData.byteLength;
       
-      // Send to viseme service for transcription (ultra fast processing)
-      visemeService.sendAudioChunk(audioData);
+      // Track timing for synchronization
+      if (!audioStartTimeRef.current) {
+        audioStartTimeRef.current = now;
+      }
+      
+      const timeSinceLastPacket = lastPacketTimeRef.current ? now - lastPacketTimeRef.current : 0;
+      lastPacketTimeRef.current = now;
+      
+      // Update packet statistics
+      const stats = packetStatsRef.current;
+      stats.totalPackets++;
+      stats.totalBytes += packetSize;
+      
+      // **LOG EVERY AUDIO PACKET** (as required)
+      console.log(`📦 Audio packet #${packetId}:`, {
+        size: `${packetSize} bytes`,
+        timestamp: `${now.toFixed(2)}ms`,
+        timeSinceLastPacket: `${timeSinceLastPacket.toFixed(2)}ms`,
+        sequenceNumber: packetId,
+        cumulativeBytes: stats.totalBytes,
+        geminiConnected: connectedRef.current,
+        visemeConnected: visemeService.connected,
+        mode: enableChunking ? 'waterfall' : 'immediate',
+        bufferedChunks: audioBufferRef.current.length
+      });
+      
+      // **SIMPLE WATERFALL MODE** - Collect all audio, then send complete chunk
+      if (enableChunking) {
+        // **DO NOT PLAY AUDIO YET** - Wait for visemes to ensure perfect sync
+        // audioStreamerRef.current?.addPCM16(audioData); // REMOVED - causes double playback
+        
+        // **COLLECT AUDIO FOR VISEMES** - Buffer audio until Gemini response is complete
+        audioBufferRef.current.push(audioData);
+        bufferedAudioDataRef.current.push({ audio: audioData, timestamp: now });
+        
+        // Start chunk timer if this is the first packet
+        if (!chunkStartTimeRef.current) {
+          chunkStartTimeRef.current = now;
+          console.log(`🎬 Starting audio collection for complete response`);
+          setIsBuffering(true);
+        }
+        
+        // **AUTO-SEND TIMEOUT** - Send after 2 seconds of no new audio if no completion event
+        if (autoSendTimeoutRef.current) {
+          clearTimeout(autoSendTimeoutRef.current);
+        }
+        
+        autoSendTimeoutRef.current = window.setTimeout(() => {
+          if (audioBufferRef.current.length > 0 && !isProcessingAudioRef.current) {
+            console.log(`⏰ Auto-sending buffered audio after timeout (${audioBufferRef.current.length} packets, no completion event detected)`);
+            processCompleteAudio();
+          } else if (isProcessingAudioRef.current) {
+            console.log(`⏰ Auto-send timeout triggered but audio is already being processed`);
+          }
+        }, 2000); // 2 second timeout
+        
+        console.log(`📦 Buffered packet #${packetId} (${audioBufferRef.current.length} packets total) - Audio held for sync`);
+      } else {
+        // **IMMEDIATE MODE** - Legacy behavior for backward compatibility
+        console.log(`⚡ Immediate mode: Processing packet #${packetId} individually`);
+        
+        // **1. IMMEDIATE FORWARDING TO AUDIO STREAMER** (for playback)
+        audioStreamerRef.current?.addPCM16(audioData);
+        
+        // **2. IMMEDIATE FORWARDING TO VISEME SERVICE** (ultra-fast processing)
+        visemeService.sendAudioChunk(audioData)
+          .then(() => {
+            const processingLatency = performance.now() - now;
+            console.log(`⚡ Viseme service packet #${packetId} sent - Processing latency: ${processingLatency.toFixed(2)}ms`);
+          })
+          .catch((error) => {
+            console.error(`❌ Failed to send packet #${packetId} to viseme service:`, error);
+            stats.droppedPackets++;
+          });
+      }
+      
+      // **WARN FOR SYNCHRONIZATION ISSUES**
+      if (timeSinceLastPacket > 100) { // More than 100ms gap
+        console.warn(`⚠️ Potential packet delay detected: ${timeSinceLastPacket.toFixed(2)}ms gap between packets`);
+      }
+      
+      if (stats.droppedPackets > 0 && packetId % 10 === 0) {
+        console.warn(`⚠️ Packet loss detected: ${stats.droppedPackets}/${stats.totalPackets} packets dropped`);
+      }
     };
 
     client
       .on("error", onError)
       .on("open", onOpen)
       .on("close", onClose)
-      .on("interrupted", stopAudioStreamer)
+      .on("interrupted", onGeminiResponseComplete)
+      .on("turncomplete", onGeminiResponseComplete)
       .on("audio", onAudio);
 
     return () => {
@@ -128,37 +423,168 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
         .off("error", onError)
         .off("open", onOpen)
         .off("close", onClose)
-        .off("interrupted", stopAudioStreamer)
+        .off("interrupted", onGeminiResponseComplete)
+        .off("turncomplete", onGeminiResponseComplete)
         .off("audio", onAudio)
         .disconnect();
     };
-  }, [client]);
+  }, [client, enableChunking, processCompleteAudio, onGeminiResponseComplete]);
 
   const connect = useCallback(async () => {
     if (!config) {
       throw new Error("config has not been set");
     }
-    client.disconnect();
     
-    // Connect viseme service first for ultra-fast processing
-    try {
-      await visemeService.connect();
-      console.log("Viseme service connected successfully");
-    } catch (error) {
-      console.warn("Viseme service connection failed:", error);
-      // Continue even if viseme service fails
+    console.log("🚀 Starting ExpressBuddy ultra-fast connection sequence...");
+    
+    // Reset all tracking variables
+    packetSequenceRef.current = 0;
+    audioStartTimeRef.current = null;
+    lastPacketTimeRef.current = 0;
+    isProcessingAudioRef.current = false; // Reset processing flag
+    packetStatsRef.current = {
+      totalPackets: 0,
+      totalBytes: 0,
+      droppedPackets: 0,
+      averageLatency: 0,
+      maxLatency: 0,
+      minLatency: Infinity
+    };
+    
+    // Ensure clean disconnection first
+    console.log("🔄 Ensuring clean disconnection...");
+    client.disconnect();
+    visemeService.disconnect();
+    
+    // Connect viseme service independently (non-blocking, ultra-fast)
+    console.log("🎯 Connecting viseme service (ultra-fast mode)...");
+    const visemeConnectionStart = performance.now();
+    
+    visemeService.connect().then(() => {
+      const visemeLatency = performance.now() - visemeConnectionStart;
+      console.log(`✅ Viseme service connected successfully - Connection latency: ${visemeLatency.toFixed(2)}ms`);
+    }).catch((error) => {
+      console.warn("⚠️ Viseme service connection failed (continuing anyway):", error);
+      // Continue even if viseme service fails - packets will be queued
+    });
+    
+    // Small delay to ensure client is fully disconnected before reconnecting
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Connect Gemini client independently
+    console.log("🤖 Connecting Gemini Live API...");
+    const geminiConnectionStart = performance.now();
+    
+    const geminiConnected = await client.connect(model, config);
+    const geminiLatency = performance.now() - geminiConnectionStart;
+    
+    console.log(`🤖 Gemini client connection result: ${geminiConnected} - Connection latency: ${geminiLatency.toFixed(2)}ms`);
+    
+    if (!geminiConnected) {
+      throw new Error("Failed to connect to Gemini Live API");
     }
     
-    await client.connect(model, config);
-  }, [client, config, model, visemeService]);
+    console.log("🎉 ExpressBuddy ultra-fast connection sequence completed!");
+    
+    // Log final connection status
+    setTimeout(() => {
+      console.log("📊 Connection Status Summary:", {
+        geminiConnected: connected,
+        visemeConnected: visemeService.connected,
+        totalConnectionTime: `${(performance.now() - visemeConnectionStart).toFixed(2)}ms`,
+        readyForUltraFastSync: connected && visemeService.connected
+      });
+    }, 500);
+    
+  }, [client, config, model, visemeService, connected]);
 
   const disconnect = useCallback(async () => {
+    console.log("🛑 Starting ExpressBuddy disconnect sequence...");
+    
+    // Log final statistics before disconnecting
+    const stats = packetStatsRef.current;
+    console.log("📊 Final Session Statistics:", {
+      totalPackets: stats.totalPackets,
+      totalBytes: `${(stats.totalBytes / 1024).toFixed(2)} KB`,
+      droppedPackets: stats.droppedPackets,
+      packetLossRate: stats.totalPackets > 0 ? `${((stats.droppedPackets / stats.totalPackets) * 100).toFixed(2)}%` : "0%",
+      averageLatency: `${stats.averageLatency.toFixed(2)}ms`,
+      maxLatency: `${stats.maxLatency.toFixed(2)}ms`,
+      minLatency: stats.minLatency === Infinity ? "N/A" : `${stats.minLatency.toFixed(2)}ms`
+    });
+    
+    // Disconnect both services
     client.disconnect();
     visemeService.disconnect();
     setConnected(false);
     setCurrentVisemes([]);
     setCurrentSubtitles([]);
+    
+    // Reset all tracking variables
+    packetSequenceRef.current = 0;
+    audioStartTimeRef.current = null;
+    lastPacketTimeRef.current = 0;
+    isProcessingAudioRef.current = false; // Reset processing flag
+    packetStatsRef.current = {
+      totalPackets: 0,
+      totalBytes: 0,
+      droppedPackets: 0,
+      averageLatency: 0,
+      maxLatency: 0,
+      minLatency: Infinity
+    };
+    
+    console.log("✅ ExpressBuddy disconnect sequence completed");
   }, [setConnected, client, visemeService]);
+
+  // Utility functions for monitoring and debugging
+  const getPacketStatistics = useCallback(() => {
+    const stats = packetStatsRef.current;
+    
+    return {
+      audioPackets: {
+        totalPackets: stats.totalPackets,
+        totalBytes: stats.totalBytes,
+        droppedPackets: stats.droppedPackets,
+        packetLossRate: stats.totalPackets > 0 ? (stats.droppedPackets / stats.totalPackets) * 100 : 0,
+        averageLatency: stats.averageLatency,
+        maxLatency: stats.maxLatency,
+        minLatency: stats.minLatency === Infinity ? 0 : stats.minLatency
+      },
+      visemeService: {
+        connected: visemeService.connected,
+        queueSize: 0 // TODO: Implement getQueueSize in viseme service
+      },
+      connectionStatus: {
+        geminiConnected: connected,
+        visemeConnected: visemeService.connected,
+      },
+      synchronization: {
+        audioStartTime: audioStartTimeRef.current,
+        lastPacketTime: lastPacketTimeRef.current,
+        currentSequence: packetSequenceRef.current
+      }
+    };
+  }, [connected, visemeService]);
+
+  const logPerformanceReport = useCallback(() => {
+    const report = getPacketStatistics();
+    console.log("📊 ExpressBuddy Performance Report:", report);
+    return report;
+  }, [getPacketStatistics]);
+
+  // Auto-logging every 30 seconds during active streaming
+  useEffect(() => {
+    if (!connected) return;
+    
+    const interval = setInterval(() => {
+      if (packetStatsRef.current.totalPackets > 0) {
+        logPerformanceReport();
+      }
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [connected, logPerformanceReport]);
 
   return {
     client,
@@ -173,5 +599,14 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     visemeService,
     currentVisemes,
     currentSubtitles,
+    // Debugging and monitoring utilities
+    getPacketStatistics,
+    logPerformanceReport,
+    // Simple audio control
+    isBuffering,
+    enableChunking,
+    setEnableChunking,
+    forceProcessAudio,
+    replayLastAudio,
   };
 }
