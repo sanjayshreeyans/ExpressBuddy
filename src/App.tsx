@@ -17,9 +17,12 @@
 import "./App.scss";
 import { LiveAPIProvider } from "./contexts/LiveAPIContext";
 import MainInterfaceWithAvatar from "./components/main-interface/MainInterfaceWithAvatar";
+import LandingPage from "./components/landing-page/LandingPage";
 import { LiveClientOptions } from "./types";
 import { StagewiseToolbar } from "@stagewise/toolbar-react";
 import { ReactPlugin } from "@stagewise-plugins/react";
+import SplashScreen from "./components/splash-screen/SplashScreen";
+import { useEffect, useState } from "react";
 
 const API_KEY = process.env.REACT_APP_GEMINI_API_KEY as string;
 if (typeof API_KEY !== "string") {
@@ -31,12 +34,47 @@ const apiOptions: LiveClientOptions = {
 };
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+  const [currentScreen, setCurrentScreen] = useState<'landing' | 'chat'>('landing');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3000); // Show splash for 3 seconds
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleStartChat = () => {
+    setCurrentScreen('chat');
+  };
+
+  const handleSignIn = () => {
+    // For now, just navigate to chat - implement sign in later
+    setCurrentScreen('chat');
+  };
+
+  const handleGoToLanding = () => {
+    setCurrentScreen('landing');
+  };
+
   return (
     <div className="App">
-      <StagewiseToolbar config={{ plugins: [ReactPlugin] }} />
-      <LiveAPIProvider options={apiOptions}>
-        <MainInterfaceWithAvatar />
-      </LiveAPIProvider>
+      {showSplash ? (
+        <SplashScreen />
+      ) : currentScreen === 'landing' ? (
+        <LandingPage 
+          onStartChat={handleStartChat}
+          onSignIn={handleSignIn}
+        />
+      ) : (
+        <>
+          <StagewiseToolbar config={{ plugins: [ReactPlugin] }} />
+          <LiveAPIProvider options={apiOptions}>
+            <MainInterfaceWithAvatar onGoToLanding={handleGoToLanding} />
+          </LiveAPIProvider>
+        </>
+      )}
     </div>
   );
 }
