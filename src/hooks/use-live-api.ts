@@ -78,6 +78,28 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   const packetSequenceRef = useRef(0);
   const audioStartTimeRef = useRef<number | null>(null);
   const lastPacketTimeRef = useRef<number>(0);
+  
+  // AI interruption state
+  const isAIPlayingRef = useRef<boolean>(false);
+  
+  /*
+   * AI INTERRUPTION SYSTEM:
+   * 
+   * This system ensures that when a user starts speaking while the AI is playing audio/visemes,
+   * the AI immediately stops to give priority to the user. The implementation leverages Google's
+   * built-in VAD (Voice Activity Detection) events:
+   * 
+   * 1. "turncomplete" - AI finished speaking naturally → process buffered audio normally
+   * 2. "interrupted" - User started speaking while AI was talking → immediately stop AI playback
+   * 
+   * The system automatically:
+   * - Stops AI audio playback via audioStreamer.stop()
+   * - Clears current visemes and subtitles
+   * - Discards any buffered audio to prioritize new user input
+   * - Resets all processing state
+   * 
+   * No manual VAD or volume-based detection is needed - Google handles this internally.
+   */
   const packetStatsRef = useRef({
     totalPackets: 0,
     totalBytes: 0,
@@ -86,6 +108,42 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     maxLatency: 0,
     minLatency: Infinity
   });
+
+  // **AI INTERRUPTION** - Stop AI audio/visemes when user starts speaking
+  const interruptAIPlayback = useCallback(() => {
+    if (!isAIPlayingRef.current) {
+      return; // No AI playback to interrupt
+    }
+    
+    console.log("🛑 INTERRUPTING AI: User started speaking");
+    
+    // Immediately stop audio playback
+    if (audioStreamerRef.current) {
+      audioStreamerRef.current.stop();
+      console.log("🔇 Stopped AI audio playback");
+    }
+    
+    // Reset viseme playback by clearing current visemes
+    setCurrentVisemes([]);
+    setCurrentSubtitles([]);
+    console.log("👄 Reset viseme and subtitle playback");
+    
+    // Clear any buffered audio to prioritize new user input
+    audioBufferRef.current = [];
+    pendingCompleteAudioRef.current = null;
+    
+    // Clear auto-send timeout if any
+    if (autoSendTimeoutRef.current) {
+      clearTimeout(autoSendTimeoutRef.current);
+      autoSendTimeoutRef.current = null;
+    }
+    
+    // Reset processing state
+    isProcessingAudioRef.current = false;
+    isAIPlayingRef.current = false;
+    
+    console.log("✅ AI interruption complete - ready for new user input");
+  }, []);
 
   // **WATERFALL AUDIO PROCESSING** - Process complete audio response from Gemini
   const processCompleteAudio = useCallback(async () => {
@@ -131,6 +189,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       
       // **FALLBACK: Play audio immediately without visemes**
       console.log("🔄 Falling back to immediate audio playback without sync");
+      isAIPlayingRef.current = true;
       audioStreamerRef.current?.addPCM16(combinedAudio);
       lastCompleteAudioRef.current = combinedAudio; // Keep for potential replay
     } finally {
@@ -168,6 +227,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   const replayLastAudio = useCallback(() => {
     if (lastCompleteAudioRef.current) {
       console.log("🔄 Replaying last complete audio file");
+      isAIPlayingRef.current = true;
       audioStreamerRef.current?.addPCM16(lastCompleteAudioRef.current);
     } else {
       console.warn("⚠️ No audio available for replay");
@@ -175,10 +235,8 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   }, []);
 
   // **WATERFALL COMPLETION HANDLER** - Process complete audio response
-  const onGeminiResponseComplete = useCallback(() => {
-    // **CRITICAL FIX**: Don't stop audio streamer here - let the audio play through
-    // audioStreamerRef.current?.stop(); // REMOVED: This was causing audio to cut off
-    
+  // **GEMINI TURN COMPLETE** - AI finished speaking naturally
+  const onGeminiTurnComplete = useCallback(() => {
     // Clear auto-send timeout since we got a completion event
     if (autoSendTimeoutRef.current) {
       clearTimeout(autoSendTimeoutRef.current);
@@ -186,16 +244,31 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     }
     
     if (enableChunking && audioBufferRef.current.length > 0) {
-      console.log(`🎯 Gemini response complete! Processing full audio (${audioBufferRef.current.length} packets)`);
+      console.log(`🎯 Gemini turn complete! Processing full audio (${audioBufferRef.current.length} packets)`);
       processCompleteAudio();
     }
   }, [enableChunking, processCompleteAudio]);
+
+  // **GEMINI INTERRUPTED** - User started speaking while AI was talking  
+  const onGeminiInterrupted = useCallback(() => {
+    console.log("🛑 Gemini interrupted by user - triggering AI interruption");
+    interruptAIPlayback();
+  }, [interruptAIPlayback]);
 
   // register audio for streaming server -> speakers
   useEffect(() => {
     if (!audioStreamerRef.current) {
       audioContext({ id: "audio-out" }).then((audioCtx: AudioContext) => {
         audioStreamerRef.current = new AudioStreamer(audioCtx);
+        
+        // Set up audio completion callback to reset AI playing flag
+        if (audioStreamerRef.current) {
+          audioStreamerRef.current.onComplete = () => {
+            console.log("🔇 AI audio playback completed");
+            isAIPlayingRef.current = false;
+          };
+        }
+        
         audioStreamerRef.current
           .addWorklet<any>("vumeter-out", VolMeterWorket, (ev: any) => {
             setVolume(ev.data.volume);
@@ -229,7 +302,8 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
         if (enableChunking && pendingCompleteAudioRef.current) {
           console.log(`🎵 Starting synchronized audio + viseme playback (${(pendingCompleteAudioRef.current.length / 1024).toFixed(2)} KB)`);
           
-          // **CRITICAL**: Start audio playback immediately to sync with visemes
+          // **CRITICAL**: Mark AI as playing and start audio playback to sync with visemes
+          isAIPlayingRef.current = true;
           audioStreamerRef.current?.addPCM16(pendingCompleteAudioRef.current);
           pendingCompleteAudioRef.current = null;
           
@@ -293,6 +367,8 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     const onClose = () => {
       setConnected(false);
       connectedRef.current = false;
+      // Reset AI playing state when connection closes
+      isAIPlayingRef.current = false;
     };
 
     const onError = (error: ErrorEvent) => {
@@ -378,7 +454,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
           } else if (isProcessingAudioRef.current) {
             console.log(`⏰ Auto-send timeout triggered but audio is already being processed`);
           }
-        }, 2000); // 2 second timeout
+        }, 100); // 100ms second timeout
         
         console.log(`📦 Buffered packet #${packetId} (${audioBufferRef.current.length} packets total) - Audio held for sync`);
       } else {
@@ -386,6 +462,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
         console.log(`⚡ Immediate mode: Processing packet #${packetId} individually`);
         
         // **1. IMMEDIATE FORWARDING TO AUDIO STREAMER** (for playback)
+        isAIPlayingRef.current = true;
         audioStreamerRef.current?.addPCM16(audioData);
         
         // **2. IMMEDIATE FORWARDING TO VISEME SERVICE** (ultra-fast processing)
@@ -414,8 +491,8 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       .on("error", onError)
       .on("open", onOpen)
       .on("close", onClose)
-      .on("interrupted", onGeminiResponseComplete)
-      .on("turncomplete", onGeminiResponseComplete)
+      .on("interrupted", onGeminiInterrupted)
+      .on("turncomplete", onGeminiTurnComplete)
       .on("audio", onAudio);
 
     return () => {
@@ -423,12 +500,12 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
         .off("error", onError)
         .off("open", onOpen)
         .off("close", onClose)
-        .off("interrupted", onGeminiResponseComplete)
-        .off("turncomplete", onGeminiResponseComplete)
+        .off("interrupted", onGeminiInterrupted)
+        .off("turncomplete", onGeminiTurnComplete)
         .off("audio", onAudio)
         .disconnect();
     };
-  }, [client, enableChunking, processCompleteAudio, onGeminiResponseComplete]);
+  }, [client, enableChunking, processCompleteAudio, onGeminiTurnComplete, onGeminiInterrupted]);
 
   const connect = useCallback(async () => {
     if (!config) {
@@ -442,6 +519,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     audioStartTimeRef.current = null;
     lastPacketTimeRef.current = 0;
     isProcessingAudioRef.current = false; // Reset processing flag
+    isAIPlayingRef.current = false; // Reset AI playing flag
     packetStatsRef.current = {
       totalPackets: 0,
       totalBytes: 0,
@@ -525,6 +603,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     audioStartTimeRef.current = null;
     lastPacketTimeRef.current = 0;
     isProcessingAudioRef.current = false; // Reset processing flag
+    isAIPlayingRef.current = false; // Reset AI playing flag
     packetStatsRef.current = {
       totalPackets: 0,
       totalBytes: 0,

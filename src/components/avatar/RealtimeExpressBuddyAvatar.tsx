@@ -41,7 +41,7 @@ export const RealtimeExpressBuddyAvatar: React.FC<RealtimeExpressBuddyAvatarProp
 
   // Rive setup
   const { rive, RiveComponent } = useRive({
-    src: '/pandabot.riv',
+    src: '/realistic_female_v1_3.riv',
     stateMachines: 'InLesson',
     artboard: 'Character',
     animations: 'head_idle',
