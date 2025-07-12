@@ -18,11 +18,12 @@ import "./App.scss";
 import { LiveAPIProvider } from "./contexts/LiveAPIContext";
 import MainInterfaceWithAvatar from "./components/main-interface/MainInterfaceWithAvatar";
 import LandingPage from "./components/landing-page/LandingPage";
+import TestAuthPage from "./components/auth/TestAuthPage";
 import { LiveClientOptions } from "./types";
 import { StagewiseToolbar } from "@stagewise/toolbar-react";
 import { ReactPlugin } from "@stagewise-plugins/react";
-import SplashScreen from "./components/splash-screen/SplashScreen";
 import { useEffect, useState } from "react";
+import { KindeProvider, useKindeAuth } from "@kinde-oss/kinde-auth-react";
 
 const API_KEY = process.env.REACT_APP_GEMINI_API_KEY as string;
 if (typeof API_KEY !== "string") {
@@ -33,41 +34,57 @@ const apiOptions: LiveClientOptions = {
   apiKey: API_KEY,
 };
 
-function App() {
-  const [showSplash, setShowSplash] = useState(true);
-  const [currentScreen, setCurrentScreen] = useState<'landing' | 'chat'>('landing');
+function AppContent() {
+  const [currentScreen, setCurrentScreen] = useState<'landing' | 'auth' | 'chat'>('landing');
+  const { isAuthenticated, isLoading } = useKindeAuth();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowSplash(false);
-    }, 3000); // Show splash for 3 seconds
-
-    return () => clearTimeout(timer);
-  }, []);
+    if (isAuthenticated && currentScreen === 'auth') {
+      setCurrentScreen('chat');
+    }
+  }, [isAuthenticated, currentScreen]);
 
   const handleStartChat = () => {
-    setCurrentScreen('chat');
+    if (isAuthenticated) {
+      setCurrentScreen('chat');
+    } else {
+      setCurrentScreen('auth');
+    }
   };
 
   const handleSignIn = () => {
-    // For now, just navigate to chat - implement sign in later
-    setCurrentScreen('chat');
+    setCurrentScreen('auth');
   };
 
   const handleGoToLanding = () => {
     setCurrentScreen('landing');
   };
 
+  const handleBackToLanding = () => {
+    setCurrentScreen('landing');
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="App">
-      {showSplash ? (
-        <SplashScreen />
-      ) : currentScreen === 'landing' ? (
+      {currentScreen === 'landing' && (
         <LandingPage 
           onStartChat={handleStartChat}
           onSignIn={handleSignIn}
         />
-      ) : (
+      )}
+
+      {currentScreen === 'chat' && (
         <>
           <StagewiseToolbar config={{ plugins: [ReactPlugin] }} />
           <LiveAPIProvider options={apiOptions}>
@@ -76,6 +93,20 @@ function App() {
         </>
       )}
     </div>
+  );
+}
+
+function App() {
+  return (
+    // <KindeProvider
+    //   clientId="0531b02ab7864ba89c419db341727945"
+    //   domain="https://mybuddy.kinde.com"
+    //   redirectUri={window.location.origin}
+    //   logoutUri={window.location.origin}
+    //   useInsecureForRefreshToken={process.env.NODE_ENV === 'development'}
+    // >
+    //   <AppContent />
+    // </KindeProvider>
   );
 }
 

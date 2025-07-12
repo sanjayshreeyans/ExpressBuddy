@@ -6,6 +6,7 @@
   "private": true,
   "dependencies": {
     "@google/genai": "^0.14.0",
+    "@kinde-oss/kinde-auth-react": "^5.5.0",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-navigation-menu": "^1.2.13",
@@ -16,6 +17,7 @@
     "clsx": "^2.1.1",
     "dotenv-flow": "^4.1.0",
     "eventemitter3": "^5.0.1",
+    "framer-motion": "^12.23.3",
     "lodash": "^4.17.21",
     "lucide-react": "^0.516.0",
     "react": "^18.3.1",
