@@ -5,6 +5,8 @@
  */
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
 import { motion } from 'framer-motion';
 import { useRive } from '@rive-app/react-canvas';
 import { Button } from '../ui/button';
@@ -38,12 +40,25 @@ import {
 } from 'lucide-react';
 
 interface LandingPageProps {
-  onStartChat: () => void;
-  onSignIn: () => void;
+  // Remove props since we'll use navigation
 }
 
-export default function LandingPage({ onStartChat, onSignIn }: LandingPageProps) {
+export default function LandingPage({}: LandingPageProps) {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const navigate = useNavigate();
+  const { isAuthenticated } = useKindeAuth();
+
+  const handleStartChat = () => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    } else {
+      navigate('/login');
+    }
+  };
+
+  const handleSignIn = () => {
+    navigate('/login');
+  };
   
   // Learning paths for ExpressBuddy
   const learningPaths = [
@@ -187,7 +202,7 @@ export default function LandingPage({ onStartChat, onSignIn }: LandingPageProps)
             </a>
             <Button 
               variant="outline" 
-              onClick={onSignIn}
+              onClick={handleSignIn}
               className="rounded-full border-gray-300 text-gray-700 hover:bg-gray-50"
             >
               Sign In
@@ -225,7 +240,7 @@ export default function LandingPage({ onStartChat, onSignIn }: LandingPageProps)
               </a>
               <Button 
                 variant="outline" 
-                onClick={onSignIn}
+                onClick={handleSignIn}
                 className="w-full rounded-full border-gray-300 text-gray-700 hover:bg-gray-50"
               >
                 Sign In
@@ -277,7 +292,7 @@ export default function LandingPage({ onStartChat, onSignIn }: LandingPageProps)
                 className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
               >
                 <Button
-                  onClick={onStartChat}
+                  onClick={handleStartChat}
                   size="lg"
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
                 >
@@ -542,7 +557,7 @@ export default function LandingPage({ onStartChat, onSignIn }: LandingPageProps)
               whileTap={{ scale: 0.95 }}
             >
               <Button
-                onClick={onStartChat}
+                onClick={handleStartChat}
                 size="lg"
                 variant="secondary"
                 className="bg-white text-blue-600 hover:bg-gray-100 text-xl px-12 py-6 rounded-2xl shadow-lg font-semibold"

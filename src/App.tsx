@@ -15,14 +15,17 @@
  */
 
 import "./App.scss";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { LiveAPIProvider } from "./contexts/LiveAPIContext";
 import MainInterfaceWithAvatar from "./components/main-interface/MainInterfaceWithAvatar";
 import LandingPage from "./components/landing-page/LandingPage";
-import TestAuthPage from "./components/auth/TestAuthPage";
+import LearningPathHome from "./components/home/LearningPathHome";
+import AuthPage from "./components/auth/AuthPage";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { LiveClientOptions } from "./types";
 import { StagewiseToolbar } from "@stagewise/toolbar-react";
 import { ReactPlugin } from "@stagewise-plugins/react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { KindeProvider, useKindeAuth } from "@kinde-oss/kinde-auth-react";
 
 const API_KEY = process.env.REACT_APP_GEMINI_API_KEY as string;
@@ -35,34 +38,14 @@ const apiOptions: LiveClientOptions = {
 };
 
 function AppContent() {
-  const [currentScreen, setCurrentScreen] = useState<'landing' | 'auth' | 'chat'>('landing');
   const { isAuthenticated, isLoading } = useKindeAuth();
 
   useEffect(() => {
-    if (isAuthenticated && currentScreen === 'auth') {
-      setCurrentScreen('chat');
+    // Redirect to dashboard after authentication
+    if (isAuthenticated && window.location.pathname === '/login') {
+      window.location.href = '/dashboard';
     }
-  }, [isAuthenticated, currentScreen]);
-
-  const handleStartChat = () => {
-    if (isAuthenticated) {
-      setCurrentScreen('chat');
-    } else {
-      setCurrentScreen('auth');
-    }
-  };
-
-  const handleSignIn = () => {
-    setCurrentScreen('auth');
-  };
-
-  const handleGoToLanding = () => {
-    setCurrentScreen('landing');
-  };
-
-  const handleBackToLanding = () => {
-    setCurrentScreen('landing');
-  };
+  }, [isAuthenticated]);
 
   if (isLoading) {
     return (
@@ -76,37 +59,49 @@ function AppContent() {
   }
 
   return (
-    <div className="App">
-      {currentScreen === 'landing' && (
-        <LandingPage 
-          onStartChat={handleStartChat}
-          onSignIn={handleSignIn}
-        />
-      )}
-
-      {currentScreen === 'chat' && (
-        <>
-          <StagewiseToolbar config={{ plugins: [ReactPlugin] }} />
-          <LiveAPIProvider options={apiOptions}>
-            <MainInterfaceWithAvatar onGoToLanding={handleGoToLanding} />
-          </LiveAPIProvider>
-        </>
-      )}
-    </div>
+    <Router>
+      <Routes>
+        {/* Landing Page - Public Route */}
+        <Route path="/" element={<LandingPage />} />
+        
+        {/* Authentication - Public Route */}
+        <Route path="/login" element={<AuthPage />} />
+        
+        {/* Protected Routes */}
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <LearningPathHome />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/chat" element={
+          <ProtectedRoute>
+            <>
+              <StagewiseToolbar config={{ plugins: [ReactPlugin] }} />
+              <LiveAPIProvider options={apiOptions}>
+                <MainInterfaceWithAvatar />
+              </LiveAPIProvider>
+            </>
+          </ProtectedRoute>
+        } />
+        
+        {/* Catch all route - redirect to landing */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Router>
   );
 }
 
 function App() {
   return (
-    // <KindeProvider
-    //   clientId="0531b02ab7864ba89c419db341727945"
-    //   domain="https://mybuddy.kinde.com"
-    //   redirectUri={window.location.origin}
-    //   logoutUri={window.location.origin}
-    //   useInsecureForRefreshToken={process.env.NODE_ENV === 'development'}
-    // >
-    //   <AppContent />
-    // </KindeProvider>
+    <KindeProvider
+      clientId="0531b02ab7864ba89c419db341727945"
+      domain="https://mybuddy.kinde.com"
+      redirectUri="http://localhost:3000"
+      logoutUri="http://localhost:3000"
+    >
+      <AppContent />
+    </KindeProvider>
   );
 }
 
