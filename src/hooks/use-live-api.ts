@@ -22,6 +22,8 @@ import { audioContext } from "../lib/utils";
 import VolMeterWorket from "../lib/worklets/vol-meter";
 import { LiveConnectConfig } from "@google/genai";
 import { VisemeTranscriptionService, VisemeData, SubtitleData } from "../lib/viseme-transcription-service";
+// **NEW**: Import silence detection hook
+import { useSilenceDetection, SilenceDetectionConfig, SilenceDetectionState, SilenceAnalytics } from "./use-silence-detection";
 
 export type UseLiveAPIResults = {
   client: GenAILiveClient;
@@ -45,6 +47,18 @@ export type UseLiveAPIResults = {
   setEnableChunking: (enabled: boolean) => void;
   forceProcessAudio: () => void;
   replayLastAudio: () => void;
+  // **NEW**: Silence detection and nudge system
+  silenceDetection: {
+    config: SilenceDetectionConfig;
+    updateConfig: (updates: Partial<SilenceDetectionConfig>) => void;
+    state: SilenceDetectionState;
+    triggerManualNudge: () => Promise<void>;
+    resetSilenceTimer: () => void;
+    getAnalytics: () => SilenceAnalytics;
+  };
+  // **NEW**: Nudge system state
+  isNudgeIndicatorVisible: boolean;
+  sendNudgeToGemini: (message: string) => Promise<void>;
 };
 
 export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
@@ -61,9 +75,45 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   const [currentVisemes, setCurrentVisemes] = useState<VisemeData[]>([]);
   const [currentSubtitles, setCurrentSubtitles] = useState<SubtitleData[]>([]);
   
+  // **NEW**: Nudge indicator state
+  const [isNudgeIndicatorVisible, setIsNudgeIndicatorVisible] = useState(false);
+  
   // Audio control
   const [isBuffering, setIsBuffering] = useState<boolean>(false);
   const [enableChunking, setEnableChunking] = useState<boolean>(true); // Allow disabling chunking for compatibility
+  
+  // **NEW**: Send nudge to Gemini function
+  const sendNudgeToGemini = useCallback(async (message: string) => {
+    if (!connected || !client) {
+      throw new Error('Not connected to Gemini');
+    }
+    
+    console.log('📤 Sending nudge text message to Gemini:', message);
+    
+    // Send text message to Gemini using proper text format (not binary input)
+    client.send({ text: message }, true);
+    
+    console.log('✅ Nudge text message sent to Gemini successfully');
+  }, [connected, client]);
+  
+  // **NEW**: Initialize silence detection with callbacks
+  const silenceDetection = useSilenceDetection({
+    onNudgeTriggered: sendNudgeToGemini,
+    onShowNudgeIndicator: setIsNudgeIndicatorVisible,
+    onAnalyticsEvent: (event: string, data: any) => {
+      console.log(`📊 Silence Analytics - ${event}:`, data);
+      // Could integrate with existing logger here
+    },
+    onSessionTerminated: () => {
+      console.log('🚫 Session terminated due to maximum nudges reached');
+      // Disconnect the client and show termination message
+      if (connected) {
+        disconnect();
+      }
+      // Show termination message
+      alert("Session ended: Maximum interaction attempts reached. Please try again later.");
+    },
+  });
   
   // Audio buffer for waterfall processing
   const audioBufferRef = useRef<Uint8Array[]>([]);
@@ -243,17 +293,30 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       autoSendTimeoutRef.current = null;
     }
     
+    // **NEW**: Only update conversation state if silence detection is enabled
+    if (silenceDetection.config.enabled) {
+      console.log('🎯 AI turn complete - transitioning to listening for user');
+      silenceDetection.setConversationState('listening-for-user');
+    }
+    
     if (enableChunking && audioBufferRef.current.length > 0) {
       console.log(`🎯 Gemini turn complete! Processing full audio (${audioBufferRef.current.length} packets)`);
       processCompleteAudio();
     }
-  }, [enableChunking, processCompleteAudio]);
+  }, [enableChunking, processCompleteAudio, silenceDetection.config.enabled]);
 
   // **GEMINI INTERRUPTED** - User started speaking while AI was talking  
   const onGeminiInterrupted = useCallback(() => {
     console.log("🛑 Gemini interrupted by user - triggering AI interruption");
+    
+    // **NEW**: Only reset silence detection if enabled
+    if (silenceDetection.config.enabled) {
+      silenceDetection.resetSilenceTimer();
+      silenceDetection.setConversationState('user-speaking');
+    }
+    
     interruptAIPlayback();
-  }, [interruptAIPlayback]);
+  }, [interruptAIPlayback, silenceDetection.config.enabled]);
 
   // register audio for streaming server -> speakers
   useEffect(() => {
@@ -665,6 +728,14 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     return () => clearInterval(interval);
   }, [connected, logPerformanceReport]);
 
+  // **NEW**: Integration with silence detection system (simplified to prevent loops)
+  // Update volume for speech detection only
+  useEffect(() => {
+    if (silenceDetection.config.enabled) {
+      silenceDetection.updateVolume(volume);
+    }
+  }, [volume, silenceDetection.config.enabled]); // Only depend on enabled flag to prevent loops
+
   return {
     client,
     config,
@@ -687,5 +758,10 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     setEnableChunking,
     forceProcessAudio,
     replayLastAudio,
+    // **NEW**: Silence detection and nudge system
+    silenceDetection,
+    // **NEW**: Nudge system state
+    isNudgeIndicatorVisible,
+    sendNudgeToGemini,
   };
 }

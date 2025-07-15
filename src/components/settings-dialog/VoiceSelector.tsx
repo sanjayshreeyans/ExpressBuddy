@@ -13,24 +13,18 @@ const voiceOptions = [
 export default function VoiceSelector() {
   const { config, setConfig } = useLiveAPIContext();
 
-  useEffect(() => {
-    const voiceName =
-      config.speechConfig?.voiceConfig?.prebuiltVoiceConfig?.voiceName ||
-      "Atari02";
-    const voiceOption = { value: voiceName, label: voiceName };
-    setSelectedOption(voiceOption);
-  }, [config]);
-
+  // Set the initial displayed option to Kore.
   const [selectedOption, setSelectedOption] = useState<{
     value: string;
     label: string;
-  } | null>(voiceOptions[5]);
+  } | null>(voiceOptions[2]);
 
   const updateConfig = useCallback(
     (voiceName: string) => {
       setConfig({
         ...config,
         speechConfig: {
+          ...config.speechConfig, // Preserve other speech settings
           voiceConfig: {
             prebuiltVoiceConfig: {
               voiceName: voiceName,
@@ -41,6 +35,25 @@ export default function VoiceSelector() {
     },
     [config, setConfig]
   );
+
+  // NEW: This effect runs ONLY ONCE when the component mounts.
+  // It checks the global config and sets our desired default if it's not already set.
+  useEffect(() => {
+    const currentVoice = config.speechConfig?.voiceConfig?.prebuiltVoiceConfig?.voiceName;
+    if (currentVoice !== "Kore") {
+      updateConfig("Kore");
+    }
+  }, []); // The empty array [] ensures this runs only once on mount.
+
+  // This effect keeps the dropdown display in sync with the global config.
+  useEffect(() => {
+    const voiceName = config.speechConfig?.voiceConfig?.prebuiltVoiceConfig?.voiceName;
+    const voiceOption = voiceOptions.find(opt => opt.value === voiceName);
+    if (voiceOption) {
+      setSelectedOption(voiceOption);
+    }
+  }, [config]);
+
 
   return (
     <div className="select-group">
@@ -71,7 +84,7 @@ export default function VoiceSelector() {
         defaultValue={selectedOption}
         options={voiceOptions}
         onChange={(e) => {
-          setSelectedOption(e);
+          // The onChange handler can be simplified now since effects handle the state
           if (e) {
             updateConfig(e.value);
           }

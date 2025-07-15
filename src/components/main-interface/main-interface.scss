@@ -34,22 +34,26 @@
 // ============================================================================
 .header-section {
   flex-shrink: 0; // Prevents this section from shrinking
-  padding: 1rem 2rem;
+  padding: 1.5rem 2rem; // **INCREASED**: More padding for better visibility
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid #e0e0e0;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); // **NEW**: Subtle gradient background
 
   .app-title h1 {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 1.8rem; // **INCREASED**: Larger title
     color: #1a73e8;
+    font-weight: 700; // **NEW**: Bolder font weight
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); // **NEW**: Subtle text shadow
   }
 
   .app-title p {
-    margin: 0;
-    font-size: 0.9rem;
+    margin: 0.25rem 0 0 0; // **ADJUSTED**: Small top margin
+    font-size: 1rem; // **INCREASED**: Larger subtitle
     color: #5f6368;
+    font-weight: 500; // **NEW**: Medium font weight
   }
 }
 
@@ -71,8 +75,9 @@
   width: 100%;
   display: flex;
   justify-content: center; // Center horizontally
-  align-items: center; // Center vertically
+  align-items: flex-start; // **CHANGED**: Align to top instead of center
   min-height: 0; // A critical flexbox fix to prevent content overflow issues.
+  padding-top: 0; // **NEW**: Add top padding to move content higher
 }
 
 .panda-stage {
@@ -80,6 +85,8 @@
   flex-direction: column;
   align-items: center;
   gap: 1.5rem;
+  position: relative; // **NEW**: Added for better positioning context
+  margin-top: 0; // **NEW**: Add top margin to move panda higher
 }
 
 /*
@@ -109,6 +116,11 @@
 .panda-status {
   display: flex;
   gap: 0.75rem;
+  flex-wrap: wrap; // **NEW**: Allow wrapping for better layout
+  justify-content: center; // **NEW**: Center status bubbles
+  margin-top: 1rem; // **NEW**: Add space above status bubbles
+  position: relative; // **NEW**: Better positioning
+  z-index: 10; // **NEW**: Ensure status bubbles are above other content
 }
 
 .status-bubble {
@@ -139,4 +151,73 @@
     color: #d93025;
     border-color: transparent;
   }
+}
+
+// Import nudge indicator styles
+@import '../nudge-indicator/nudge-indicator.scss';
+@import '../silence-settings/silence-settings.scss';
+
+// **NEW**: Silence detection status styles
+.silence-status {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  font-size: 13px !important; // **INCREASED**: Slightly larger font
+  font-weight: 600 !important; // **INCREASED**: Bolder weight
+  padding: 8px 16px !important; // **INCREASED**: More padding
+  border-radius: 20px !important; // **INCREASED**: More rounded
+  margin-top: 12px !important; // **INCREASED**: More space above
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important; // **NEW**: Subtle shadow
+  border: 1px solid #e5e7eb !important; // **NEW**: Subtle border
+  
+  &.listening {
+    background: linear-gradient(135deg, #fef3c7, #fcd34d) !important;
+    color: #92400e !important;
+    animation: pulse 2s infinite;
+    border-color: #fbbf24 !important;
+    box-shadow: 0 2px 12px rgba(251, 191, 36, 0.3) !important;
+  }
+  
+  &.ai-speaking {
+    background: linear-gradient(135deg, #dbeafe, #60a5fa) !important;
+    color: #1e40af !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 2px 12px rgba(59, 130, 246, 0.3) !important;
+  }
+  
+  &.user-speaking {
+    background: linear-gradient(135deg, #dcfce7, #4ade80) !important;
+    color: #166534 !important;
+    border-color: #22c55e !important;
+    box-shadow: 0 2px 12px rgba(34, 197, 94, 0.3) !important;
+  }
+  
+  .silence-warning {
+    color: #dc2626 !important;
+    font-weight: 700 !important; // **INCREASED**: Even bolder
+    animation: blink 1s infinite;
+    text-shadow: 0 1px 2px rgba(220, 38, 38, 0.2) !important; // **NEW**: Text shadow
+  }
+}
+
+.silence-settings-btn {
+  &:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 20;
+  }
+}
+
+// Animations for silence detection
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.3; }
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
 }

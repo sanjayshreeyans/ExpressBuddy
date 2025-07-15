@@ -23,6 +23,9 @@ import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import { useLoggerStore } from "../../lib/store-logger";
 import { useResponseBuffer } from "../../hooks/useResponseBuffer";
 import { AvatarState } from "../../types/avatar";
+// **NEW**: Import silence detection components
+import { NudgeIndicator } from "../nudge-indicator/NudgeIndicator";
+import { SilenceDetectionSettings } from "../silence-settings/SilenceDetectionSettings";
 import "./main-interface.scss";
 import {
   Modality,
@@ -37,7 +40,18 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
 
   // FIX: Destructure `setConfig` from the context to send the system prompt.
-  const { connected, client, setConfig, visemeService, currentVisemes, currentSubtitles } = useLiveAPIContext();
+  // **NEW**: Include silence detection functionality
+  const { 
+    connected, 
+    client, 
+    setConfig, 
+    visemeService, 
+    currentVisemes, 
+    currentSubtitles,
+    silenceDetection,
+    isNudgeIndicatorVisible,
+    sendNudgeToGemini
+  } = useLiveAPIContext();
   const { log } = useLoggerStore();
 
   const [avatarState, setAvatarState] = useState<AvatarState>({
@@ -46,6 +60,9 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
     hasGeneratedContent: false
   });
   const [currentAvatarSubtitle, setCurrentAvatarSubtitle] = useState<string>('');
+  
+  // **NEW**: Silence detection settings visibility
+  const [isSettingsVisible, setIsSettingsVisible] = useState(false);
 
   const { buffer, addChunk, markComplete, reset, accumulatedText } = useResponseBuffer();
 
@@ -234,6 +251,49 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
             <div className={cn("status-bubble", { connected })}>
               {connected ? "● Connected" : "○ Disconnected"}
             </div>
+            
+            {/* **NEW**: Silence Detection Settings Button */}
+            <button
+              onClick={() => setIsSettingsVisible(true)}
+              className="silence-settings-btn"
+              title="Configure silence detection and nudge system"
+              style={{
+                background: silenceDetection.config.enabled ? 'var(--primary)' : '#6b7280',
+                color: 'white',
+                border: 'none',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                marginLeft: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                {silenceDetection.config.enabled ? 'notifications_active' : 'notifications_off'}
+              </span>
+              Silence Detection
+              {silenceDetection.state.nudgeCount > 0 && (
+                <span className="nudge-count" style={{
+                  background: '#ff4444',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '20px',
+                  height: '20px',
+                  fontSize: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginLeft: '4px'
+                }}>
+                  {silenceDetection.state.nudgeCount}
+                </span>
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -286,6 +346,42 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
             {avatarState.isBuffering && (
               <div className="status-bubble buffering">● Preparing</div>
             )}
+            
+            {/* **NEW**: Silence detection status */}
+            {silenceDetection.config.enabled && (
+              <div className={cn("status-bubble silence-status", {
+                'listening': silenceDetection.state.conversationState === 'listening-for-user',
+                'ai-speaking': silenceDetection.state.conversationState === 'ai-speaking',
+                'user-speaking': silenceDetection.state.conversationState === 'user-speaking'
+              })}>
+                {silenceDetection.state.conversationState === 'listening-for-user' && (
+                  <>
+                    Piko is listening...
+                    {silenceDetection.state.currentSilenceDuration > silenceDetection.config.silenceThresholdSeconds * 0.8 && (
+                      <span className="silence-warning"> (Piko will say something soon)</span>
+                    )}
+                  </>
+                )}
+                {silenceDetection.state.conversationState === 'ai-speaking' && 'Piko is talking'}
+                {silenceDetection.state.conversationState === 'user-speaking' && "It's your turn!"}
+                {silenceDetection.state.conversationState === 'processing' && 'Piko is thinking...'}
+                {silenceDetection.state.conversationState === 'idle' && 'Piko is waiting'}
+                
+                {/* **NEW**: Nudge counter and warning */}
+                {silenceDetection.state.nudgeCount > 0 && (
+                  <div style={{
+                    fontSize: '11px',
+                    marginTop: '4px',
+                    color: silenceDetection.state.nudgeCount >= silenceDetection.config.maxNudges - 1 ? '#dc2626' : '#6b7280'
+                  }}>
+                    Piko's tries: {silenceDetection.state.nudgeCount}/{silenceDetection.config.maxNudges}
+                    {silenceDetection.state.nudgeCount >= silenceDetection.config.maxNudges - 1 && (
+                      <span className="silence-warning"> (Last try!)</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -298,6 +394,22 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
           enableEditingSettings={true}
         />
       </div>
+      
+      {/* **NEW**: Nudge Indicator */}
+      <NudgeIndicator 
+        visible={isNudgeIndicatorVisible}
+        message="Piko has a question for you!"
+      />
+      
+      {/* **NEW**: Silence Detection Settings */}
+      <SilenceDetectionSettings
+        isVisible={isSettingsVisible}
+        onClose={() => setIsSettingsVisible(false)}
+        config={silenceDetection.config}
+        analytics={silenceDetection.getAnalytics()}
+        onConfigUpdate={silenceDetection.updateConfig}
+        onManualNudge={silenceDetection.triggerManualNudge}
+      />
     </div>
   );
 }

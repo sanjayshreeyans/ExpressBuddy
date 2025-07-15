@@ -7,14 +7,15 @@ export default function AuthPage() {
   const navigate = useNavigate();
   const { login, register } = useKindeAuth();
 
-  const handleSignInSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+
+  const handleSignInSubmit = () => {
     login();
   };
 
   const handleGoogleSignIn = () => {
     login();
   };
+
 
   const handleCreateAccount = () => {
     register();
@@ -32,25 +33,9 @@ export default function AuthPage() {
         </span>
       }
       description="Sign in to start your child's learning journey with personalized AI support"
-      heroImageSrc="hero"
       onSignIn={handleSignInSubmit}
-      onGoogleSignIn={handleGoogleSignIn}
-      onCreateAccount={handleCreateAccount}
-      onResetPassword={handleResetPassword}
-      testimonials={[
-        {
-          avatarSrc: "https://images.unsplash.com/photo-1494790108755-2616c33ec826?w=150&h=150&fit=crop&crop=face",
-          name: "Sarah M.",
-          handle: "@sarahm",
-          text: "ExpressBuddy helped my son with autism express his emotions better. Amazing results!"
-        },
-        {
-          avatarSrc: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", 
-          name: "Mike D.",
-          handle: "@miked",
-          text: "The AI companion is so patient and understanding. Perfect for children with social anxiety."
-        }
-      ]}
+      onSignUp={handleCreateAccount}
+
     />
   );
 }

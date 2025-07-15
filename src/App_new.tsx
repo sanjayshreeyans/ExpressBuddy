@@ -19,7 +19,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { LiveAPIProvider } from "./contexts/LiveAPIContext";
 import MainInterfaceWithAvatar from "./components/main-interface/MainInterfaceWithAvatar";
 import LandingPage from "./components/landing-page/LandingPage";
-
 import LearningPathHome from "./components/home/LearningPathHome";
 import AuthPage from "./components/auth/AuthPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -98,7 +97,7 @@ function App() {
     <KindeProvider
       clientId="0531b02ab7864ba89c419db341727945"
       domain="https://mybuddy.kinde.com"
-      redirectUri="http://localhost:3000/dashboard"
+      redirectUri="http://localhost:3000"
       logoutUri="http://localhost:3000"
     >
       <AppContent />

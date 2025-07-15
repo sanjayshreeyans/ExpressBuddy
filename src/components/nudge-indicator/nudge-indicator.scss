@@ -1,0 +1,192 @@
+/**
+ * Styles for the Nudge Indicator Component
+ */
+
+.nudge-indicator {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: 0 8px 32px rgba(255, 107, 107, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  min-width: 280px;
+  animation: slideInFromRight 0.3s ease-out;
+  
+  // Ensure it appears above other elements
+  pointer-events: auto;
+}
+
+.nudge-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 2;
+}
+
+.nudge-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: bounce 1s infinite;
+  
+  .material-symbols-outlined {
+    font-size: 24px;
+    color: white;
+    font-weight: 600;
+  }
+}
+
+.nudge-text {
+  flex: 1;
+  color: white;
+}
+
+.nudge-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.nudge-message {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.9;
+  line-height: 1.3;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.nudge-animation {
+  position: absolute;
+  top: 50%;
+  left: 32px; // Position over the icon
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.pulse-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+  
+  &:nth-child(2) {
+    animation-delay: 0.5s;
+  }
+  
+  &:nth-child(3) {
+    animation-delay: 1s;
+  }
+}
+
+// Animations
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-8px);
+  }
+  60% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0;
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .nudge-indicator {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    min-width: auto;
+    padding: 12px 16px;
+  }
+  
+  .nudge-content {
+    gap: 10px;
+  }
+  
+  .nudge-icon {
+    width: 36px;
+    height: 36px;
+    
+    .material-symbols-outlined {
+      font-size: 20px;
+    }
+  }
+  
+  .nudge-animation {
+    left: 28px;
+  }
+  
+  .pulse-ring {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .nudge-title {
+    font-size: 13px;
+  }
+  
+  .nudge-message {
+    font-size: 11px;
+  }
+}
+
+// Dark mode support
+@media (prefers-color-scheme: dark) {
+  .nudge-indicator {
+    background: linear-gradient(135deg, #dc3545, #e85a6b);
+    box-shadow: 0 8px 32px rgba(220, 53, 69, 0.4);
+  }
+}
+
+// High contrast mode
+@media (prefers-contrast: high) {
+  .nudge-indicator {
+    background: #dc3545;
+    border: 2px solid white;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  }
+  
+  .nudge-icon {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
