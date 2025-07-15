@@ -266,7 +266,6 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
                 fontSize: '12px',
                 fontWeight: 'bold',
                 cursor: 'pointer',
-                marginLeft: '12px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '4px',
@@ -329,6 +328,7 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
             visemeService={visemeService}
             onAvatarStateChange={handleAvatarStateChange}
             onCurrentSubtitleChange={handleAvatarSubtitleChange}
+           silenceDetection={silenceDetection} // **NEW**: Pass silence detection data
           />
 
           <Captions subtitleText={currentAvatarSubtitle} />
@@ -340,47 +340,8 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
             {avatarState.status === 'processing' && (
               <div className="status-bubble thinking">● Processing</div>
             )}
-            {avatarState.status === 'speaking' && (
-              <div className="status-bubble speaking">● Speaking</div>
-            )}
             {avatarState.isBuffering && (
               <div className="status-bubble buffering">● Preparing</div>
-            )}
-            
-            {/* **NEW**: Silence detection status */}
-            {silenceDetection.config.enabled && (
-              <div className={cn("status-bubble silence-status", {
-                'listening': silenceDetection.state.conversationState === 'listening-for-user',
-                'ai-speaking': silenceDetection.state.conversationState === 'ai-speaking',
-                'user-speaking': silenceDetection.state.conversationState === 'user-speaking'
-              })}>
-                {silenceDetection.state.conversationState === 'listening-for-user' && (
-                  <>
-                    Piko is listening...
-                    {silenceDetection.state.currentSilenceDuration > silenceDetection.config.silenceThresholdSeconds * 0.8 && (
-                      <span className="silence-warning"> (Piko will say something soon)</span>
-                    )}
-                  </>
-                )}
-                {silenceDetection.state.conversationState === 'ai-speaking' && 'Piko is talking'}
-                {silenceDetection.state.conversationState === 'user-speaking' && "It's your turn!"}
-                {silenceDetection.state.conversationState === 'processing' && 'Piko is thinking...'}
-                {silenceDetection.state.conversationState === 'idle' && 'Piko is waiting'}
-                
-                {/* **NEW**: Nudge counter and warning */}
-                {silenceDetection.state.nudgeCount > 0 && (
-                  <div style={{
-                    fontSize: '11px',
-                    marginTop: '4px',
-                    color: silenceDetection.state.nudgeCount >= silenceDetection.config.maxNudges - 1 ? '#dc2626' : '#6b7280'
-                  }}>
-                    Piko's tries: {silenceDetection.state.nudgeCount}/{silenceDetection.config.maxNudges}
-                    {silenceDetection.state.nudgeCount >= silenceDetection.config.maxNudges - 1 && (
-                      <span className="silence-warning"> (Last try!)</span>
-                    )}
-                  </div>
-                )}
-              </div>
             )}
           </div>
         </div>

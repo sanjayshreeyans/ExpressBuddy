@@ -18,6 +18,7 @@ interface RealtimeExpressBuddyAvatarProps {
   onPlaybackStateChange?: (state: PlaybackState) => void;
   onCurrentSubtitleChange?: (subtitle: string) => void;
   visemeService?: any; // For debug info
+  silenceDetection?: any; // **NEW**: For displaying silence status
 }
 
 export const RealtimeExpressBuddyAvatar: React.FC<RealtimeExpressBuddyAvatarProps> = ({
@@ -28,6 +29,7 @@ export const RealtimeExpressBuddyAvatar: React.FC<RealtimeExpressBuddyAvatarProp
   onPlaybackStateChange,
   onCurrentSubtitleChange,
   visemeService,
+  silenceDetection, // **NEW**
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -220,20 +222,28 @@ export const RealtimeExpressBuddyAvatar: React.FC<RealtimeExpressBuddyAvatarProp
 
       {/* Debug info - Ultra-fast performance monitoring */}
       {process.env.NODE_ENV === 'development' && (
-        <div className="absolute top-2 right-2 bg-black bg-opacity-75 text-white p-2 rounded text-xs font-mono">
+        <div className="absolute top-4 right-[-15rem] bg-black bg-opacity-75 text-white p-1 rounded text-xs font-mono">
           <div>Visemes: {visemes.length}</div>
           <div>Subtitles: {subtitles.length}</div>
           <div>Playing: {isPlaying ? '🔴 Yes' : '⚪ No'}</div>
           <div>Time: {currentTime.toFixed(2)}s</div>
           {visemeService && (
             <>
-              <div>Connected: {visemeService.connected ? '🟢' : '🔴'}</div>
               <div>Latency: {visemeService.processingLatency?.toFixed(1)}ms</div>
               <div>Ultra-fast: {visemeService.isUltraFast ? '⚡' : '🐌'}</div>
             </>
           )}
-        </div>
-      )}
-    </div>
+         {/* **NEW**: Silence detection debug info */}
+         {silenceDetection && silenceDetection.config.enabled && (
+           <div className="mt-2 pt-2 border-t border-gray-600">
+             <div>Piko Status: {silenceDetection.state.conversationState}</div>
+             {silenceDetection.state.nudgeCount > 0 && (
+               <div>Tries: {silenceDetection.state.nudgeCount}/{silenceDetection.config.maxNudges}</div>
+             )}
+           </div>
+         )}
+       </div>
+     )}
+   </div>
   );
 };

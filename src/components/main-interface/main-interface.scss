@@ -138,6 +138,12 @@
   &.speaking { color: #1e8e3e; border-color: #81c995; }
 }
 
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .connection-status .status-bubble {
   box-shadow: none;
   font-weight: normal;
