@@ -114,7 +114,7 @@ export function useSilenceDetection(callbacks: SilenceDetectionCallbacks): UseSi
   const [config, setConfig] = useState<SilenceDetectionConfig>({
     silenceThresholdSeconds: 10,
     speechVolumeThreshold: 0.05, // 5% volume threshold
-    nudgeMessage: "🎯 URGENT: The child has been silent for too long and may be distracted or lost. IMMEDIATELY switch to a completely different topic with high energy! Try asking about their favorite cartoon character, a fun game, or tell an exciting story with sound effects. Use phrases like 'WOW!' or 'That's AMAZING!' to re-engage them. Make it interactive and ask them to participate actively!",
+    nudgeMessage: "🎯 URGENT: The child has been silent for too long and may be distracted or lost.  Try giving suggestion on how to answer your previously just asked question. Kids sometimes are stuck on some of the questions you ask them. the idea of this role is you show empathy and you put yourself in their shoes. so answer the question your self.  Feel free to look at thier camera for your role. Check emotion. ",
     enabled: true, // **ENABLED BY DEFAULT** per user request
     minTimeBetweenNudges: 0, // **NO TIME BETWEEN NUDGES** per user request
     maxNudges: 5, // **MAXIMUM 5 NUDGES** before session terminates

@@ -12,6 +12,7 @@
     "@radix-ui/react-navigation-menu": "^1.2.13",
     "@radix-ui/react-slot": "^1.2.3",
     "@rive-app/react-canvas": "^4.21.4",
+    "@supabase/supabase-js": "^2.51.0",
     "@types/react-router-dom": "^5.3.3",
     "class-variance-authority": "^0.7.1",
     "classnames": "^2.5.1",
