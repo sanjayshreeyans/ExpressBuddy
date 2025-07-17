@@ -17,6 +17,7 @@ interface RealtimeExpressBuddyAvatarProps {
   onAvatarStateChange?: (state: AvatarState) => void;
   onPlaybackStateChange?: (state: PlaybackState) => void;
   onCurrentSubtitleChange?: (subtitle: string) => void;
+  onRiveInputsReady?: (riveInputs: any) => void; // **NEW**: Callback to expose Rive inputs
   visemeService?: any; // For debug info
   silenceDetection?: any; // **NEW**: For displaying silence status
 }
@@ -28,6 +29,7 @@ export const RealtimeExpressBuddyAvatar: React.FC<RealtimeExpressBuddyAvatarProp
   onAvatarStateChange,
   onPlaybackStateChange,
   onCurrentSubtitleChange,
+  onRiveInputsReady, // **NEW**: Callback to expose Rive inputs
   visemeService,
   silenceDetection, // **NEW**
 }) => {
@@ -84,12 +86,19 @@ export const RealtimeExpressBuddyAvatar: React.FC<RealtimeExpressBuddyAvatarProp
     if (playbackControllerRef.current && riveInputs && riveInputs.mouth && !riveInputsInitialized.current) {
       playbackControllerRef.current.updateRiveInputs(riveInputs);
       riveInputsInitialized.current = true;
+      
+      // **NEW**: Expose Rive inputs to parent component
+      if (onRiveInputsReady) {
+        console.log('🎯 RealtimeExpressBuddyAvatar: Rive inputs ready, calling callback');
+        onRiveInputsReady(riveInputs);
+      }
     }
-  }, [riveInputs]);
+  }, [riveInputs, onRiveInputsReady]);
 
   // Handle real-time visemes - optimized for ultra-fast processing
   useEffect(() => {
     if (!playbackControllerRef.current || !riveInputsInitialized.current) {
+      console.log('🚫 RealtimeExpressBuddyAvatar: Viseme processing blocked - Controller:', !!playbackControllerRef.current, 'RiveInputs:', riveInputsInitialized.current);
       return;
     }
 

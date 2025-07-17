@@ -23,6 +23,8 @@ import LandingPage from "./components/landing-page/LandingPage";
 import LearningPathHome from "./components/home/LearningPathHome";
 import AuthPage from "./components/auth/AuthPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import TTSIntegrationTest from "./components/emotion-detective/TTSIntegrationTest";
+import TTSQuickDemo from "./components/emotion-detective/TTSQuickDemo";
 import { LiveClientOptions } from "./types";
 import { StagewiseToolbar } from "@stagewise/toolbar-react";
 import { ReactPlugin } from "@stagewise-plugins/react";
@@ -83,6 +85,22 @@ function AppContent() {
                 <MainInterfaceWithAvatar />
               </LiveAPIProvider>
             </>
+          </ProtectedRoute>
+        } />
+        
+        {/* TTS Quick Demo - Development Route */}
+        <Route path="/demo-tts" element={
+          <ProtectedRoute>
+            <TTSQuickDemo />
+          </ProtectedRoute>
+        } />
+        
+        {/* TTS Integration Test - Development Route */}
+        <Route path="/test-tts" element={
+          <ProtectedRoute>
+            <div className="min-h-screen bg-gray-50">
+              <TTSIntegrationTest />
+            </div>
           </ProtectedRoute>
         } />
         
