@@ -25,6 +25,8 @@ import AuthPage from "./components/auth/AuthPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import TTSIntegrationTest from "./components/emotion-detective/TTSIntegrationTest";
 import TTSQuickDemo from "./components/emotion-detective/TTSQuickDemo";
+import EmotionDetectionDemo from "./components/emotion-detective/EmotionDetectionDemo";
+import { EmotionDetectiveLearning } from "./components/emotion-detective";
 import { LiveClientOptions } from "./types";
 import { StagewiseToolbar } from "@stagewise/toolbar-react";
 import { ReactPlugin } from "@stagewise-plugins/react";
@@ -101,6 +103,29 @@ function AppContent() {
             <div className="min-h-screen bg-gray-50">
               <TTSIntegrationTest />
             </div>
+          </ProtectedRoute>
+        } />
+        
+        {/* Emotion Detection Demo - Development Route */}
+        <Route path="/demo-emotion" element={
+          <ProtectedRoute>
+            <div className="min-h-screen bg-gray-50">
+              <EmotionDetectionDemo />
+            </div>
+          </ProtectedRoute>
+        } />
+        
+        {/* Emotion Detective Learning - Development Route */}
+        <Route path="/emotion-detective" element={
+          <ProtectedRoute>
+            <EmotionDetectiveLearning
+              lessonId="test-lesson-1"
+              childId="test-child"
+              onComplete={(results) => {
+                console.log('Lesson completed:', results);
+                alert(`Lesson completed! XP earned: ${results.totalXP}`);
+              }}
+            />
           </ProtectedRoute>
         } />
         

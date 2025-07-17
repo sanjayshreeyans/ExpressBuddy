@@ -76,7 +76,7 @@ export interface TTSRequest {
 }
 
 // Emotion level configuration
-export const EMOTION_LEVELS = {
+export const EMOTION_LEVELS: Record<number, readonly string[]> = {
   1: ['happy', 'sad', 'angry', 'neutral'], // Basic emotions matching face-api.js
   2: ['disgusted', 'fearful'], // Additional face-api.js emotions (corrected mapping)
   3: ['excited', 'worried', 'confused', 'proud'], // Complex emotions (mapped from basic)

@@ -81,33 +81,54 @@
     - Add error handling for TTS failures
     - _Requirements: 2.1, 6.1, 6.4_
 
-- [ ] 5. Implement face-api.js emotion detection service
-  - [ ] 5.1 Set up face-api.js models and initialization
+- [x] 5. Implement face-api.js emotion detection service
+
+
+
+
+  - [x] 5.1 Set up face-api.js models and initialization
+
+
+
     - Load face detection and expression recognition models
     - Create service to initialize face-api.js with proper models
     - Implement model loading progress tracking
+
+
     - Add error handling for model loading failures
     - _Requirements: 3.4, 3.5, 6.6_
 
+
+
   - [ ] 5.2 Create emotion detection and analysis functions
+
+
     - Implement real-time face detection from camera stream
     - Add emotion expression analysis with confidence scoring
     - Create emotion matching logic against target emotions
     - Add face detection overlay and guidance system
+    - After finished make sure you make a demo componeent screen but it on app.tsx and we can try out that componeent. 
     - _Requirements: 3.3, 3.4, 3.5_
 
-- [ ] 6. Create main emotion detective learning container component
-  - [ ] 6.1 Build EmotionDetectiveLearning main container using shadcn/ui
+- [x] 6. Create main emotion detective learning container component
+
+
+
+
+  - [x] 6.1 Build EmotionDetectiveLearning main container using shadcn/ui
+
+
     - Create main component with lesson state management
     - Implement phase transitions (intro → questions → mirroring → complete)
     - Add progress tracking and XP calculation
     - Use shadcn/ui Card, Progress, and Badge components
     - _Requirements: 1.1, 1.2, 1.3, 4.1, 4.4, 4.5_
 
-  - [ ] 6.2 Implement lesson introduction component with Pico TTS
+  - [x] 6.2 Implement lesson introduction component with Pico TTS
+
+
     - Create LessonIntroduction component with center-to-left Pico transition
-    - Integrate browser TTS service for lesson narration
-    - Add subtitle display with lip-sync animation
+    - Integrate edge TTS service for lesson narration, we arleady have this done
     - Use Framer Motion for smooth Pico positioning animations
     - _Requirements: 2.1, 6.1, 6.3_
 
