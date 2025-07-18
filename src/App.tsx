@@ -26,12 +26,13 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import TTSIntegrationTest from "./components/emotion-detective/TTSIntegrationTest";
 import TTSQuickDemo from "./components/emotion-detective/TTSQuickDemo";
 import EmotionDetectionDemo from "./components/emotion-detective/EmotionDetectionDemo";
-import { EmotionDetectiveLearning } from "./components/emotion-detective";
+import { EmotionDetectiveLearning, QuestionTypesDemo } from "./components/emotion-detective";
 import { LiveClientOptions } from "./types";
 import { StagewiseToolbar } from "@stagewise/toolbar-react";
 import { ReactPlugin } from "@stagewise-plugins/react";
 import { useEffect } from "react";
 import { KindeProvider, useKindeAuth } from "@kinde-oss/kinde-auth-react";
+import { SupabaseProvider } from "./contexts/SupabaseContext";
 
 const API_KEY = process.env.REACT_APP_GEMINI_API_KEY as string;
 if (typeof API_KEY !== "string") {
@@ -129,6 +130,15 @@ function AppContent() {
           </ProtectedRoute>
         } />
         
+        {/* Question Types Demo - Development Route */}
+        <Route path="/demo-questions" element={
+          <ProtectedRoute>
+            <div className="min-h-screen bg-gray-50">
+              <QuestionTypesDemo />
+            </div>
+          </ProtectedRoute>
+        } />
+        
         {/* Catch all route - redirect to landing */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -144,7 +154,9 @@ function App() {
       redirectUri="http://localhost:3000/dashboard"
       logoutUri="http://localhost:3000"
     >
-      <AppContent />
+      <SupabaseProvider>
+        <AppContent />
+      </SupabaseProvider>
     </KindeProvider>
   );
 }

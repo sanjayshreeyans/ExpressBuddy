@@ -5,7 +5,6 @@ import { Badge } from '../ui/badge';
 import { RealtimeExpressBuddyAvatar } from '../avatar/RealtimeExpressBuddyAvatar';
 import { useTTSPlayback } from '../../hooks/useTTSPlayback';
 import { LessonIntroductionProps, EMOTION_LEVELS, EMOTION_METADATA } from '../../types/emotion-detective';
-import { VisemeData, SubtitleData } from '../../lib/viseme-transcription-service';
 import { RiveInputs } from '../../types/avatar';
 
 /**
@@ -40,7 +39,7 @@ const LessonIntroduction: React.FC<LessonIntroductionProps> = ({
    */
   const getIntroductionText = useCallback(() => {
     const emotions = EMOTION_LEVELS[lessonLevel] || EMOTION_LEVELS[1];
-    const emotionNames = emotions.map(emotion => 
+    const emotionNames = emotions.map((emotion: string) => 
       EMOTION_METADATA[emotion]?.description || emotion
     ).join(', ');
 
@@ -281,7 +280,7 @@ const LessonIntroduction: React.FC<LessonIntroductionProps> = ({
                   <div className="p-4 bg-green-50 rounded-lg">
                     <h4 className="font-medium text-green-900 mb-2">Today's Emotions</h4>
                     <div className="flex flex-wrap gap-1">
-                      {(EMOTION_LEVELS[lessonLevel] || EMOTION_LEVELS[1]).map(emotion => (
+                      {(EMOTION_LEVELS[lessonLevel] || EMOTION_LEVELS[1]).map((emotion: string) => (
                         <Badge key={emotion} variant="outline" className="text-xs capitalize">
                           {emotion}
                         </Badge>

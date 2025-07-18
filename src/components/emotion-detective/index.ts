@@ -8,3 +8,6 @@ export { default as QuestionType4 } from './QuestionType4';
 export { default as EmotionMirroring } from './EmotionMirroring';
 export { default as ProgressTracking } from './ProgressTracking';
 export { SpeakerIcon, InlineSpeakerIcon, SpeakerButton } from './SpeakerIcon';
+
+// Demo Components
+export { default as QuestionTypesDemo } from './QuestionTypesDemo';

@@ -132,29 +132,39 @@
     - Use Framer Motion for smooth Pico positioning animations
     - _Requirements: 2.1, 6.1, 6.3_
 
-- [ ] 7. Build question type components using shadcn/ui
-  - [ ] 7.1 Create QuestionType1 component (Face → Emotion)
+- [x] 7. Build question type components using shadcn/ui
+
+
+
+
+
+  - [x] 7.1 Create QuestionType1 component (Face → Emotion)
+
+
     - Display human face image with multiple choice emotion options
     - Use shadcn/ui Card, Button, and AspectRatio components
     - Implement immediate TTS narration and speaker icons
     - Add answer validation and feedback system
     - _Requirements: 2.2, 2.3, 2.4, 6.1, 6.2_
 
-  - [ ] 7.2 Create QuestionType2 component (Emotion → Face)
+  - [x] 7.2 Create QuestionType2 component (Emotion → Face)
+
     - Display 2x2 grid of face images for emotion selection
     - Use shadcn/ui Card and AspectRatio for face display
     - Implement TTS for emotion description (no speaker icons)
     - Add visual selection feedback and validation
     - _Requirements: 2.6, 6.1, 6.2_
 
-  - [ ] 7.3 Create QuestionType3 component (Scenario → Face)
+  - [x] 7.3 Create QuestionType3 component (Scenario → Face)
+
     - Display scenario text with 2x2 face image grid
     - Use shadcn/ui Card, Typography, and AspectRatio components
     - Implement TTS for scenario reading with speaker icon
     - Add scenario-to-emotion matching logic
     - _Requirements: 2.7, 6.1, 6.2_
 
-  - [ ] 7.4 Create QuestionType4 component (Face → Scenario)
+  - [x] 7.4 Create QuestionType4 component (Face → Scenario)
+
     - Display face image with multiple scenario text options
     - Use shadcn/ui Card, Button, and Typography components
     - Implement TTS for question and scenario options with speaker icons
@@ -162,14 +172,22 @@
     - _Requirements: 2.8, 6.1, 6.2_
 
 - [ ] 8. Implement camera-based emotion mirroring component
-  - [ ] 8.1 Create EmotionMirroring component with camera integration
-    - Implement WebRTC camera access and preview
+
+
+  - [x] 8.1 Create EmotionMirroring component with camera integration
+
+
+    - Implement WebRTC camera access and preview. already done. EmotionDetectionDemo.tsx
     - Use shadcn/ui Card, Button, and Progress components
     - Add reference face image display alongside camera
+    - the reference image is the right answer (FACE only) in the preious question. basically this is a extension to the preivous question. 
+    - We already created most of the code for this use case EmotionDetectionDemo.tsx
+    - In there all the camera, the detection the rendering the processing is mostly done. 
     - Create capture button and image processing workflow
     - _Requirements: 3.1, 3.2, 3.3_
 
-  - [ ] 8.2 Integrate face-api.js emotion detection in mirroring
+  - [-] 8.2 Integrate face-api.js emotion detection in mirroring
+
     - Add real-time face detection overlay on camera preview
     - Implement emotion analysis on captured images
     - Create confidence scoring and matching logic

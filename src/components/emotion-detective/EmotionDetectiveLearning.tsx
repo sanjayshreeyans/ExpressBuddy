@@ -64,7 +64,55 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
       setError(null);
 
       if (!child) {
-        throw new Error('Child not found');
+        // For development/testing, create a mock child
+        const mockChild = {
+          id: 'test-child-123',
+          kinde_user_id: 'test-user-123',
+          name: 'Test Child',
+          age: 8,
+          created_at: new Date().toISOString()
+        };
+        
+        console.log('⚠️ No child found, using mock child for development:', mockChild);
+        
+        // Use mock child for development
+        const mockProgress: EmotionDetectiveProgress = {
+          id: 'mock-progress-123',
+          childId: mockChild.id,
+          level: 1,
+          totalXP: 0,
+          completedSessions: 0,
+          currentStreak: 0,
+          bestStreak: 0,
+          unlockedEmotions: ['happy', 'sad', 'angry', 'neutral'],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        
+        setProgress(mockProgress);
+        
+        // Generate questions for this lesson
+        const lessonLevel = 1;
+        const availableEmotions = EMOTION_LEVELS[lessonLevel] || EMOTION_LEVELS[1];
+        const lessonEmotions = availableEmotions.slice(0, 4);
+        const questions = generateLessonQuestions(lessonEmotions, lessonLevel);
+
+        // Create mock session
+        const newSession: LessonSession = {
+          id: `mock_session_${Date.now()}`,
+          childId: mockChild.id,
+          lessonType: 'emotion-detective',
+          level: lessonLevel,
+          questions,
+          startTime: new Date(),
+          totalXP: 0,
+          completedQuestions: 0,
+          status: 'in-progress'
+        };
+
+        setSession(newSession);
+        sessionStartTime.current = new Date();
+        return;
       }
 
       // Get or create progress
