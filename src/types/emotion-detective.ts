@@ -259,3 +259,12 @@ export interface ProgressTrackingProps {
   completedQuestions: number;
   totalQuestions: number;
 }
+
+export interface SessionStats {
+  correctIdentifications: number;
+  successfulMirrors: number;
+  totalQuestions: number;
+  averageResponseTime: number;
+  perfectStreak: number;
+  sessionDuration: number;
+}

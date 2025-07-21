@@ -1,5 +1,13 @@
 import * as faceapi from 'face-api.js';
 import { FaceApiResult } from '../../types/emotion-detective';
+import { 
+  EmotionDetectiveError, 
+  createError, 
+  handleFaceApiError, 
+  logError,
+  retryWithBackoff,
+  withGracefulDegradation
+} from '../../utils/errorHandling';
 
 export interface ModelLoadingProgress {
   modelsLoaded: number;
@@ -43,7 +51,7 @@ export class EmotionDetectionService {
   }
 
   /**
-   * Initialize face-api.js with required models
+   * Initialize face-api.js with required models with comprehensive error handling
    * @param modelsPath Path to the face-api.js models (default: '/models')
    * @param onProgress Optional callback for loading progress
    */
@@ -60,33 +68,42 @@ export class EmotionDetectionService {
     }
 
     try {
-      this.updateProgress('Loading face detection model...', 0);
-      
-      // Load face detection model
-      await faceapi.nets.tinyFaceDetector.loadFromUri(modelsPath);
-      this.updateProgress('Face detection model loaded', 1);
+      // Use retry mechanism for model loading
+      await retryWithBackoff(async () => {
+        this.updateProgress('Loading face detection model...', 0);
+        
+        // Load face detection model
+        await faceapi.nets.tinyFaceDetector.loadFromUri(modelsPath);
+        this.updateProgress('Face detection model loaded', 1);
 
-      // Load face landmark model
-      this.updateProgress('Loading face landmark model...', 1);
-      await faceapi.nets.faceLandmark68Net.loadFromUri(modelsPath);
-      this.updateProgress('Face landmark model loaded', 2);
+        // Load face landmark model
+        this.updateProgress('Loading face landmark model...', 1);
+        await faceapi.nets.faceLandmark68Net.loadFromUri(modelsPath);
+        this.updateProgress('Face landmark model loaded', 2);
 
-      // Load face expression recognition model
-      this.updateProgress('Loading expression recognition model...', 2);
-      await faceapi.nets.faceExpressionNet.loadFromUri(modelsPath);
-      this.updateProgress('All models loaded successfully', 3);
+        // Load face expression recognition model
+        this.updateProgress('Loading expression recognition model...', 2);
+        await faceapi.nets.faceExpressionNet.loadFromUri(modelsPath);
+        this.updateProgress('All models loaded successfully', 3);
 
-      this.modelsLoaded = true;
-      this.isInitialized = true;
-      this.loadingProgress.isComplete = true;
-      
-      this.notifyProgressCallbacks();
+        this.modelsLoaded = true;
+        this.isInitialized = true;
+        this.loadingProgress.isComplete = true;
+        
+        this.notifyProgressCallbacks();
+      }, 3, 2000, 10000);
       
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      this.loadingProgress.error = `Failed to load face-api.js models: ${errorMessage}`;
+      const faceApiError = handleFaceApiError(error as Error, {
+        component: 'EmotionDetectionService',
+        action: 'initialize'
+      });
+      
+      this.loadingProgress.error = faceApiError.userMessage;
       this.notifyProgressCallbacks();
-      throw new Error(this.loadingProgress.error);
+      logError(faceApiError);
+      
+      throw faceApiError;
     }
   }
 
@@ -130,18 +147,54 @@ export class EmotionDetectionService {
     overlayCanvas?: HTMLCanvasElement
   ): Promise<FaceApiResult | null> {
     if (!this.isReady()) {
-      throw new Error('EmotionDetectionService is not initialized. Call initialize() first.');
+      const error = createError('FACE_API_INITIALIZATION_FAILED', undefined, {
+        component: 'EmotionDetectionService',
+        action: 'detectEmotions'
+      });
+      logError(error);
+      throw error;
     }
 
     try {
-      // Detect faces with expressions
-      const detections = await faceapi
-        .detectAllFaces(imageElement, new faceapi.TinyFaceDetectorOptions({
-          inputSize: this.config.inputSize,
-          scoreThreshold: this.config.scoreThreshold
-        }))
-        .withFaceLandmarks()
-        .withFaceExpressions();
+      // Validate input element
+      if (!imageElement) {
+        throw createError('FACE_DETECTION_FAILED', new Error('Invalid image element'), {
+          component: 'EmotionDetectionService',
+          action: 'detectEmotions'
+        });
+      }
+
+      // Check if video element is ready
+      if (imageElement instanceof HTMLVideoElement) {
+        if (imageElement.readyState < 2) {
+          throw createError('FACE_DETECTION_FAILED', new Error('Video not ready'), {
+            component: 'EmotionDetectionService',
+            action: 'detectEmotions'
+          });
+        }
+      }
+
+      // Detect faces with expressions using graceful degradation
+      const detections = await withGracefulDegradation(
+        async () => {
+          return await faceapi
+            .detectAllFaces(imageElement, new faceapi.TinyFaceDetectorOptions({
+              inputSize: this.config.inputSize,
+              scoreThreshold: this.config.scoreThreshold
+            }))
+            .withFaceLandmarks()
+            .withFaceExpressions();
+        },
+        async () => {
+          // Fallback: try with different settings
+          return await faceapi
+            .detectAllFaces(imageElement, new faceapi.TinyFaceDetectorOptions({
+              inputSize: 320, // Smaller input size for better performance
+              scoreThreshold: 0.3 // Lower threshold for better detection
+            }))
+            .withFaceExpressions(); // Skip landmarks if they fail
+        }
+      );
 
       if (detections.length === 0) {
         return null; // No face detected
@@ -152,12 +205,25 @@ export class EmotionDetectionService {
       
       // Check if detection confidence is above minimum threshold
       if (detection.detection.score < this.config.minConfidence) {
-        return null; // Low confidence detection
+        // Create low confidence error but don't throw it, just return null
+        const lowConfidenceError = createError('LOW_DETECTION_CONFIDENCE', undefined, {
+          component: 'EmotionDetectionService',
+          action: 'detectEmotions'
+        }, { confidence: detection.detection.score });
+        
+        // Log for debugging but don't throw
+        console.warn('Low detection confidence:', lowConfidenceError.userMessage);
+        return null;
       }
 
       // Draw face detection overlay if canvas provided
       if (overlayCanvas) {
-        this.drawFaceOverlay(overlayCanvas, imageElement, detection);
+        try {
+          this.drawFaceOverlay(overlayCanvas, imageElement, detection);
+        } catch (overlayError) {
+          // Don't fail the entire detection if overlay fails
+          console.warn('Failed to draw face overlay:', overlayError);
+        }
       }
 
       const expressions = detection.expressions;
@@ -176,8 +242,17 @@ export class EmotionDetectionService {
       };
 
     } catch (error) {
-      console.error('Error detecting emotions:', error);
-      throw new Error(`Emotion detection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      if (error instanceof EmotionDetectiveError) {
+        throw error;
+      }
+      
+      const faceApiError = handleFaceApiError(error as Error, {
+        component: 'EmotionDetectionService',
+        action: 'detectEmotions'
+      });
+      
+      logError(faceApiError);
+      throw faceApiError;
     }
   }
 

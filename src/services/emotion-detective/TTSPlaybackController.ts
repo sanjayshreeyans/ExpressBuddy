@@ -33,7 +33,7 @@ export class TTSPlaybackController {
 
   constructor(options: TTSPlaybackOptions = {}) {
     this.riveInputs = options.riveInputs || null;
-    
+
     // Initialize viseme playback controller if rive inputs are provided
     if (this.riveInputs) {
       this.initializeVisemeController(options);
@@ -64,7 +64,7 @@ export class TTSPlaybackController {
    */
   updateRiveInputs(riveInputs: RiveInputs, options: TTSPlaybackOptions = {}): void {
     this.riveInputs = riveInputs;
-    
+
     if (this.visemePlaybackController) {
       this.visemePlaybackController.updateRiveInputs(riveInputs);
     } else {
@@ -82,7 +82,7 @@ export class TTSPlaybackController {
    */
   setCallbacks(callbacks: TTSPlaybackCallbacks): void {
     this.callbacks = callbacks;
-    
+
     // Update TTS service callbacks
     TTSService.setCallbacks({
       onVisemes: this.handleVisemes.bind(this),
@@ -114,18 +114,18 @@ export class TTSPlaybackController {
   async speak(request: TTSRequest): Promise<void> {
     try {
       console.log('🎤 TTS Playback Controller: Starting speech with lip-sync:', request.text);
-      
+
       // Reset state
       this.reset();
-      
+
       // Initialize viseme service if needed
       if (!TTSService.isVisemeServiceConnected()) {
         await TTSService.initializeVisemeService();
       }
-      
+
       // Start TTS
       await TTSService.speak(request);
-      
+
     } catch (error) {
       console.error('❌ TTS Playback Controller: Error during speech:', error);
       this.callbacks.onError?.(`Speech error: ${error}`);
@@ -138,18 +138,18 @@ export class TTSPlaybackController {
    */
   stop(): void {
     console.log('🛑 TTS Playback Controller: Stopping speech and animation');
-    
+
     // Stop TTS
     TTSService.stop();
-    
+
     // Stop viseme playback
     if (this.visemePlaybackController) {
       this.visemePlaybackController.reset();
     }
-    
+
     // Stop subtitle updates
     this.stopSubtitleUpdates();
-    
+
     // Reset state
     this.isPlaying = false;
     this.callbacks.onPlaybackEnd?.();
@@ -160,15 +160,15 @@ export class TTSPlaybackController {
    */
   pause(): void {
     console.log('⏸️ TTS Playback Controller: Pausing speech and animation');
-    
+
     // Pause TTS
     TTSService.pause();
-    
+
     // Pause viseme playback
     if (this.visemePlaybackController) {
       this.visemePlaybackController.pause();
     }
-    
+
     // Stop subtitle updates
     this.stopSubtitleUpdates();
   }
@@ -178,15 +178,15 @@ export class TTSPlaybackController {
    */
   resume(): void {
     console.log('▶️ TTS Playback Controller: Resuming speech and animation');
-    
+
     // Resume TTS
     TTSService.resume();
-    
+
     // Resume viseme playback
     if (this.visemePlaybackController && this.currentVisemes.length > 0) {
       this.visemePlaybackController.play();
     }
-    
+
     // Resume subtitle updates
     this.startSubtitleUpdates();
   }
@@ -200,8 +200,10 @@ export class TTSPlaybackController {
     this.currentSubtitleIndex = -1;
     this.isPlaying = false;
     this.stopSubtitleUpdates();
-    
+
+    // Always reset viseme controller to ensure clean state
     if (this.visemePlaybackController) {
+      console.log('🧹 TTSPlaybackController: Resetting viseme controller');
       this.visemePlaybackController.reset();
     }
   }
@@ -210,14 +212,14 @@ export class TTSPlaybackController {
    * Handle visemes from TTS service
    */
   private handleVisemes(visemes: VisemeData[], subtitles: SubtitleData[]): void {
-    console.log('🎯 TTS Playback Controller: Received visemes and subtitles', { 
-      visemes: visemes.length, 
-      subtitles: subtitles.length 
+    console.log('🎯 TTS Playback Controller: Received visemes and subtitles', {
+      visemes: visemes.length,
+      subtitles: subtitles.length
     });
-    
+
     this.currentVisemes = visemes;
     this.currentSubtitles = subtitles;
-    
+
     // Start viseme playback if controller is available
     if (this.visemePlaybackController && visemes.length > 0) {
       // Get the current audio element from TTSService for synchronization
@@ -226,17 +228,17 @@ export class TTSPlaybackController {
         console.log('🎵 TTS Playback Controller: Setting audio element for viseme sync');
         this.visemePlaybackController.setAudioElement(audioElement);
       }
-      
+
       this.visemePlaybackController.add(visemes);
       this.visemePlaybackController.play();
       console.log('🎬 TTS Playback Controller: Started viseme playback with', visemes.length, 'visemes');
     }
-    
+
     // Start subtitle updates
     if (subtitles.length > 0) {
       this.startSubtitleUpdates();
     }
-    
+
     // Forward to callbacks
     this.callbacks.onVisemes?.(visemes, subtitles);
   }
@@ -253,7 +255,7 @@ export class TTSPlaybackController {
    */
   private handleSubtitles(subtitles: SubtitleData[]): void {
     console.log('📝 TTS Playback Controller: Received subtitles', { count: subtitles.length });
-    
+
     this.currentSubtitles = subtitles;
     this.callbacks.onSubtitles?.(subtitles);
   }
@@ -262,11 +264,11 @@ export class TTSPlaybackController {
    * Handle streaming chunks from TTS service
    */
   private handleStreamingChunk(chunkText: string, visemes: VisemeData[]): void {
-    console.log('⚡ TTS Playback Controller: Received streaming chunk', { 
-      text: chunkText, 
-      visemes: visemes.length 
+    console.log('⚡ TTS Playback Controller: Received streaming chunk', {
+      text: chunkText,
+      visemes: visemes.length
     });
-    
+
     // For streaming chunks, immediately start viseme playback
     if (this.visemePlaybackController && visemes.length > 0) {
       this.visemePlaybackController.add(visemes);
@@ -274,7 +276,7 @@ export class TTSPlaybackController {
         this.visemePlaybackController.play();
       }
     }
-    
+
     this.callbacks.onStreamingChunk?.(chunkText, visemes);
   }
 
@@ -394,17 +396,17 @@ export class TTSPlaybackController {
    */
   async disconnect(): Promise<void> {
     console.log('🛑 TTS Playback Controller: Disconnecting...');
-    
+
     // Stop any current playback
     this.stop();
-    
+
     // Disconnect TTS service
     await TTSService.disconnect();
-    
+
     // Reset controller
     this.visemePlaybackController = null;
     this.riveInputs = null;
-    
+
     console.log('✅ TTS Playback Controller: Disconnected successfully');
   }
 }

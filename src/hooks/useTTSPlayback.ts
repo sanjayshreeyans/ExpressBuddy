@@ -54,7 +54,7 @@ export function useTTSPlayback(options: UseTTSPlaybackOptions = {}): [TTSPlaybac
   // Initialize controller
   useEffect(() => {
     controllerRef.current = new TTSPlaybackController(options);
-    
+
     // Setup callbacks
     const callbacks: TTSPlaybackCallbacks = {
       onPlaybackStart: () => {
@@ -78,18 +78,23 @@ export function useTTSPlayback(options: UseTTSPlaybackOptions = {}): [TTSPlaybac
         }
       },
       onVisemes: (visemes: VisemeData[], subtitles: SubtitleData[]) => {
-        console.log('🎯 useTTSPlayback: Received visemes and subtitles', { 
-          visemes: visemes.length, 
-          subtitles: subtitles.length 
+        console.log('🎯 useTTSPlayback: Received visemes and subtitles', {
+          visemes: visemes.length,
+          subtitles: subtitles.length
         });
         if (mountedRef.current) {
-          setState(prev => ({ ...prev, visemes, subtitles }));
+          console.log('🎯 useTTSPlayback: Setting visemes in state:', visemes.length);
+          setState(prev => ({
+            ...prev,
+            visemes: [...visemes], // Create new array to ensure state update
+            subtitles: [...subtitles] // Create new array to ensure state update
+          }));
         }
       },
       onStreamingChunk: (chunkText: string, visemes: VisemeData[]) => {
-        console.log('⚡ useTTSPlayback: Received streaming chunk', { 
-          text: chunkText, 
-          visemes: visemes.length 
+        console.log('⚡ useTTSPlayback: Received streaming chunk', {
+          text: chunkText,
+          visemes: visemes.length
         });
         if (mountedRef.current) {
           // For streaming, append to existing visemes
@@ -101,8 +106,8 @@ export function useTTSPlayback(options: UseTTSPlaybackOptions = {}): [TTSPlaybac
     controllerRef.current.setCallbacks(callbacks);
 
     // Check if TTS is supported
-    setState(prev => ({ 
-      ...prev, 
+    setState(prev => ({
+      ...prev,
       isSupported: controllerRef.current?.isSupported || false,
       isConnected: controllerRef.current?.isVisemeServiceConnected || false
     }));
@@ -128,7 +133,7 @@ export function useTTSPlayback(options: UseTTSPlaybackOptions = {}): [TTSPlaybac
     return () => {
       mountedRef.current = false;
     };
-  }, []);
+  }, [options]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -197,11 +202,11 @@ export function useTTSPlayback(options: UseTTSPlaybackOptions = {}): [TTSPlaybac
       onClick: async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        
+
         try {
           // Stop any current speech first
           stop();
-          
+
           // Speak the text
           await speak({
             text,
@@ -249,7 +254,7 @@ export function useSimpleTTS() {
       try {
         // Stop any current speech
         window.speechSynthesis.cancel();
-        
+
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = options.speed || 1.0;
         utterance.pitch = 1.0;

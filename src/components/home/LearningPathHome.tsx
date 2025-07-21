@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
 import { motion } from 'framer-motion';
 import SupabaseTest from '../SupabaseTest';
-import { 
-  Brain, 
-  MessageCircle, 
-  Heart, 
-  CheckCircle, 
-  Lock, 
-  Star, 
+import {
+  Brain,
+  MessageCircle,
+  Heart,
+  CheckCircle,
+  Lock,
+  Star,
   Trophy,
   User,
   Settings,
@@ -68,6 +68,14 @@ export default function LearningPathHome() {
     navigate('/chat');
   };
 
+  const handleNodeClick = (nodeId: string) => {
+    if (nodeId === 'emotion-detective') {
+      navigate('/emotion-detective');
+    } else {
+      setSelectedPath(nodeId);
+    }
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/');
@@ -118,14 +126,14 @@ export default function LearningPathHome() {
       type: 'milestone'
     },
     {
-      id: 'emotion-mirroring',
-      title: 'Emotion Mirroring',
-      description: 'Learn to mirror emotions you see',
+      id: 'emotion-detective',
+      title: 'Emotion Detective',
+      description: 'Interactive emotion recognition with Pico',
       icon: <Eye className="w-8 h-8" />,
       status: 'current',
-      progress: 65,
-      lessons: 6,
-      xp: 180,
+      progress: 0,
+      lessons: 10,
+      xp: 200,
       color: 'from-purple-500 to-pink-500',
       position: { x: 80, y: 450 },
       size: 'large',
@@ -262,22 +270,22 @@ export default function LearningPathHome() {
   // Create smooth Duolingo-style path with gentle S-curves
   const createSmoothPath = () => {
     if (learningPaths.length === 0) return '';
-    
+
     let path = `M ${learningPaths[0].position.x + 40} ${learningPaths[0].position.y + 40}`;
-    
+
     for (let i = 1; i < learningPaths.length; i++) {
       const curr = learningPaths[i];
       const prev = learningPaths[i - 1];
-      
+
       // Create smooth bezier curves between points
       const controlPoint1X = prev.position.x + 40;
       const controlPoint1Y = prev.position.y + 40 + (curr.position.y - prev.position.y) * 0.3;
       const controlPoint2X = curr.position.x + 40;
       const controlPoint2Y = curr.position.y + 40 - (curr.position.y - prev.position.y) * 0.3;
-      
+
       path += ` C ${controlPoint1X} ${controlPoint1Y}, ${controlPoint2X} ${controlPoint2Y}, ${curr.position.x + 40} ${curr.position.y + 40}`;
     }
-    
+
     return path;
   };
 
@@ -292,7 +300,7 @@ export default function LearningPathHome() {
 
   const getNodeStyle = (node: LearningNode) => {
     const baseClasses = `absolute rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 cursor-pointer ${getNodeSize(node.size)} border-4`;
-    
+
     if (node.status === 'completed') {
       return `${baseClasses} bg-gradient-to-br from-green-400 to-green-500 text-white border-green-300 hover:scale-110 hover:shadow-3xl transform`;
     } else if (node.status === 'current') {
@@ -309,12 +317,12 @@ export default function LearningPathHome() {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: index * 0.15, type: "spring", stiffness: 100 }}
       className={getNodeStyle(node)}
-      style={{ 
-        left: `${node.position.x}px`, 
+      style={{
+        left: `${node.position.x}px`,
         top: `${node.position.y}px`,
         zIndex: hoveredNode === node.id ? 30 : node.status === 'current' ? 20 : 10
       }}
-      onClick={() => node.status !== 'locked' && setSelectedPath(node.id)}
+      onClick={() => node.status !== 'locked' && handleNodeClick(node.id)}
       onMouseEnter={() => setHoveredNode(node.id)}
       onMouseLeave={() => setHoveredNode(null)}
     >
@@ -339,7 +347,7 @@ export default function LearningPathHome() {
           )}
         </div>
       )}
-      
+
       {/* Progress ring for current lessons */}
       {node.status === 'current' && node.progress && (
         <div className="absolute inset-0 rounded-full">
@@ -365,14 +373,14 @@ export default function LearningPathHome() {
           </svg>
         </div>
       )}
-      
+
       {/* XP badge */}
       {node.status !== 'locked' && node.xp > 0 && (
         <div className="absolute -top-3 -right-3 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center border-2 border-white shadow-lg">
           {node.xp}
         </div>
       )}
-      
+
       {/* Lesson title and progress tooltip */}
       {hoveredNode === node.id && (
         <motion.div
@@ -422,15 +430,15 @@ export default function LearningPathHome() {
                 Learning Mode
               </Badge>
             </div>
-            
+
             <div className="flex items-center space-x-4">            <div className="flex items-center space-x-2 text-sm text-gray-600">
               <Trophy className="w-4 h-4 text-yellow-500" />
               <span className="font-medium">1,240 XP</span>
             </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <Zap className="w-4 h-4 text-orange-500" />
-              <span className="font-medium">7 Day Streak</span>
-            </div>
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <Zap className="w-4 h-4 text-orange-500" />
+                <span className="font-medium">7 Day Streak</span>
+              </div>
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
                   {user?.given_name?.[0] || 'U'}
@@ -447,7 +455,7 @@ export default function LearningPathHome() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Supabase Connection Test */}
         <SupabaseTest />
-        
+
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
           {/* Main Learning Path */}
           <div className="xl:col-span-3">
@@ -476,16 +484,16 @@ export default function LearningPathHome() {
 
             {/* Duolingo-style Learning Path */}
             <div className="bg-white rounded-2xl shadow-lg p-8 relative overflow-hidden">
-              <div 
+              <div
                 className="relative mx-auto"
-                style={{ 
+                style={{
                   width: '400px',
                   height: '2000px',
                   background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)'
                 }}
               >
                 {/* Smooth Duolingo-style Path SVG */}
-                <svg 
+                <svg
                   className="absolute inset-0 w-full h-full"
                   viewBox="0 0 400 2000"
                   preserveAspectRatio="xMidYMin meet"
@@ -499,10 +507,10 @@ export default function LearningPathHome() {
                       <stop offset="100%" stopColor="#f59e0b" />
                     </linearGradient>
                     <filter id="pathGlow">
-                      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                      <feMerge> 
-                        <feMergeNode in="coloredBlur"/>
-                        <feMergeNode in="SourceGraphic"/>
+                      <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+                      <feMerge>
+                        <feMergeNode in="coloredBlur" />
+                        <feMergeNode in="SourceGraphic" />
                       </feMerge>
                     </filter>
                   </defs>
@@ -578,7 +586,7 @@ export default function LearningPathHome() {
                       </p>
                     </div>
                   </div>
-                  <Button 
+                  <Button
                     onClick={handleStartChat}
                     className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white"
                   >

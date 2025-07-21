@@ -25,8 +25,10 @@ import AuthPage from "./components/auth/AuthPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import TTSIntegrationTest from "./components/emotion-detective/TTSIntegrationTest";
 import TTSQuickDemo from "./components/emotion-detective/TTSQuickDemo";
+import TTSVisemeTest from "./components/emotion-detective/TTSVisemeTest";
 import EmotionDetectionDemo from "./components/emotion-detective/EmotionDetectionDemo";
-import { EmotionDetectiveLearning, QuestionTypesDemo } from "./components/emotion-detective";
+import EmotionMirroringDemo from "./components/emotion-detective/EmotionMirroringDemo";
+import { EmotionDetectiveLearning, QuestionTypesDemo, ProgressTrackingDemo } from "./components/emotion-detective";
 import { LiveClientOptions } from "./types";
 import { StagewiseToolbar } from "@stagewise/toolbar-react";
 import { ReactPlugin } from "@stagewise-plugins/react";
@@ -69,17 +71,17 @@ function AppContent() {
       <Routes>
         {/* Landing Page - Public Route */}
         <Route path="/" element={<LandingPage />} />
-        
+
         {/* Authentication - Public Route */}
         <Route path="/login" element={<AuthPage />} />
-        
+
         {/* Protected Routes */}
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <LearningPathHome />
           </ProtectedRoute>
         } />
-        
+
         <Route path="/chat" element={
           <ProtectedRoute>
             <>
@@ -90,14 +92,14 @@ function AppContent() {
             </>
           </ProtectedRoute>
         } />
-        
+
         {/* TTS Quick Demo - Development Route */}
         <Route path="/demo-tts" element={
           <ProtectedRoute>
             <TTSQuickDemo />
           </ProtectedRoute>
         } />
-        
+
         {/* TTS Integration Test - Development Route */}
         <Route path="/test-tts" element={
           <ProtectedRoute>
@@ -106,7 +108,16 @@ function AppContent() {
             </div>
           </ProtectedRoute>
         } />
-        
+
+        {/* TTS Viseme Test - Development Route */}
+        <Route path="/test-visemes" element={
+          <ProtectedRoute>
+            <div className="min-h-screen bg-gray-50">
+              <TTSVisemeTest />
+            </div>
+          </ProtectedRoute>
+        } />
+
         {/* Emotion Detection Demo - Development Route */}
         <Route path="/demo-emotion" element={
           <ProtectedRoute>
@@ -115,21 +126,22 @@ function AppContent() {
             </div>
           </ProtectedRoute>
         } />
-        
-        {/* Emotion Detective Learning - Development Route */}
+
+        {/* Emotion Detective Learning - Production Route */}
         <Route path="/emotion-detective" element={
           <ProtectedRoute>
             <EmotionDetectiveLearning
-              lessonId="test-lesson-1"
-              childId="test-child"
+              lessonId="emotion-detective-level-1"
+              childId="current-child"
               onComplete={(results) => {
                 console.log('Lesson completed:', results);
-                alert(`Lesson completed! XP earned: ${results.totalXP}`);
+                // Navigate back to dashboard after completion
+                window.location.href = '/dashboard';
               }}
             />
           </ProtectedRoute>
         } />
-        
+
         {/* Question Types Demo - Development Route */}
         <Route path="/demo-questions" element={
           <ProtectedRoute>
@@ -138,7 +150,21 @@ function AppContent() {
             </div>
           </ProtectedRoute>
         } />
-        
+
+        {/* Emotion Mirroring - Production Route */}
+        <Route path="/emotion-mirroring" element={
+          <ProtectedRoute>
+            <EmotionMirroringDemo />
+          </ProtectedRoute>
+        } />
+
+        {/* Progress Tracking Demo - Development Route */}
+        <Route path="/demo-progress" element={
+          <ProtectedRoute>
+            <ProgressTrackingDemo />
+          </ProtectedRoute>
+        } />
+
         {/* Catch all route - redirect to landing */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

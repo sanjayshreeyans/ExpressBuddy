@@ -33,6 +33,13 @@ export const RealtimeExpressBuddyAvatar: React.FC<RealtimeExpressBuddyAvatarProp
   visemeService,
   silenceDetection, // **NEW**
 }) => {
+  // Debug visemes received by avatar
+  useEffect(() => {
+    console.log('🎯 RealtimeExpressBuddyAvatar: Props changed - Visemes:', visemes.length, 'Subtitles:', subtitles.length);
+    if (visemes.length > 0) {
+      console.log('🎯 RealtimeExpressBuddyAvatar: Received visemes:', visemes.slice(0, 3));
+    }
+  }, [visemes, subtitles]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +52,7 @@ export const RealtimeExpressBuddyAvatar: React.FC<RealtimeExpressBuddyAvatarProp
 
   // Rive setup
   const { rive, RiveComponent } = useRive({
-    src: '/v5_mascot-cat.riv',
+    src: '/pandabot.riv',
     stateMachines: 'InLesson',
     artboard: 'Character',
     animations: 'head_idle',
@@ -86,7 +93,7 @@ export const RealtimeExpressBuddyAvatar: React.FC<RealtimeExpressBuddyAvatarProp
     if (playbackControllerRef.current && riveInputs && riveInputs.mouth && !riveInputsInitialized.current) {
       playbackControllerRef.current.updateRiveInputs(riveInputs);
       riveInputsInitialized.current = true;
-      
+
       // **NEW**: Expose Rive inputs to parent component
       if (onRiveInputsReady) {
         console.log('🎯 RealtimeExpressBuddyAvatar: Rive inputs ready, calling callback');
@@ -104,43 +111,53 @@ export const RealtimeExpressBuddyAvatar: React.FC<RealtimeExpressBuddyAvatarProp
 
     if (visemes.length > 0) {
       // For real-time streaming, immediately start processing new visemes
-      console.log('Received real-time visemes:', visemes.length);
-      
+      console.log('🎯 RealtimeExpressBuddyAvatar: Received real-time visemes:', visemes.length);
+
+      // Stop any current animation frame to prevent conflicts
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = 0;
+      }
+
       // Always reset when new visemes arrive to ensure correct timing for each chunk
       playbackControllerRef.current.reset();
-      
+
       // Add new visemes to the queue
       playbackControllerRef.current.add(visemes);
-      
+
       // Always start fresh playback for new chunk
       visemeStartTime.current = performance.now();
       setIsPlaying(true);
-      
+
       // Start the playback controller
       playbackControllerRef.current.play({});
-      
+
       // Start our timing loop
       const animate = () => {
         const elapsed = (performance.now() - visemeStartTime.current) / 1000;
         setCurrentTime(elapsed);
-        
+
         // Continue animation if still playing and we have visemes
         if (isPlaying && visemes.length > 0) {
           animationFrameRef.current = requestAnimationFrame(animate);
         } else if (elapsed > 5.0) {
           // Auto-stop after 5 seconds of no new visemes
+          console.log('🛑 RealtimeExpressBuddyAvatar: Auto-stopping after 5 seconds');
           setIsPlaying(false);
+          playbackControllerRef.current?.reset();
         }
       };
-      
+
       animationFrameRef.current = requestAnimationFrame(animate);
     } else if (isPlaying) {
       // If no visemes and we're playing, stop after a short delay
       setTimeout(() => {
         if (visemes.length === 0) {
+          console.log('🛑 RealtimeExpressBuddyAvatar: Stopping due to no visemes');
           setIsPlaying(false);
           if (animationFrameRef.current) {
             cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = 0;
           }
           playbackControllerRef.current?.reset();
         }
@@ -171,9 +188,9 @@ export const RealtimeExpressBuddyAvatar: React.FC<RealtimeExpressBuddyAvatarProp
 
   // Update playback state
   useEffect(() => {
-    onPlaybackStateChange?.({ 
-      isPlaying, 
-      currentTime, 
+    onPlaybackStateChange?.({
+      isPlaying,
+      currentTime,
       duration: visemes.length > 0 ? Math.max(...visemes.map(v => v.offset)) / 1000 : 0
     });
   }, [isPlaying, currentTime, visemes, onPlaybackStateChange]);
@@ -194,16 +211,16 @@ export const RealtimeExpressBuddyAvatar: React.FC<RealtimeExpressBuddyAvatarProp
       setIsPlaying(true);
       visemeStartTime.current = performance.now();
       playbackControllerRef.current?.play({});
-      
+
       const animate = () => {
         const elapsed = (performance.now() - visemeStartTime.current) / 1000;
         setCurrentTime(elapsed);
-        
+
         if (isPlaying) {
           animationFrameRef.current = requestAnimationFrame(animate);
         }
       };
-      
+
       animationFrameRef.current = requestAnimationFrame(animate);
     }
   }, [isPlaying, visemes, error]);
@@ -242,17 +259,17 @@ export const RealtimeExpressBuddyAvatar: React.FC<RealtimeExpressBuddyAvatarProp
               <div>Ultra-fast: {visemeService.isUltraFast ? '⚡' : '🐌'}</div>
             </>
           )}
-         {/* **NEW**: Silence detection debug info */}
-         {silenceDetection && silenceDetection.config.enabled && (
-           <div className="mt-2 pt-2 border-t border-gray-600">
-             <div>Piko Status: {silenceDetection.state.conversationState}</div>
-             {silenceDetection.state.nudgeCount > 0 && (
-               <div>Tries: {silenceDetection.state.nudgeCount}/{silenceDetection.config.maxNudges}</div>
-             )}
-           </div>
-         )}
-       </div>
-     )}
-   </div>
+          {/* **NEW**: Silence detection debug info */}
+          {silenceDetection && silenceDetection.config.enabled && (
+            <div className="mt-2 pt-2 border-t border-gray-600">
+              <div>Piko Status: {silenceDetection.state.conversationState}</div>
+              {silenceDetection.state.nudgeCount > 0 && (
+                <div>Tries: {silenceDetection.state.nudgeCount}/{silenceDetection.config.maxNudges}</div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 };

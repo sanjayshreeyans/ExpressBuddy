@@ -1,0 +1,102 @@
+/* BACKUP OF ORIGINAL goodStyles.css - Created before applying new color scheme */
+
+/* ExpressBuddy Custom Theme - Playful Learning Interface */
+
+:root {
+    /* Primary Colors */
+    --primary: #58CC02;
+    --primary-hover: #4CAF50;
+    --primary-light: #7ED321;
+    --primary-dark: #46A002;
+
+    /* Secondary Colors */
+    --secondary: #1CB0F6;
+    --secondary-hover: #0EA5E9;
+    --secondary-light: #38BDF8;
+    --secondary-dark: #0284C7;
+
+    /* Accent Colors */
+    --accent: #FF4B4B;
+    --accent-hover: #EF4444;
+    --accent-light: #FCA5A5;
+    --accent-dark: #DC2626;
+
+    /* Pico Brand Colors */
+    --pico-purple: #B4A7D6;
+    --pico-purple-light: #D1C4E9;
+    --pico-purple-dark: #9575CD;
+
+    /* Background Colors */
+    --background: #FFFFFF;
+    --background-alt: #F7F7F7;
+    --background-soft: #FAFAFA;
+    --surface: #FFFFFF;
+    --surface-elevated: #FFFFFF;
+
+    /* Text Colors */
+    --text-primary: #3C3C3C;
+    --text-secondary: #6B7280;
+    --text-muted: #9CA3AF;
+    --text-inverse: #FFFFFF;
+
+    /* Border Colors */
+    --border: #E5E7EB;
+    --border-light: #F3F4F6;
+    --border-dark: #D1D5DB;
+
+    /* Status Colors */
+    --success: #10B981;
+    --warning: #F59E0B;
+    --error: #EF4444;
+    --info: #3B82F6;
+
+    /* Gamification Colors */
+    --xp-gold: #FFD700;
+    --streak-fire: #FF6B35;
+    --progress-complete: var(--primary);
+    --progress-incomplete: #E5E7EB;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-playful: 0 8px 25px rgba(88, 204, 2, 0.15);
+
+    /* Border Radius */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-2xl: 24px;
+    --radius-full: 9999px;
+
+    /* Spacing */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-2xl: 48px;
+    --spacing-3xl: 64px;
+
+    /* Typography */
+    --font-family-primary: 'Nunito', 'Comfortaa', sans-serif;
+    --font-family-secondary: 'Inter', sans-serif;
+    --font-size-xs: 12px;
+    --font-size-sm: 14px;
+    --font-size-md: 16px;
+    --font-size-lg: 18px;
+    --font-size-xl: 20px;
+    --font-size-2xl: 24px;
+    --font-size-3xl: 32px;
+    --font-size-4xl: 48px;
+
+    /* Animations */
+    --transition-fast: 150ms ease-out;
+    --transition-normal: 300ms ease-out;
+    --transition-slow: 500ms ease-out;
+    --bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Rest of the original goodStyles.css content would be here... */

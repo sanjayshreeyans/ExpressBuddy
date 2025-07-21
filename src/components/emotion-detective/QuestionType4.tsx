@@ -50,29 +50,29 @@ export const QuestionType4: React.FC<QuestionComponentProps> = ({
 
   const getButtonVariant = (scenario: string) => {
     if (!hasAnswered) return 'outline';
-    
+
     if (scenario === question.correctAnswer) {
       return 'default'; // Correct answer - green styling
     }
-    
+
     if (scenario === selectedAnswer && scenario !== question.correctAnswer) {
       return 'destructive'; // Wrong selected answer - red styling
     }
-    
+
     return 'secondary'; // Other options - muted
   };
 
   const getButtonClassName = (scenario: string) => {
     if (!hasAnswered) return '';
-    
+
     if (scenario === question.correctAnswer) {
       return 'bg-green-600 hover:bg-green-700 text-white border-green-600';
     }
-    
+
     if (scenario === selectedAnswer && scenario !== question.correctAnswer) {
       return 'bg-red-600 hover:bg-red-700 text-white border-red-600';
     }
-    
+
     return 'opacity-60';
   };
 
@@ -95,7 +95,7 @@ export const QuestionType4: React.FC<QuestionComponentProps> = ({
         <CardHeader className="pb-4">
           <CardTitle className="text-xl font-semibold text-center flex items-center justify-center gap-2">
             {question.questionText}
-            <SpeakerIcon 
+            <SpeakerIcon
               text={question.questionText}
               className="ml-2"
               aria-label="Repeat question"
@@ -104,13 +104,13 @@ export const QuestionType4: React.FC<QuestionComponentProps> = ({
         </CardHeader>
       </Card>
 
-      {/* Main Content Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
+      {/* Main Content Layout - Scaled down to fit screen */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 mb-4 max-h-[350px]">
         {/* Face Image Section */}
         <div className="lg:col-span-2">
-          <Card className="h-fit">
-            <CardContent className="p-6">
-              <AspectRatio ratio={4/5} className="bg-muted rounded-lg overflow-hidden">
+          <Card className="h-fit max-h-[300px]">
+            <CardContent className="p-3">
+              <AspectRatio ratio={4 / 5} className="bg-muted rounded-lg overflow-hidden max-h-[200px]">
                 <img
                   src={question.faceImage.path}
                   alt={`Person showing an emotion`}
@@ -121,7 +121,7 @@ export const QuestionType4: React.FC<QuestionComponentProps> = ({
                   }}
                 />
               </AspectRatio>
-              
+
               {/* Image metadata for debugging */}
               {process.env.NODE_ENV === 'development' && (
                 <div className="mt-2 text-xs text-muted-foreground">
@@ -161,9 +161,9 @@ export const QuestionType4: React.FC<QuestionComponentProps> = ({
                   <span className="flex-1 text-sm leading-relaxed pr-2">
                     "{scenario}"
                   </span>
-                  
+
                   {/* Speaker icon for scenario options */}
-                  <SpeakerIcon 
+                  <SpeakerIcon
                     text={scenario}
                     className="ml-2 flex-shrink-0"
                     size="sm"

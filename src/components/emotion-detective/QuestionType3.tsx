@@ -52,15 +52,15 @@ export const QuestionType3: React.FC<QuestionComponentProps> = ({
     if (!hasAnswered) {
       return 'cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all';
     }
-    
+
     if (faceId === question.correctAnswer) {
       return 'ring-2 ring-green-500 bg-green-50';
     }
-    
+
     if (faceId === selectedAnswer && faceId !== question.correctAnswer) {
       return 'ring-2 ring-red-500 bg-red-50';
     }
-    
+
     return 'opacity-60';
   };
 
@@ -87,26 +87,26 @@ export const QuestionType3: React.FC<QuestionComponentProps> = ({
         </CardHeader>
       </Card>
 
-      {/* Main Content Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
+      {/* Main Content Layout - Scaled down to fit screen */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 mb-4 max-h-[350px]">
         {/* Scenario Section */}
         <div className="lg:col-span-2">
-          <Card className="h-fit">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
+          <Card className="h-fit max-h-[300px]">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
                 Situation
-                <SpeakerIcon 
+                <SpeakerIcon
                   text={`${question.questionText} ${question.scenario}`}
                   className="ml-auto"
                   aria-label="Read scenario aloud"
                 />
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-base leading-relaxed p-4 bg-muted rounded-lg">
+            <CardContent className="p-3">
+              <div className="text-sm leading-relaxed p-3 bg-muted rounded-lg">
                 "{question.scenario}"
               </div>
-              <div className="mt-4 text-sm text-muted-foreground">
+              <div className="mt-2 text-xs text-muted-foreground">
                 How would someone feel in this situation?
               </div>
             </CardContent>
@@ -115,12 +115,12 @@ export const QuestionType3: React.FC<QuestionComponentProps> = ({
 
         {/* Face Options Grid */}
         <div className="lg:col-span-3">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Choose the matching emotion:</CardTitle>
+          <Card className="max-h-[300px]">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Choose the matching emotion:</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
+            <CardContent className="p-3">
+              <div className="grid grid-cols-2 gap-2">
                 {question.faceOptions.map((face, index) => (
                   <Card
                     key={`${face.id}-${index}`}
@@ -130,8 +130,8 @@ export const QuestionType3: React.FC<QuestionComponentProps> = ({
                     )}
                     onClick={() => handleFaceSelect(face.id)}
                   >
-                    <CardContent className="p-3">
-                      <AspectRatio ratio={4/5} className="bg-muted rounded-lg overflow-hidden">
+                    <CardContent className="p-2">
+                      <AspectRatio ratio={4 / 5} className="bg-muted rounded-lg overflow-hidden max-h-[80px]">
                         <img
                           src={face.path}
                           alt={`Person ${index + 1}`}
@@ -142,7 +142,7 @@ export const QuestionType3: React.FC<QuestionComponentProps> = ({
                           }}
                         />
                       </AspectRatio>
-                      
+
                       {/* Selection indicator */}
                       {hasAnswered && (
                         <div className="mt-2 text-center">

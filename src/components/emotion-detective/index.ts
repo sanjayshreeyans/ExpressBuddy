@@ -9,5 +9,13 @@ export { default as EmotionMirroring } from './EmotionMirroring';
 export { default as ProgressTracking } from './ProgressTracking';
 export { SpeakerIcon, InlineSpeakerIcon, SpeakerButton } from './SpeakerIcon';
 
+// Progress and XP Components
+export { default as AnimatedXPCounter } from './AnimatedXPCounter';
+export { default as LevelProgressDisplay } from './LevelProgressDisplay';
+export { default as AchievementNotification } from './AchievementNotification';
+export { default as LessonCompletionScreen } from './LessonCompletionScreen';
+
 // Demo Components
 export { default as QuestionTypesDemo } from './QuestionTypesDemo';
+export { default as EmotionMirroringDemo } from './EmotionMirroringDemo';
+export { default as ProgressTrackingDemo } from './ProgressTrackingDemo';

@@ -7,6 +7,18 @@ import { Progress } from '../ui/progress';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Separator } from '../ui/separator';
+import { cameraService } from '../../services/emotion-detective/CameraService';
+import {
+  EmotionDetectiveError,
+  createError,
+  logError,
+  withGracefulDegradation
+} from '../../utils/errorHandling';
+import {
+  CameraErrorAlert,
+  FaceApiErrorAlert,
+  ErrorAlert
+} from './ErrorAlerts';
 
 export const EmotionMirroring: React.FC<EmotionMirroringProps> = ({
   targetEmotion,
@@ -33,16 +45,44 @@ export const EmotionMirroring: React.FC<EmotionMirroringProps> = ({
   const [isCapturing, setIsCapturing] = useState(false);
   const stopDetectionRef = useRef<(() => void) | null>(null);
 
-  // Initialize face-api.js models
+  // Error handling states
+  const [cameraError, setCameraError] = useState<EmotionDetectiveError | null>(null);
+  const [faceApiError, setFaceApiError] = useState<EmotionDetectiveError | null>(null);
+  const [dismissedErrors, setDismissedErrors] = useState<Set<string>>(new Set());
+
+  // Initialize face-api.js models with comprehensive error handling
   useEffect(() => {
     const initializeModels = async () => {
       try {
-        await emotionDetectionService.initialize('/models', setLoadingProgress);
+        await withGracefulDegradation(
+          async () => {
+            await emotionDetectionService.initialize('/models', setLoadingProgress);
+          },
+          async () => {
+            // Fallback: Try with different model path or reduced functionality
+            console.warn('Primary model loading failed, trying fallback...');
+            await emotionDetectionService.initialize('/models', setLoadingProgress);
+          },
+          (error) => {
+            setFaceApiError(error);
+            logError(error);
+          }
+        );
+
         setIsInitialized(true);
+        setFaceApiError(null);
         console.log('Face-api.js models loaded successfully for mirroring!');
       } catch (error) {
-        console.error('Failed to initialize face-api.js:', error);
-        setLoadingProgress(prev => ({ ...prev, error: error instanceof Error ? error.message : 'Unknown error' }));
+        const faceApiError = error instanceof EmotionDetectiveError
+          ? error
+          : createError('FACE_API_MODELS_LOAD_FAILED', error as Error, {
+            component: 'EmotionMirroring',
+            action: 'initializeModels'
+          });
+
+        setFaceApiError(faceApiError);
+        setLoadingProgress(prev => ({ ...prev, error: faceApiError.userMessage }));
+        logError(faceApiError);
       }
     };
 
@@ -51,31 +91,65 @@ export const EmotionMirroring: React.FC<EmotionMirroringProps> = ({
 
   // Auto-start camera when component mounts and models are ready
   useEffect(() => {
-    if (isInitialized && !cameraActive) {
+    if (isInitialized && !cameraActive && !cameraError) {
       startCamera();
     }
   }, [isInitialized]);
 
-  // Start camera
+  // Subscribe to camera status changes
+  useEffect(() => {
+    const unsubscribe = cameraService.onStatusChange((status) => {
+      setVideoStream(status.stream);
+      setCameraActive(status.isActive);
+
+      if (status.error) {
+        setCameraError(status.error);
+        setGuidance(status.error.userMessage);
+      } else {
+        setCameraError(null);
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
+  // Start camera with comprehensive error handling
   const startCamera = async () => {
     try {
+      setCameraError(null);
       console.log('🎥 [MIRRORING] Starting camera for emotion mirroring...');
-      
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: 640,
-          height: 480,
-          facingMode: 'user'
+
+      // Use camera service with graceful degradation
+      const stream = await withGracefulDegradation(
+        async () => {
+          return await cameraService.requestCameraAccess({
+            width: 640,
+            height: 480,
+            facingMode: 'user'
+          });
+        },
+        async () => {
+          // Fallback: Try with basic constraints
+          return await cameraService.requestCameraAccessWithFallback({
+            width: 320,
+            height: 240,
+            facingMode: 'user'
+          });
+        },
+        (error) => {
+          setCameraError(error);
+          logError(error);
         }
-      });
+      );
 
       console.log('🎥 [MIRRORING] Camera stream obtained successfully!');
       setVideoStream(stream);
       setCameraActive(true);
+      setCameraError(null);
 
       // Set up video element
       setTimeout(() => {
-        if (videoRef.current) {
+        if (videoRef.current && stream) {
           videoRef.current.srcObject = stream;
           videoRef.current.play().then(() => {
             console.log('🎥 [MIRRORING] Video playing successfully');
@@ -83,33 +157,49 @@ export const EmotionMirroring: React.FC<EmotionMirroringProps> = ({
             startRealTimeDetection();
           }).catch((playError) => {
             console.error('🎥 [MIRRORING] Video play() failed:', playError);
+            const cameraPlayError = createError('CAMERA_HARDWARE_ERROR', playError, {
+              component: 'EmotionMirroring',
+              action: 'videoPlay'
+            });
+            setCameraError(cameraPlayError);
           });
         }
       }, 100);
     } catch (error) {
-      console.error('🎥 [MIRRORING] ERROR accessing camera:', error);
-      setGuidance('Could not access camera. Please ensure camera permissions are granted.');
+      const cameraError = error instanceof EmotionDetectiveError
+        ? error
+        : createError('CAMERA_HARDWARE_ERROR', error as Error, {
+          component: 'EmotionMirroring',
+          action: 'startCamera'
+        });
+
+      setCameraError(cameraError);
+      setGuidance(cameraError.userMessage);
+      logError(cameraError);
     }
   };
 
-  // Stop camera
-  const stopCamera = () => {
-    if (videoStream) {
-      videoStream.getTracks().forEach(track => track.stop());
-    }
+  // Stop camera using camera service
+  const stopCamera = async () => {
+    try {
+      await cameraService.stopCamera();
 
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
 
-    setVideoStream(null);
-    setCameraActive(false);
+      setVideoStream(null);
+      setCameraActive(false);
+      setCameraError(null);
 
-    // Stop real-time detection if active
-    if (stopDetectionRef.current) {
-      stopDetectionRef.current();
-      stopDetectionRef.current = null;
-      setIsRealTimeActive(false);
+      // Stop real-time detection if active
+      if (stopDetectionRef.current) {
+        stopDetectionRef.current();
+        stopDetectionRef.current = null;
+        setIsRealTimeActive(false);
+      }
+    } catch (error) {
+      console.error('Error stopping camera:', error);
     }
   };
 
@@ -163,7 +253,7 @@ export const EmotionMirroring: React.FC<EmotionMirroringProps> = ({
         videoRef.current,
         targetEmotion
       );
-      
+
       setCaptureResult(result);
       console.log('Mirroring capture result:', result);
 
@@ -172,13 +262,13 @@ export const EmotionMirroring: React.FC<EmotionMirroringProps> = ({
       if (result.success && result.result) {
         // Base score on detection confidence (0-40 points)
         const detectionScore = Math.round(result.result.detectionConfidence * 40);
-        
+
         // Emotion confidence score (0-40 points)
         const emotionScore = Math.round(result.confidence * 40);
-        
+
         // Bonus for correct emotion match (0-20 points)
         const matchBonus = result.isMatch ? 20 : 0;
-        
+
         score = detectionScore + emotionScore + matchBonus;
         score = Math.min(100, Math.max(0, score));
       }
@@ -186,11 +276,11 @@ export const EmotionMirroring: React.FC<EmotionMirroringProps> = ({
       // Enhanced success criteria with confidence thresholds
       const highConfidence = result.confidence >= 0.7;
       const mediumConfidence = result.confidence >= 0.5;
-      const goodDetection = result.result?.detectionConfidence >= 0.7;
-      
+      const goodDetection = result.result?.detectionConfidence ? result.result.detectionConfidence >= 0.7 : false;
+
       const success = result.isMatch && highConfidence && goodDetection;
       const partialSuccess = result.isMatch && mediumConfidence;
-      
+
       if (success) {
         // Perfect match - stop detection and complete
         stopRealTimeDetection();
@@ -233,23 +323,23 @@ export const EmotionMirroring: React.FC<EmotionMirroringProps> = ({
     if (!result.success) {
       return "No face detected. Please position your face clearly in the camera view.";
     }
-    
+
     if (result.result?.detectionConfidence < 0.5) {
       return "Face detection is unclear. Move closer to the camera and ensure good lighting.";
     }
-    
+
     if (result.confidence < 0.4) {
       return `Try to express the ${targetEmotion} emotion more clearly. Look at the reference image for guidance.`;
     }
-    
+
     if (!result.isMatch) {
       return `You're showing ${result.detectedEmotion} but we need ${targetEmotion}. Try to match the reference image more closely.`;
     }
-    
+
     if (result.confidence < 0.6) {
       return `Good attempt! Try to express the ${targetEmotion} emotion a bit more clearly.`;
     }
-    
+
     return `Almost there! Attempt ${attemptNumber + 1} - try to hold the expression a bit longer.`;
   };
 
@@ -278,6 +368,48 @@ export const EmotionMirroring: React.FC<EmotionMirroringProps> = ({
         <p className="text-muted-foreground mt-2">
           Look at the reference image and try to mirror the <span className="font-semibold capitalize">{targetEmotion}</span> emotion
         </p>
+      </div>
+
+      {/* Error Alerts */}
+      <div className="space-y-4 mb-6">
+        {/* Camera Error Alert */}
+        {cameraError && !dismissedErrors.has(cameraError.code) && (
+          <CameraErrorAlert
+            error={cameraError}
+            onRetry={() => {
+              setCameraError(null);
+              startCamera();
+            }}
+            onSkip={() => {
+              setDismissedErrors(prev => new Set(prev).add(cameraError.code));
+              setCameraError(null);
+              // Continue without camera - show manual verification option
+            }}
+            onDismiss={() => {
+              setDismissedErrors(prev => new Set(prev).add(cameraError.code));
+              setCameraError(null);
+            }}
+          />
+        )}
+
+        {/* Face-API Error Alert */}
+        {faceApiError && !dismissedErrors.has(faceApiError.code) && (
+          <FaceApiErrorAlert
+            error={faceApiError}
+            onRetry={() => {
+              setFaceApiError(null);
+              // Retry model loading
+              emotionDetectionService.reset();
+              window.location.reload(); // Simple retry by reloading
+            }}
+            onContinueWithoutAI={() => {
+              setDismissedErrors(prev => new Set(prev).add(faceApiError.code));
+              setFaceApiError(null);
+              // Continue with manual verification
+            }}
+            loadingProgress={loadingProgress}
+          />
+        )}
       </div>
 
       {/* Model Loading Progress */}
@@ -390,7 +522,7 @@ export const EmotionMirroring: React.FC<EmotionMirroringProps> = ({
               >
                 {isCapturing ? 'Analyzing...' : 'Capture & Analyze'}
               </Button>
-              
+
               {attempts > 0 && (
                 <Button
                   onClick={handleRetry}
@@ -439,8 +571,8 @@ export const EmotionMirroring: React.FC<EmotionMirroringProps> = ({
                     {(detectionResult.detectionConfidence * 100).toFixed(1)}%
                   </Badge>
                 </div>
-                <Progress 
-                  value={detectionResult.detectionConfidence * 100} 
+                <Progress
+                  value={detectionResult.detectionConfidence * 100}
                   className="h-2"
                 />
               </div>
@@ -455,8 +587,8 @@ export const EmotionMirroring: React.FC<EmotionMirroringProps> = ({
                     {(detectionResult.expressions[targetEmotion as keyof typeof detectionResult.expressions] * 100).toFixed(1)}%
                   </Badge>
                 </div>
-                <Progress 
-                  value={detectionResult.expressions[targetEmotion as keyof typeof detectionResult.expressions] * 100} 
+                <Progress
+                  value={detectionResult.expressions[targetEmotion as keyof typeof detectionResult.expressions] * 100}
                   className="h-3"
                 />
                 {detectionResult.expressions[targetEmotion as keyof typeof detectionResult.expressions] >= 0.6 && (
@@ -497,44 +629,149 @@ export const EmotionMirroring: React.FC<EmotionMirroringProps> = ({
             <CardHeader>
               <CardTitle className="text-purple-600">Analysis Result</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between">
-                <span>Success:</span>
+            <CardContent className="space-y-4">
+              {/* Overall Success Status */}
+              <div className="flex justify-between items-center">
+                <span className="font-medium">Detection Status:</span>
                 <Badge variant={captureResult.success ? "default" : "destructive"}>
-                  {captureResult.success ? 'Face Detected' : 'No Face'}
+                  {captureResult.success ? 'Face Detected' : 'No Face Found'}
                 </Badge>
               </div>
-              <div className="flex justify-between">
-                <span>Target Emotion:</span>
-                <Badge variant="outline" className="capitalize">{targetEmotion}</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span>Detected Emotion:</span>
-                <Badge variant="secondary" className="capitalize">{captureResult.detectedEmotion}</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span>Confidence:</span>
-                <span>{(captureResult.confidence * 100).toFixed(1)}%</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Match:</span>
-                <Badge variant={captureResult.isMatch ? "default" : "destructive"}>
-                  {captureResult.isMatch ? '✓ Perfect Match!' : '✗ Keep Trying'}
-                </Badge>
-              </div>
-              
-              {captureResult.isMatch && (
+
+              {captureResult.success && captureResult.result && (
+                <>
+                  {/* Face Detection Confidence */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Face Detection Quality:</span>
+                      <Badge variant={captureResult.result.detectionConfidence >= 0.7 ? "default" : "secondary"}>
+                        {(captureResult.result.detectionConfidence * 100).toFixed(1)}%
+                      </Badge>
+                    </div>
+                    <Progress value={captureResult.result.detectionConfidence * 100} className="h-2" />
+                  </div>
+
+                  <Separator />
+
+                  {/* Emotion Analysis */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">Target Emotion:</span>
+                      <Badge variant="outline" className="capitalize">{targetEmotion}</Badge>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">Detected Emotion:</span>
+                      <Badge
+                        variant={captureResult.isMatch ? "default" : "secondary"}
+                        className="capitalize"
+                      >
+                        {captureResult.detectedEmotion}
+                      </Badge>
+                    </div>
+
+                    {/* Emotion Confidence with Progress Bar */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Emotion Confidence:</span>
+                        <span className="text-sm font-mono">{(captureResult.confidence * 100).toFixed(1)}%</span>
+                      </div>
+                      <Progress
+                        value={captureResult.confidence * 100}
+                        className={`h-2 ${captureResult.confidence >= 0.6 ? '' : 'opacity-60'}`}
+                      />
+                    </div>
+
+                    {/* Match Status */}
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">Emotion Match:</span>
+                      <Badge variant={captureResult.isMatch ? "default" : "destructive"}>
+                        {captureResult.isMatch ? '✓ Perfect Match!' : '✗ Different Emotion'}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Score Breakdown */}
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-sm">Score Breakdown:</h4>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="flex justify-between">
+                        <span>Face Quality:</span>
+                        <span>{Math.round(captureResult.result.detectionConfidence * 40)}/40</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Emotion Clarity:</span>
+                        <span>{Math.round(captureResult.confidence * 40)}/40</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Match Bonus:</span>
+                        <span>{captureResult.isMatch ? '20' : '0'}/20</span>
+                      </div>
+                      <div className="flex justify-between font-medium">
+                        <span>Total Score:</span>
+                        <span>
+                          {Math.min(100, Math.max(0,
+                            Math.round(captureResult.result.detectionConfidence * 40) +
+                            Math.round(captureResult.confidence * 40) +
+                            (captureResult.isMatch ? 20 : 0)
+                          ))}/100
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <Separator />
+
+              {/* Success/Failure Messages */}
+              {captureResult.isMatch && captureResult.confidence >= 0.7 && (
                 <Alert>
                   <AlertDescription className="text-green-600 font-medium">
-                    🎉 Great job! You successfully mirrored the {targetEmotion} emotion!
+                    🎉 Excellent! You perfectly mirrored the {targetEmotion} emotion!
                   </AlertDescription>
                 </Alert>
               )}
-              
-              {!captureResult.isMatch && attempts < 3 && (
+
+              {captureResult.isMatch && captureResult.confidence >= 0.5 && captureResult.confidence < 0.7 && (
+                <Alert>
+                  <AlertDescription className="text-blue-600 font-medium">
+                    👍 Good job! You showed the {targetEmotion} emotion clearly enough.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {!captureResult.success && (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    No face detected. Please ensure your face is clearly visible in the camera.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {captureResult.success && !captureResult.isMatch && attempts < 3 && (
                 <Alert>
                   <AlertDescription>
-                    Try to express the {targetEmotion} emotion more clearly. Look at the reference image for guidance.
+                    You're showing <strong>{captureResult.detectedEmotion}</strong> but we need <strong>{targetEmotion}</strong>.
+                    Look at the reference image and try again!
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {captureResult.success && captureResult.confidence < 0.5 && attempts < 3 && (
+                <Alert>
+                  <AlertDescription>
+                    The emotion detection confidence is low. Try to express the {targetEmotion} emotion more clearly.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {attempts >= 3 && (
+                <Alert>
+                  <AlertDescription className="text-orange-600">
+                    You've completed all 3 attempts. Great effort! You'll still earn points for trying.
                   </AlertDescription>
                 </Alert>
               )}

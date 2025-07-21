@@ -18,7 +18,7 @@ export class VisemePlaybackController {
   private manualSpeakingStateControl = false;
   private audioDuration: number | null = null;
   private audioElement: HTMLAudioElement | null = null;
-  
+
   constructor(options: VisemePlaybackOptions) {
     this.riveInputs = options.riveInputs;
     this.transitionDuration = options.transitionDuration ?? 21;
@@ -50,7 +50,7 @@ export class VisemePlaybackController {
   add(visemes: VisemeData[]): void {
     // Clear existing visemes first to prevent duplication
     this._chunks.length = 0;
-    
+
     if (visemes.length > 0) {
       // Normalize viseme offsets to start from 0 for this chunk
       const firstOffset = visemes[0].offset;
@@ -58,7 +58,7 @@ export class VisemePlaybackController {
         ...viseme,
         offset: viseme.offset - firstOffset
       }));
-      
+
       this._chunks.push(...normalizedVisemes);
       console.log(`Added ${visemes.length} visemes to playback queue (normalized from ${firstOffset}ms, duration: ${this.audioDuration ? this.audioDuration * 1000 : 'unknown'}ms)`);
       console.log(`First viseme offset: ${normalizedVisemes[0]?.offset}ms, Last: ${normalizedVisemes[normalizedVisemes.length - 1]?.offset}ms`);
@@ -75,7 +75,7 @@ export class VisemePlaybackController {
 
     this._playing = true;
     this.startTime = performance.now() - this.playbackOffset;
-    
+
     if (options?.callback) {
       options.callback();
     }
@@ -116,11 +116,11 @@ export class VisemePlaybackController {
    */
   reset(): void {
     this.pause();
-    
+
     try {
       // Reset to neutral viseme (100 - which should be neutral/silence)
       this.run(100);
-      
+
       // Reset speaking state
       if (this.setSpeakingState && !this.manualSpeakingStateControl && this.riveInputs.emotions?.is_speaking) {
         this.riveInputs.emotions.is_speaking.value = false;
@@ -135,7 +135,7 @@ export class VisemePlaybackController {
     this.animationFrameId = null;
     this.lastPlayedIndex = -1;
     this._chunks.length = 0;
-    
+
     console.log('Reset viseme playback controller');
   }
 
@@ -153,11 +153,11 @@ export class VisemePlaybackController {
     if (!this._playing) return;
 
     const currentTime = this.currentTime();
-    
+
     // Check if we've exceeded audio duration - stop playback if so
     if (this.audioDuration && currentTime > (this.audioDuration * 1000)) {
       console.log(`Viseme playback stopped: exceeded audio duration (${currentTime}ms > ${this.audioDuration * 1000}ms)`);
-      this.pause();
+      this.reset(); // Use reset instead of pause to properly clean up state
       return;
     }
 
@@ -167,13 +167,13 @@ export class VisemePlaybackController {
 
     for (let i = this.lastPlayedIndex + 1; i < this._chunks.length && processed < maxProcessPerFrame; i++) {
       const viseme = this._chunks[i];
-      
+
       // Skip visemes that are scheduled beyond audio duration
       if (this.audioDuration && viseme.offset > (this.audioDuration * 1000)) {
         console.log(`Skipping viseme ID ${viseme.visemeId} at ${viseme.offset}ms - beyond audio duration (${this.audioDuration * 1000}ms)`);
         continue;
       }
-      
+
       if (viseme.offset <= currentTime) {
         this.run(viseme.visemeId);
         this.lastPlayedIndex = i;

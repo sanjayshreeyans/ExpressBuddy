@@ -50,15 +50,15 @@ export const QuestionType2: React.FC<QuestionComponentProps> = ({
     if (!hasAnswered) {
       return 'cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all';
     }
-    
+
     if (faceId === question.correctAnswer) {
       return 'ring-2 ring-green-500 bg-green-50';
     }
-    
+
     if (faceId === selectedAnswer && faceId !== question.correctAnswer) {
       return 'ring-2 ring-red-500 bg-red-50';
     }
-    
+
     return 'opacity-60';
   };
 
@@ -89,8 +89,8 @@ export const QuestionType2: React.FC<QuestionComponentProps> = ({
         </CardHeader>
       </Card>
 
-      {/* Face Options Grid */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      {/* Face Options Grid - Scaled down to fit screen */}
+      <div className="grid grid-cols-2 gap-3 mb-4 max-h-[300px]">
         {question.faceOptions.map((face, index) => (
           <Card
             key={`${face.id}-${index}`}
@@ -100,8 +100,8 @@ export const QuestionType2: React.FC<QuestionComponentProps> = ({
             )}
             onClick={() => handleFaceSelect(face.id)}
           >
-            <CardContent className="p-4">
-              <AspectRatio ratio={4/5} className="bg-muted rounded-lg overflow-hidden">
+            <CardContent className="p-2">
+              <AspectRatio ratio={4 / 5} className="bg-muted rounded-lg overflow-hidden max-h-[120px]">
                 <img
                   src={face.path}
                   alt={`Person ${index + 1}`}
@@ -112,7 +112,7 @@ export const QuestionType2: React.FC<QuestionComponentProps> = ({
                   }}
                 />
               </AspectRatio>
-              
+
               {/* Selection indicator */}
               {hasAnswered && (
                 <div className="mt-2 text-center">
