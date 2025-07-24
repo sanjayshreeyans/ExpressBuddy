@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { AspectRatio } from '../ui/aspect-ratio';
 import { SpeakerIcon } from './SpeakerIcon';
 import { QuestionComponentProps } from '../../types/emotion-detective';
-import { useTTSPlayback } from '../../hooks/useTTSPlayback';
 import { cn } from '../../lib/utils';
 
 /**
@@ -19,16 +18,17 @@ export const QuestionType3: React.FC<QuestionComponentProps> = ({
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
-  const [ttsState, ttsActions] = useTTSPlayback({ autoConnect: true });
+  const hasSpokenQuestionRef = useRef(false);
 
-  // Speak the scenario immediately when component loads
+  // Speak the scenario immediately when component loads - ONLY ONCE
   useEffect(() => {
+    if (hasSpokenQuestionRef.current) return; // Prevent multiple calls
+
     const speakScenario = async () => {
       try {
         const textToSpeak = `${question.questionText} ${question.scenario}`;
-        await ttsActions.speak({
-          text: textToSpeak
-        });
+        console.log('🎵 QuestionType3: Speaking scenario once:', textToSpeak);
+        hasSpokenQuestionRef.current = true; // Mark as spoken
         onTTSRequest(textToSpeak);
       } catch (error) {
         console.error('❌ QuestionType3: Error speaking scenario:', error);
@@ -36,7 +36,7 @@ export const QuestionType3: React.FC<QuestionComponentProps> = ({
     };
 
     speakScenario();
-  }, [question.questionText, question.scenario, ttsActions, onTTSRequest]);
+  }, [question.questionText, question.scenario, onTTSRequest]);
 
   const handleFaceSelect = (faceId: string) => {
     if (hasAnswered) return;
@@ -77,129 +77,110 @@ export const QuestionType3: React.FC<QuestionComponentProps> = ({
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto">
-      {/* Question Header */}
-      <Card className="mb-6">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-xl font-semibold text-center">
-            {question.questionText}
-          </CardTitle>
-        </CardHeader>
+    <div className="h-screen flex flex-col p-4 max-w-5xl mx-auto">
+      {/* Compact Question Header */}
+      <Card className="mb-4 flex-shrink-0">
+        <CardContent className="p-4">
+          <div className="text-center">
+            <h2 className="text-lg font-semibold mb-2">{question.questionText}</h2>
+          </div>
+        </CardContent>
       </Card>
 
-      {/* Main Content Layout - Scaled down to fit screen */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 mb-4 max-h-[350px]">
+      {/* Main Content - Side by side layout */}
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
         {/* Scenario Section */}
-        <div className="lg:col-span-2">
-          <Card className="h-fit max-h-[300px]">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                Situation
-                <SpeakerIcon
-                  text={`${question.questionText} ${question.scenario}`}
-                  className="ml-auto"
-                  aria-label="Read scenario aloud"
-                />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3">
-              <div className="text-sm leading-relaxed p-3 bg-muted rounded-lg">
-                "{question.scenario}"
-              </div>
-              <div className="mt-2 text-xs text-muted-foreground">
-                How would someone feel in this situation?
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="flex flex-col">
+          <CardHeader className="pb-3 flex-shrink-0">
+            <CardTitle className="text-base flex items-center gap-2">
+              Situation
+              <SpeakerIcon
+                text={`${question.questionText} ${question.scenario}`}
+                className="ml-auto"
+                aria-label="Read scenario aloud"
+              />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col">
+            <div className="flex-1 text-sm leading-relaxed p-4 bg-muted rounded-lg">
+              "{question.scenario}"
+            </div>
+            <div className="mt-3 text-xs text-muted-foreground text-center">
+              How would someone feel in this situation?
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Face Options Grid */}
-        <div className="lg:col-span-3">
-          <Card className="max-h-[300px]">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Choose the matching emotion:</CardTitle>
-            </CardHeader>
-            <CardContent className="p-3">
-              <div className="grid grid-cols-2 gap-2">
-                {question.faceOptions.map((face, index) => (
-                  <Card
-                    key={`${face.id}-${index}`}
-                    className={cn(
-                      'transition-all duration-200',
-                      getFaceCardClassName(face.id)
-                    )}
-                    onClick={() => handleFaceSelect(face.id)}
-                  >
-                    <CardContent className="p-2">
-                      <AspectRatio ratio={4 / 5} className="bg-muted rounded-lg overflow-hidden max-h-[80px]">
-                        <img
-                          src={face.path}
-                          alt={`Person ${index + 1}`}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            console.error('❌ Failed to load face image:', face.path);
-                            e.currentTarget.src = '/placeholder-face.jpg'; // Fallback image
-                          }}
-                        />
-                      </AspectRatio>
+        <Card className="flex flex-col">
+          <CardHeader className="pb-3 flex-shrink-0">
+            <CardTitle className="text-base">Choose the matching emotion:</CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1">
+            <div className="grid grid-cols-2 gap-3 h-full">
+              {question.faceOptions.map((face, index) => (
+                <Card
+                  key={`${face.id}-${index}`}
+                  className={cn(
+                    'transition-all duration-200 flex flex-col',
+                    getFaceCardClassName(face.id)
+                  )}
+                  onClick={() => handleFaceSelect(face.id)}
+                >
+                  <CardContent className="p-2 flex-1 flex flex-col">
+                    {/* Fixed aspect ratio container */}
+                    <div className="flex-1 relative bg-muted rounded-lg overflow-hidden">
+                      <img
+                        src={face.path}
+                        alt={`Person ${index + 1}`}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        onError={(e) => {
+                          console.error('❌ Failed to load face image:', face.path);
+                          e.currentTarget.src = '/placeholder-face.jpg';
+                        }}
+                      />
+                    </div>
 
-                      {/* Selection indicator */}
-                      {hasAnswered && (
-                        <div className="mt-2 text-center">
-                          {face.id === question.correctAnswer && (
-                            <Badge className="bg-green-600 text-white text-xs">
-                              ✓ Correct
-                            </Badge>
-                          )}
-                          {face.id === selectedAnswer && face.id !== question.correctAnswer && (
-                            <Badge variant="destructive" className="text-xs">
-                              ✗ Incorrect
-                            </Badge>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Image metadata for debugging */}
-                      {process.env.NODE_ENV === 'development' && (
-                        <div className="mt-2 text-xs text-muted-foreground text-center">
-                          <Badge variant="outline" className="mr-1 text-xs">
-                            {face.emotion}
+                    {/* Selection indicator */}
+                    {hasAnswered && (
+                      <div className="mt-2 text-center">
+                        {face.id === question.correctAnswer && (
+                          <Badge className="bg-green-600 text-white text-xs">
+                            ✓ Correct
                           </Badge>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                        )}
+                        {face.id === selectedAnswer && face.id !== question.correctAnswer && (
+                          <Badge variant="destructive" className="text-xs">
+                            ✗ Incorrect
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Feedback Section */}
+      {/* Compact Feedback Section */}
       {hasAnswered && (
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
+        <Card className="mt-4 flex-shrink-0">
+          <CardContent className="p-3">
+            <div className="text-center text-sm">
               {selectedAnswer === question.correctAnswer ? (
-                <div className="text-green-600 font-semibold">
+                <div className="text-green-600 font-medium">
                   🎉 Great job! In that situation, someone would likely feel {question.emotion}.
                 </div>
               ) : (
-                <div className="text-red-600 font-semibold">
+                <div className="text-red-600 font-medium">
                   Think about it again. In that situation, someone would likely feel {question.emotion}.
                 </div>
               )}
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {/* TTS Status Indicator */}
-      {ttsState.isPlaying && (
-        <div className="fixed bottom-4 right-4 bg-blue-100 text-blue-800 px-3 py-2 rounded-lg shadow-lg">
-          🎵 Speaking...
-        </div>
       )}
     </div>
   );

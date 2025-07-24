@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { AspectRatio } from '../ui/aspect-ratio';
 import { SpeakerIcon } from './SpeakerIcon';
 import { QuestionComponentProps } from '../../types/emotion-detective';
-import { useTTSPlayback } from '../../hooks/useTTSPlayback';
 import { cn } from '../../lib/utils';
 
 /**
@@ -20,15 +19,16 @@ export const QuestionType4: React.FC<QuestionComponentProps> = ({
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
-  const [ttsState, ttsActions] = useTTSPlayback({ autoConnect: true });
+  const hasSpokenQuestionRef = useRef(false);
 
-  // Speak the question immediately when component loads
+  // Speak the question immediately when component loads - ONLY ONCE
   useEffect(() => {
+    if (hasSpokenQuestionRef.current) return; // Prevent multiple calls
+
     const speakQuestion = async () => {
       try {
-        await ttsActions.speak({
-          text: question.questionText
-        });
+        console.log('🎵 QuestionType4: Speaking question once:', question.questionText);
+        hasSpokenQuestionRef.current = true; // Mark as spoken
         onTTSRequest(question.questionText);
       } catch (error) {
         console.error('❌ QuestionType4: Error speaking question:', error);
@@ -36,7 +36,7 @@ export const QuestionType4: React.FC<QuestionComponentProps> = ({
     };
 
     speakQuestion();
-  }, [question.questionText, ttsActions, onTTSRequest]);
+  }, [question.questionText, onTTSRequest]);
 
   const handleScenarioSelect = (scenario: string) => {
     if (hasAnswered) return;
@@ -89,76 +89,64 @@ export const QuestionType4: React.FC<QuestionComponentProps> = ({
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto">
-      {/* Question Header */}
-      <Card className="mb-6">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-xl font-semibold text-center flex items-center justify-center gap-2">
-            {question.questionText}
-            <SpeakerIcon
-              text={question.questionText}
-              className="ml-2"
-              aria-label="Repeat question"
-            />
-          </CardTitle>
-        </CardHeader>
+    <div className="h-screen flex flex-col p-4 max-w-5xl mx-auto">
+      {/* Compact Question Header */}
+      <Card className="mb-4 flex-shrink-0">
+        <CardContent className="p-4">
+          <div className="text-center">
+            <h2 className="text-lg font-semibold mb-2 flex items-center justify-center gap-2">
+              {question.questionText}
+              <SpeakerIcon
+                text={question.questionText}
+                className="ml-2"
+                aria-label="Repeat question"
+              />
+            </h2>
+          </div>
+        </CardContent>
       </Card>
 
-      {/* Main Content Layout - Scaled down to fit screen */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 mb-4 max-h-[350px]">
+      {/* Main Content - Side by side layout */}
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
         {/* Face Image Section */}
-        <div className="lg:col-span-2">
-          <Card className="h-fit max-h-[300px]">
-            <CardContent className="p-3">
-              <AspectRatio ratio={4 / 5} className="bg-muted rounded-lg overflow-hidden max-h-[200px]">
-                <img
-                  src={question.faceImage.path}
-                  alt={`Person showing an emotion`}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    console.error('❌ Failed to load face image:', question.faceImage?.path);
-                    e.currentTarget.src = '/placeholder-face.jpg'; // Fallback image
-                  }}
-                />
-              </AspectRatio>
-
-              {/* Image metadata for debugging */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="mt-2 text-xs text-muted-foreground">
-                  <Badge variant="outline" className="mr-2">
-                    {question.faceImage.gender}
-                  </Badge>
-                  <Badge variant="outline" className="mr-2">
-                    Age: {question.faceImage.age}
-                  </Badge>
-                  <Badge variant="outline">
-                    {question.faceImage.emotion}
-                  </Badge>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="flex flex-col">
+          <CardHeader className="pb-3 flex-shrink-0">
+            <CardTitle className="text-base">Look at this person's expression:</CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col">
+            <div className="flex-1 relative bg-muted rounded-lg overflow-hidden">
+              <img
+                src={question.faceImage.path}
+                alt={`Person showing an emotion`}
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={(e) => {
+                  console.error('❌ Failed to load face image:', question.faceImage?.path);
+                  e.currentTarget.src = '/placeholder-face.jpg';
+                }}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Scenario Options Section */}
-        <div className="lg:col-span-3">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">What situation might cause this emotion?</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+        <Card className="flex flex-col">
+          <CardHeader className="pb-3 flex-shrink-0">
+            <CardTitle className="text-base">What situation might cause this emotion?</CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col">
+            <div className="space-y-2 flex-1">
               {question.options.map((scenario, index) => (
                 <Button
                   key={`${scenario}-${index}`}
                   variant={getButtonVariant(scenario)}
                   className={cn(
-                    'w-full justify-between text-left h-auto py-4 px-4',
+                    'w-full justify-between text-left h-auto py-3 px-3',
                     getButtonClassName(scenario)
                   )}
                   onClick={() => handleScenarioSelect(scenario)}
                   disabled={hasAnswered}
                 >
-                  <span className="flex-1 text-sm leading-relaxed pr-2">
+                  <span className="flex-1 text-xs leading-relaxed pr-2">
                     "{scenario}"
                   </span>
 
@@ -171,35 +159,28 @@ export const QuestionType4: React.FC<QuestionComponentProps> = ({
                   />
                 </Button>
               ))}
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Feedback Section */}
+      {/* Compact Feedback Section */}
       {hasAnswered && (
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
+        <Card className="mt-4 flex-shrink-0">
+          <CardContent className="p-3">
+            <div className="text-center text-sm">
               {selectedAnswer === question.correctAnswer ? (
-                <div className="text-green-600 font-semibold">
+                <div className="text-green-600 font-medium">
                   🎉 Excellent! That situation would likely make someone feel {question.emotion}.
                 </div>
               ) : (
-                <div className="text-red-600 font-semibold">
+                <div className="text-red-600 font-medium">
                   Not quite right. The correct situation is: "{question.correctAnswer}"
                 </div>
               )}
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {/* TTS Status Indicator */}
-      {ttsState.isPlaying && (
-        <div className="fixed bottom-4 right-4 bg-blue-100 text-blue-800 px-3 py-2 rounded-lg shadow-lg">
-          🎵 Speaking...
-        </div>
       )}
     </div>
   );

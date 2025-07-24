@@ -176,36 +176,80 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
   };
 
   /**
-   * Get a random face image for an emotion
+   * All available face IDs and their properties - using all faces from public/Faces
    */
-  const getFaceImageForEmotion = (emotion: string, index: number = 0) => {
+  const ALL_AVAILABLE_FACES = [
+    { id: '004', age: 'o', gender: 'm', ageNum: 40, ageGroup: 'older' },
+    { id: '066', age: 'y', gender: 'm', ageNum: 25, ageGroup: 'young' },
+    { id: '079', age: 'o', gender: 'f', ageNum: 45, ageGroup: 'older' },
+    { id: '116', age: 'm', gender: 'm', ageNum: 35, ageGroup: 'middle' },
+    { id: '140', age: 'y', gender: 'f', ageNum: 22, ageGroup: 'young' },
+    { id: '168', age: 'm', gender: 'f', ageNum: 30, ageGroup: 'middle' }
+  ];
+
+  /**
+   * Get a random face image for an emotion with better randomization
+   */
+  const getFaceImageForEmotion = useCallback((emotion: string, excludeIds: string[] = [], preferredGender?: 'male' | 'female') => {
     const emotionCode = getEmotionCode(emotion);
 
-    // Available face IDs and their properties
-    const availableFaces = [
-      { id: '004', age: 'o', gender: 'm', ageNum: 40 },
-      { id: '066', age: 'y', gender: 'm', ageNum: 25 },
-      { id: '079', age: 'o', gender: 'f', ageNum: 45 },
-      { id: '116', age: 'm', gender: 'm', ageNum: 35 },
-      { id: '140', age: 'y', gender: 'f', ageNum: 22 },
-      { id: '168', age: 'm', gender: 'f', ageNum: 30 }
-    ];
+    // Filter available faces based on preferences and exclusions
+    let availableFaces = ALL_AVAILABLE_FACES.filter(face =>
+      !excludeIds.includes(face.id)
+    );
 
-    // Select face based on index for variety
-    const selectedFace = availableFaces[index % availableFaces.length];
-    const variant = index % 2 === 0 ? 'a' : 'b';
+    // Apply gender preference if specified
+    if (preferredGender) {
+      const genderFiltered = availableFaces.filter(face =>
+        (face.gender === 'm' && preferredGender === 'male') ||
+        (face.gender === 'f' && preferredGender === 'female')
+      );
+      if (genderFiltered.length > 0) {
+        availableFaces = genderFiltered;
+      }
+    }
+
+    // If no faces available after filtering, use all faces
+    if (availableFaces.length === 0) {
+      availableFaces = ALL_AVAILABLE_FACES;
+    }
+
+    // Randomly select a face
+    const selectedFace = availableFaces[Math.floor(Math.random() * availableFaces.length)];
+
+    // Randomly select variant (a or b)
+    const variant = Math.random() > 0.5 ? 'a' : 'b';
 
     const filename = `${selectedFace.id}_${selectedFace.age}_${selectedFace.gender}_${emotionCode}_${variant}.jpg`;
 
     return {
-      id: `face_${emotion}_${selectedFace.id}`,
+      id: `face_${emotion}_${selectedFace.id}_${variant}`,
       filename,
       age: selectedFace.ageNum,
       gender: selectedFace.gender === 'm' ? 'male' : 'female' as 'male' | 'female',
       emotion,
       variant: variant === 'a' ? 1 : 2,
-      path: `/Faces/${filename}`
+      path: `/Faces/${filename}`,
+      ageGroup: selectedFace.ageGroup
     };
+  });
+
+  /**
+   * Get multiple diverse face images for an emotion (for question types 2 & 3)
+   */
+  const getMultipleFaceImagesForEmotion = (emotion: string, count: number = 4) => {
+    const faces = [];
+    const usedIds: string[] = [];
+
+    // Try to get diverse faces (different genders, ages)
+    for (let i = 0; i < count; i++) {
+      const preferredGender = i % 2 === 0 ? 'male' : 'female';
+      const face = getFaceImageForEmotion(emotion, usedIds, preferredGender);
+      faces.push(face);
+      usedIds.push(face.id.split('_')[2]); // Extract face ID
+    }
+
+    return faces;
   };
 
   /**
@@ -227,34 +271,121 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
   };
 
   /**
-   * Generate questions for the lesson with diverse question types
+   * Generate questions for the lesson with diverse question types (1-4)
    */
   const generateLessonQuestions = useCallback((emotions: string[], level: number): QuestionData[] => {
     const questions: QuestionData[] = [];
+    const questionTypes = [1, 2, 3, 4]; // All four question types
 
-    // Generate different types of questions for variety
-    emotions.forEach((emotion, index) => {
+    // Generate 10 questions total with variety
+    for (let i = 0; i < 10; i++) {
+      const emotion = emotions[i % emotions.length]; // Cycle through emotions
+      const questionType = questionTypes[i % questionTypes.length]; // Cycle through question types
       const emotionMeta = EMOTION_METADATA[emotion];
-      if (emotionMeta) {
-        // Focus on Type 1 questions (Face → Emotion) for now
-        const faceImage = getFaceImageForEmotion(emotion, index);
 
-        const question: QuestionData = {
-          id: `q_${index + 1}`,
-          type: 1,
-          emotion,
-          correctAnswer: emotion,
-          options: generateEmotionOptions(emotion, emotions),
-          questionText: QUESTION_TEMPLATES.type1,
-          faceImage
-        };
+      if (emotionMeta) {
+        let question: QuestionData;
+
+        switch (questionType) {
+          case 1: // Face → Emotion
+            const faceImage = getFaceImageForEmotion(emotion);
+            question = {
+              id: `q_${i + 1}`,
+              type: 1,
+              emotion,
+              correctAnswer: emotion,
+              options: generateEmotionOptions(emotion, emotions),
+              questionText: QUESTION_TEMPLATES.type1,
+              faceImage
+            };
+            break;
+
+          case 2: // Emotion → Face
+            const correctFace = getFaceImageForEmotion(emotion);
+            const wrongEmotions = emotions.filter(e => e !== emotion).slice(0, 3);
+            const wrongFaces = wrongEmotions.map(e => getFaceImageForEmotion(e));
+            const allFaces = [correctFace, ...wrongFaces].sort(() => Math.random() - 0.5);
+
+            question = {
+              id: `q_${i + 1}`,
+              type: 2,
+              emotion,
+              correctAnswer: correctFace.id,
+              options: allFaces.map(f => f.id),
+              questionText: QUESTION_TEMPLATES.type2.replace('{emotion}', emotion),
+              faceOptions: allFaces
+            };
+            break;
+
+          case 3: // Scenario → Face
+            const scenarios = emotionMeta.scenarios || [`Someone is feeling ${emotion}`];
+            const selectedScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+            const scenarioCorrectFace = getFaceImageForEmotion(emotion);
+            const scenarioWrongEmotions = emotions.filter(e => e !== emotion).slice(0, 3);
+            const scenarioWrongFaces = scenarioWrongEmotions.map(e => getFaceImageForEmotion(e));
+            const scenarioAllFaces = [scenarioCorrectFace, ...scenarioWrongFaces].sort(() => Math.random() - 0.5);
+
+            question = {
+              id: `q_${i + 1}`,
+              type: 3,
+              emotion,
+              correctAnswer: scenarioCorrectFace.id,
+              options: scenarioAllFaces.map(f => f.id),
+              questionText: QUESTION_TEMPLATES.type3.replace('{scenario}', selectedScenario),
+              scenario: selectedScenario,
+              faceOptions: scenarioAllFaces
+            };
+            break;
+
+          case 4: // Face → Scenario
+            const faceScenariosImage = getFaceImageForEmotion(emotion);
+            const correctScenarios = emotionMeta.scenarios || [`Someone is feeling ${emotion}`];
+            const correctScenario = correctScenarios[Math.floor(Math.random() * correctScenarios.length)];
+
+            // Get wrong scenarios from other emotions
+            const wrongScenarios: string[] = [];
+            emotions.filter(e => e !== emotion).forEach(e => {
+              const otherMeta = EMOTION_METADATA[e];
+              if (otherMeta && otherMeta.scenarios) {
+                wrongScenarios.push(...otherMeta.scenarios.slice(0, 1));
+              }
+            });
+
+            const allScenarios = [correctScenario, ...wrongScenarios.slice(0, 3)].sort(() => Math.random() - 0.5);
+
+            question = {
+              id: `q_${i + 1}`,
+              type: 4,
+              emotion,
+              correctAnswer: correctScenario,
+              options: allScenarios,
+              questionText: QUESTION_TEMPLATES.type4,
+              faceImage: faceScenariosImage,
+              scenario: correctScenario
+            };
+            break;
+
+          default:
+            // Fallback to type 1
+            const fallbackFaceImage = getFaceImageForEmotion(emotion);
+            question = {
+              id: `q_${i + 1}`,
+              type: 1,
+              emotion,
+              correctAnswer: emotion,
+              options: generateEmotionOptions(emotion, emotions),
+              questionText: QUESTION_TEMPLATES.type1,
+              faceImage: fallbackFaceImage
+            };
+        }
 
         questions.push(question);
       }
-    });
+    }
 
-    return questions;
-  }, [getFaceImageForEmotion]);
+    // Shuffle questions for randomness
+    return questions.sort(() => Math.random() - 0.5);
+  }, [getFaceImageForEmotion, generateEmotionOptions]);
 
   /**
    * Initialize lesson data with real child data

@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { AspectRatio } from '../ui/aspect-ratio';
 import { QuestionComponentProps } from '../../types/emotion-detective';
-import { useTTSPlayback } from '../../hooks/useTTSPlayback';
 import { cn } from '../../lib/utils';
 
 /**
@@ -18,15 +17,16 @@ export const QuestionType2: React.FC<QuestionComponentProps> = ({
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
-  const [ttsState, ttsActions] = useTTSPlayback({ autoConnect: true });
+  const hasSpokenQuestionRef = useRef(false);
 
-  // Speak the emotion description immediately when component loads
+  // Speak the question immediately when component loads - ONLY ONCE
   useEffect(() => {
+    if (hasSpokenQuestionRef.current) return; // Prevent multiple calls
+
     const speakQuestion = async () => {
       try {
-        await ttsActions.speak({
-          text: question.questionText
-        });
+        console.log('🎵 QuestionType2: Speaking question once:', question.questionText);
+        hasSpokenQuestionRef.current = true; // Mark as spoken
         onTTSRequest(question.questionText);
       } catch (error) {
         console.error('❌ QuestionType2: Error speaking question:', error);
@@ -34,7 +34,7 @@ export const QuestionType2: React.FC<QuestionComponentProps> = ({
     };
 
     speakQuestion();
-  }, [question.questionText, ttsActions, onTTSRequest]);
+  }, [question.questionText, onTTSRequest]);
 
   const handleFaceSelect = (faceId: string) => {
     if (hasAnswered) return;
@@ -75,47 +75,47 @@ export const QuestionType2: React.FC<QuestionComponentProps> = ({
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto">
-      {/* Question Header */}
-      <Card className="mb-6">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-xl font-semibold text-center">
-            {question.questionText}
-          </CardTitle>
-          {/* Emotion description */}
-          <div className="text-center text-muted-foreground mt-2">
-            Look for someone who is feeling <strong className="text-foreground capitalize">{question.emotion}</strong>
+    <div className="h-screen flex flex-col p-4 max-w-4xl mx-auto">
+      {/* Compact Question Header */}
+      <Card className="mb-4 flex-shrink-0">
+        <CardContent className="p-4">
+          <div className="text-center">
+            <h2 className="text-lg font-semibold mb-2">{question.questionText}</h2>
+            <p className="text-sm text-muted-foreground">
+              Look for someone who is feeling <strong className="text-foreground capitalize">{question.emotion}</strong>
+            </p>
           </div>
-        </CardHeader>
+        </CardContent>
       </Card>
 
-      {/* Face Options Grid - Scaled down to fit screen */}
-      <div className="grid grid-cols-2 gap-3 mb-4 max-h-[300px]">
+      {/* Face Options Grid - Optimized for single screen */}
+      <div className="flex-1 grid grid-cols-2 gap-4 min-h-0">
         {question.faceOptions.map((face, index) => (
           <Card
             key={`${face.id}-${index}`}
             className={cn(
-              'transition-all duration-200',
+              'transition-all duration-200 flex flex-col',
               getFaceCardClassName(face.id)
             )}
             onClick={() => handleFaceSelect(face.id)}
           >
-            <CardContent className="p-2">
-              <AspectRatio ratio={4 / 5} className="bg-muted rounded-lg overflow-hidden max-h-[120px]">
+            <CardContent className="p-3 flex-1 flex flex-col">
+              {/* Fixed aspect ratio container */}
+              <div className="flex-1 relative bg-muted rounded-lg overflow-hidden">
                 <img
                   src={face.path}
                   alt={`Person ${index + 1}`}
-                  className="w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full object-cover"
                   onError={(e) => {
                     console.error('❌ Failed to load face image:', face.path);
-                    e.currentTarget.src = '/placeholder-face.jpg'; // Fallback image
+                    e.currentTarget.src = '/placeholder-face.jpg';
                   }}
                 />
-              </AspectRatio>
+              </div>
 
               {/* Selection indicator */}
               {hasAnswered && (
-                <div className="mt-2 text-center">
+                <div className="mt-3 text-center">
                   {face.id === question.correctAnswer && (
                     <Badge className="bg-green-600 text-white">
                       ✓ Correct
@@ -128,50 +128,28 @@ export const QuestionType2: React.FC<QuestionComponentProps> = ({
                   )}
                 </div>
               )}
-
-              {/* Image metadata for debugging */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="mt-2 text-xs text-muted-foreground text-center">
-                  <Badge variant="outline" className="mr-1 text-xs">
-                    {face.gender}
-                  </Badge>
-                  <Badge variant="outline" className="mr-1 text-xs">
-                    {face.age}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    {face.emotion}
-                  </Badge>
-                </div>
-              )}
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Feedback Section */}
+      {/* Compact Feedback Section */}
       {hasAnswered && (
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
+        <Card className="mt-4 flex-shrink-0">
+          <CardContent className="p-3">
+            <div className="text-center text-sm">
               {selectedAnswer === question.correctAnswer ? (
-                <div className="text-green-600 font-semibold">
+                <div className="text-green-600 font-medium">
                   🎉 Excellent! You correctly identified the person who is feeling {question.emotion}.
                 </div>
               ) : (
-                <div className="text-red-600 font-semibold">
+                <div className="text-red-600 font-medium">
                   Not quite right. Look for the facial expression that shows {question.emotion}.
                 </div>
               )}
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {/* TTS Status Indicator */}
-      {ttsState.isPlaying && (
-        <div className="fixed bottom-4 right-4 bg-blue-100 text-blue-800 px-3 py-2 rounded-lg shadow-lg">
-          🎵 Speaking...
-        </div>
       )}
     </div>
   );
