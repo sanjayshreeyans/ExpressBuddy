@@ -48,8 +48,12 @@ export class VisemePlaybackController {
    * Add viseme data to the playback queue
    */
   add(visemes: VisemeData[]): void {
-    // Clear existing visemes first to prevent duplication
-    this._chunks.length = 0;
+    // Only clear existing visemes if we're not currently playing
+    // This prevents interrupting ongoing playback
+    if (!this._playing) {
+      this._chunks.length = 0;
+      this.lastPlayedIndex = -1;
+    }
 
     if (visemes.length > 0) {
       // Normalize viseme offsets to start from 0 for this chunk
@@ -59,9 +63,16 @@ export class VisemePlaybackController {
         offset: viseme.offset - firstOffset
       }));
 
-      this._chunks.push(...normalizedVisemes);
-      console.log(`Added ${visemes.length} visemes to playback queue (normalized from ${firstOffset}ms, duration: ${this.audioDuration ? this.audioDuration * 1000 : 'unknown'}ms)`);
-      console.log(`First viseme offset: ${normalizedVisemes[0]?.offset}ms, Last: ${normalizedVisemes[normalizedVisemes.length - 1]?.offset}ms`);
+      // If we're currently playing, append to existing visemes
+      // Otherwise, replace them
+      if (this._playing) {
+        this._chunks.push(...normalizedVisemes);
+        console.log(`Appended ${visemes.length} visemes to existing playback queue`);
+      } else {
+        this._chunks.push(...normalizedVisemes);
+        console.log(`Added ${visemes.length} visemes to playback queue (normalized from ${firstOffset}ms, duration: ${this.audioDuration ? this.audioDuration * 1000 : 'unknown'}ms)`);
+        console.log(`First viseme offset: ${normalizedVisemes[0]?.offset}ms, Last: ${normalizedVisemes[normalizedVisemes.length - 1]?.offset}ms`);
+      }
     } else {
       console.log('No visemes to add to playback queue');
     }
@@ -152,7 +163,13 @@ export class VisemePlaybackController {
   private runPlayback(): void {
     if (!this._playing) return;
 
-    const currentTime = this.currentTime();
+    // Use audio element time if available for better synchronization
+    let currentTime: number;
+    if (this.audioElement && !this.audioElement.paused) {
+      currentTime = this.audioElement.currentTime * 1000; // Convert to milliseconds
+    } else {
+      currentTime = this.currentTime();
+    }
 
     // Check if we've exceeded audio duration - stop playback if so
     if (this.audioDuration && currentTime > (this.audioDuration * 1000)) {
@@ -201,7 +218,8 @@ export class VisemePlaybackController {
 
     // Check if visemeId is supported (100-118 range)
     if (!SUPPORTED_VISEME_IDS.includes(visemeId)) {
-      throw new Error(`Unknown viseme id received: ${visemeId}`);
+      console.error(`Unknown viseme id received: ${visemeId}. Supported IDs:`, SUPPORTED_VISEME_IDS);
+      return; // Don't throw, just skip
     }
 
     // Set speaking state
@@ -213,18 +231,25 @@ export class VisemePlaybackController {
     const currentInput = this.riveInputs.mouth?.[visemeId];
     const previousInput = this.previousVisemeId !== null ? this.riveInputs.mouth?.[this.previousVisemeId] : null;
 
+    // Debug: Check if inputs exist
+    if (!currentInput) {
+      console.warn(`No Rive input found for viseme ID ${visemeId}. Available mouth inputs:`, Object.keys(this.riveInputs.mouth || {}));
+    }
+
     // Apply viseme transitions
     if (currentInput) {
       currentInput.value = this.transitionDuration;
+      console.log(`✅ Applied viseme ${visemeId} with transition ${this.transitionDuration}`);
     }
 
     if (previousInput) {
       previousInput.value = -this.transitionDuration;
+      console.log(`🔄 Reset previous viseme ${this.previousVisemeId} with transition ${-this.transitionDuration}`);
     }
 
-    // Log viseme changes occasionally to avoid spam
-    if (Math.random() < 0.1) { // Log 10% of viseme changes
-      console.log(`Viseme ID: ${visemeId} at offset: ${this.currentTime()}ms`);
+    // Log viseme changes more frequently for debugging
+    if (Math.random() < 0.3) { // Log 30% of viseme changes for better debugging
+      console.log(`🎭 Viseme ID: ${visemeId} at offset: ${this.currentTime()}ms, audio time: ${this.audioElement?.currentTime || 'N/A'}s`);
     }
   }
 

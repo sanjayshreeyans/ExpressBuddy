@@ -113,42 +113,50 @@ export const RealtimeExpressBuddyAvatar: React.FC<RealtimeExpressBuddyAvatarProp
       // For real-time streaming, immediately start processing new visemes
       console.log('🎯 RealtimeExpressBuddyAvatar: Received real-time visemes:', visemes.length);
 
-      // Stop any current animation frame to prevent conflicts
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = 0;
+      // Only reset if we're not currently playing to avoid interrupting ongoing playback
+      if (!playbackControllerRef.current.isPlaying) {
+        console.log('🧹 RealtimeExpressBuddyAvatar: Resetting controller (not currently playing)');
+        playbackControllerRef.current.reset();
+
+        // Stop any current animation frame to prevent conflicts
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = 0;
+        }
+
+        visemeStartTime.current = performance.now();
+      } else {
+        console.log('⏸️ RealtimeExpressBuddyAvatar: Skipping reset - playback in progress');
       }
 
-      // Always reset when new visemes arrive to ensure correct timing for each chunk
-      playbackControllerRef.current.reset();
-
-      // Add new visemes to the queue
+      // Add new visemes to the queue (this will append if already playing)
       playbackControllerRef.current.add(visemes);
 
-      // Always start fresh playback for new chunk
-      visemeStartTime.current = performance.now();
-      setIsPlaying(true);
+      // Start playback if not already playing
+      if (!playbackControllerRef.current.isPlaying) {
+        setIsPlaying(true);
+        playbackControllerRef.current.play({});
 
-      // Start the playback controller
-      playbackControllerRef.current.play({});
+        // Start our timing loop
+        const animate = () => {
+          const elapsed = (performance.now() - visemeStartTime.current) / 1000;
+          setCurrentTime(elapsed);
 
-      // Start our timing loop
-      const animate = () => {
-        const elapsed = (performance.now() - visemeStartTime.current) / 1000;
-        setCurrentTime(elapsed);
+          // Continue animation if still playing and we have visemes
+          if (isPlaying && playbackControllerRef.current?.isPlaying) {
+            animationFrameRef.current = requestAnimationFrame(animate);
+          } else if (elapsed > 5.0) {
+            // Auto-stop after 5 seconds of no new visemes
+            console.log('🛑 RealtimeExpressBuddyAvatar: Auto-stopping after 5 seconds');
+            setIsPlaying(false);
+            playbackControllerRef.current?.reset();
+          }
+        };
 
-        // Continue animation if still playing and we have visemes
-        if (isPlaying && visemes.length > 0) {
-          animationFrameRef.current = requestAnimationFrame(animate);
-        } else if (elapsed > 5.0) {
-          // Auto-stop after 5 seconds of no new visemes
-          console.log('🛑 RealtimeExpressBuddyAvatar: Auto-stopping after 5 seconds');
-          setIsPlaying(false);
-          playbackControllerRef.current?.reset();
-        }
-      };
-
-      animationFrameRef.current = requestAnimationFrame(animate);
+        animationFrameRef.current = requestAnimationFrame(animate);
+      } else {
+        console.log('▶️ RealtimeExpressBuddyAvatar: Playback already in progress, visemes added to queue');
+      }
     } else if (isPlaying) {
       // If no visemes and we're playing, stop after a short delay
       setTimeout(() => {

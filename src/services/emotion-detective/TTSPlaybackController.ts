@@ -201,10 +201,13 @@ export class TTSPlaybackController {
     this.isPlaying = false;
     this.stopSubtitleUpdates();
 
-    // Always reset viseme controller to ensure clean state
-    if (this.visemePlaybackController) {
+    // Only reset viseme controller if we're not currently playing
+    // This prevents interrupting ongoing viseme playback
+    if (this.visemePlaybackController && !this.visemePlaybackController.isPlaying) {
       console.log('🧹 TTSPlaybackController: Resetting viseme controller');
       this.visemePlaybackController.reset();
+    } else if (this.visemePlaybackController) {
+      console.log('⏸️ TTSPlaybackController: Skipping viseme reset - playback in progress');
     }
   }
 
@@ -227,11 +230,31 @@ export class TTSPlaybackController {
       if (audioElement) {
         console.log('🎵 TTS Playback Controller: Setting audio element for viseme sync');
         this.visemePlaybackController.setAudioElement(audioElement);
-      }
 
-      this.visemePlaybackController.add(visemes);
-      this.visemePlaybackController.play();
-      console.log('🎬 TTS Playback Controller: Started viseme playback with', visemes.length, 'visemes');
+        // Wait for audio to be ready before starting viseme playback
+        const startVisemePlayback = () => {
+          if (audioElement.readyState >= 2) { // HAVE_CURRENT_DATA
+            this.visemePlaybackController!.add(visemes);
+            this.visemePlaybackController!.play();
+            console.log('🎬 TTS Playback Controller: Started viseme playback with', visemes.length, 'visemes');
+          } else {
+            // Wait for audio to be ready
+            audioElement.addEventListener('canplay', () => {
+              this.visemePlaybackController!.add(visemes);
+              this.visemePlaybackController!.play();
+              console.log('🎬 TTS Playback Controller: Started viseme playback with', visemes.length, 'visemes (after canplay)');
+            }, { once: true });
+          }
+        };
+
+        startVisemePlayback();
+      } else {
+        // No audio element yet, start visemes anyway but they might not be perfectly synced
+        console.log('⚠️ TTS Playback Controller: No audio element available, starting visemes without sync');
+        this.visemePlaybackController.add(visemes);
+        this.visemePlaybackController.play();
+        console.log('🎬 TTS Playback Controller: Started viseme playback with', visemes.length, 'visemes (no sync)');
+      }
     }
 
     // Start subtitle updates

@@ -56,7 +56,7 @@ class TTSService {
     this.visemeService.setCallbacks({
       onVisemes: (visemes, subtitles) => {
         console.log('🎯 TTS Service: Received final visemes and subtitles', { visemes: visemes.length, subtitles: subtitles.length });
-        
+
         // Start audio playback now that we have visemes for synchronization
         if (this.currentAudio && !this.isPlaying) {
           console.log('🎵 TTS Service: Starting synchronized audio + viseme playback');
@@ -64,7 +64,7 @@ class TTSService {
             console.error('❌ TTS Service: Failed to start audio playback:', error);
           });
         }
-        
+
         this.callbacks.onVisemes?.(visemes, subtitles);
       },
       onSubtitles: (subtitles) => {
@@ -181,7 +181,7 @@ class TTSService {
           } catch (error) {
             console.error('❌ TTS Service: Error converting audio to PCM:', error);
             this.callbacks.onError?.(`Audio conversion failed: ${error}`);
-            
+
             // If viseme processing fails, still play audio
             console.log('🎵 TTS Service: Starting audio playback without visemes due to error');
             await this.currentAudio.play();
@@ -285,6 +285,30 @@ class TTSService {
    */
   isSupported(): boolean {
     return true; // Edge TTS should work in all modern browsers
+  }
+
+  /**
+   * Process visemes in parallel with audio playback
+   */
+  private async processVisemesInParallel(audio: Blob): Promise<void> {
+    try {
+      // Convert ttsmp3.com audio to PCM format expected by backend
+      const pcmData = await this.convertAudioToPCM(audio);
+      console.log('🎯 TTS Service: Converted audio to PCM format:', pcmData.length, 'bytes');
+
+      // Send PCM audio data to viseme service
+      await this.visemeService.sendAudioChunk(pcmData);
+
+      // Request final results
+      setTimeout(() => {
+        this.visemeService.requestFinalResults();
+      }, 100);
+
+      console.log('✅ TTS Service: Viseme processing started in parallel');
+    } catch (error) {
+      console.error('❌ TTS Service: Error processing visemes in parallel:', error);
+      this.callbacks.onError?.(`Viseme processing failed: ${error}`);
+    }
   }
 
   /**
