@@ -7,6 +7,7 @@ import { Progress } from '../ui/progress';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Separator } from '../ui/separator';
+import { cn } from '../../lib/utils';
 import { cameraService } from '../../services/emotion-detective/CameraService';
 import {
   EmotionDetectiveError,
@@ -89,30 +90,6 @@ export const EmotionMirroring: React.FC<EmotionMirroringProps> = ({
     initializeModels();
   }, []);
 
-  // Auto-start camera when component mounts and models are ready
-  useEffect(() => {
-    if (isInitialized && !cameraActive && !cameraError) {
-      startCamera();
-    }
-  }, [isInitialized]);
-
-  // Subscribe to camera status changes
-  useEffect(() => {
-    const unsubscribe = cameraService.onStatusChange((status) => {
-      setVideoStream(status.stream);
-      setCameraActive(status.isActive);
-
-      if (status.error) {
-        setCameraError(status.error);
-        setGuidance(status.error.userMessage);
-      } else {
-        setCameraError(null);
-      }
-    });
-
-    return unsubscribe;
-  }, []);
-
   // Start camera with comprehensive error handling
   const startCamera = async () => {
     try {
@@ -147,24 +124,46 @@ export const EmotionMirroring: React.FC<EmotionMirroringProps> = ({
       setCameraActive(true);
       setCameraError(null);
 
-      // Set up video element
+      // Set up video element with proper error handling
       setTimeout(() => {
         if (videoRef.current && stream) {
+          // Clear any existing srcObject first to prevent conflicts
+          if (videoRef.current.srcObject) {
+            const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
+            tracks.forEach(track => track.stop());
+          }
+          
           videoRef.current.srcObject = stream;
-          videoRef.current.play().then(() => {
-            console.log('🎥 [MIRRORING] Video playing successfully');
-            // Auto-start real-time detection
-            startRealTimeDetection();
-          }).catch((playError) => {
-            console.error('🎥 [MIRRORING] Video play() failed:', playError);
-            const cameraPlayError = createError('CAMERA_HARDWARE_ERROR', playError, {
-              component: 'EmotionMirroring',
-              action: 'videoPlay'
-            });
-            setCameraError(cameraPlayError);
-          });
+          
+          // Wait for video to be ready before playing
+          const handleCanPlay = () => {
+            if (videoRef.current) {
+              videoRef.current.play().then(() => {
+                console.log('🎥 [MIRRORING] Video playing successfully');
+                // Wait a bit more before starting detection to ensure video is stable
+                setTimeout(() => {
+                  startRealTimeDetection();
+                }, 500);
+              }).catch((playError) => {
+                // Only log non-abort errors (abort errors are normal when switching streams)
+                if (playError.name !== 'AbortError') {
+                  console.error('🎥 [MIRRORING] Video play() failed:', playError);
+                  const cameraPlayError = createError('CAMERA_HARDWARE_ERROR', playError, {
+                    component: 'EmotionMirroring',
+                    action: 'videoPlay'
+                  });
+                  setCameraError(cameraPlayError);
+                }
+              });
+              
+              // Remove the event listener after use
+              videoRef.current.removeEventListener('canplay', handleCanPlay);
+            }
+          };
+          
+          videoRef.current.addEventListener('canplay', handleCanPlay);
         }
-      }, 100);
+      }, 200); // Increased timeout to give more time for stream setup
     } catch (error) {
       const cameraError = error instanceof EmotionDetectiveError
         ? error
@@ -178,6 +177,30 @@ export const EmotionMirroring: React.FC<EmotionMirroringProps> = ({
       logError(cameraError);
     }
   };
+
+  // Auto-start camera when component mounts and models are ready
+  useEffect(() => {
+    if (isInitialized && !cameraActive && !cameraError) {
+      startCamera();
+    }
+  }, [cameraActive, cameraError, isInitialized, startCamera]);
+
+  // Subscribe to camera status changes
+  useEffect(() => {
+    const unsubscribe = cameraService.onStatusChange((status) => {
+      setVideoStream(status.stream);
+      setCameraActive(status.isActive);
+
+      if (status.error) {
+        setCameraError(status.error);
+        setGuidance(status.error.userMessage);
+      } else {
+        setCameraError(null);
+      }
+    });
+
+    return unsubscribe;
+  }, []);
 
   // Stop camera using camera service
   const stopCamera = async () => {
@@ -203,10 +226,25 @@ export const EmotionMirroring: React.FC<EmotionMirroringProps> = ({
     }
   };
 
-  // Start real-time detection
+  // Start real-time detection with better error handling
   const startRealTimeDetection = () => {
-    if (!videoRef.current || !canvasRef.current || !isInitialized) return;
+    if (!videoRef.current || !canvasRef.current || !isInitialized) {
+      console.log('🚫 Cannot start detection - missing requirements');
+      return;
+    }
 
+    // Check if video is actually ready
+    if (videoRef.current.readyState < 2) {
+      console.log('⏳ Video not ready yet, waiting...');
+      // Try again after a short delay
+      setTimeout(() => {
+        startRealTimeDetection();
+      }, 500);
+      return;
+    }
+
+    console.log('🎯 Starting real-time emotion detection');
+    
     const stopFn = emotionDetectionService.startRealTimeDetection(
       videoRef.current,
       canvasRef.current,
@@ -215,7 +253,7 @@ export const EmotionMirroring: React.FC<EmotionMirroringProps> = ({
         const guidanceText = emotionDetectionService.getDetectionGuidance(result);
         setGuidance(guidanceText);
       },
-      200 // Detection every 200ms
+      300 // Increased interval to 300ms for better stability
     );
 
     stopDetectionRef.current = stopFn;
@@ -362,440 +400,181 @@ export const EmotionMirroring: React.FC<EmotionMirroringProps> = ({
   }, []);
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-4">
-      <div className="text-center mb-6">
-        <h2 className="text-3xl font-bold tracking-tight">Mirror the Emotion</h2>
-        <p className="text-muted-foreground mt-2">
-          Look at the reference image and try to mirror the <span className="font-semibold capitalize">{targetEmotion}</span> emotion
-        </p>
-      </div>
-
-      {/* Error Alerts */}
-      <div className="space-y-4 mb-6">
-        {/* Camera Error Alert */}
-        {cameraError && !dismissedErrors.has(cameraError.code) && (
-          <CameraErrorAlert
-            error={cameraError}
-            onRetry={() => {
-              setCameraError(null);
-              startCamera();
-            }}
-            onSkip={() => {
-              setDismissedErrors(prev => new Set(prev).add(cameraError.code));
-              setCameraError(null);
-              // Continue without camera - show manual verification option
-            }}
-            onDismiss={() => {
-              setDismissedErrors(prev => new Set(prev).add(cameraError.code));
-              setCameraError(null);
-            }}
-          />
-        )}
-
-        {/* Face-API Error Alert */}
-        {faceApiError && !dismissedErrors.has(faceApiError.code) && (
-          <FaceApiErrorAlert
-            error={faceApiError}
-            onRetry={() => {
-              setFaceApiError(null);
-              // Retry model loading
-              emotionDetectionService.reset();
-              window.location.reload(); // Simple retry by reloading
-            }}
-            onContinueWithoutAI={() => {
-              setDismissedErrors(prev => new Set(prev).add(faceApiError.code));
-              setFaceApiError(null);
-              // Continue with manual verification
-            }}
-            loadingProgress={loadingProgress}
-          />
+    <div className="w-full h-[100vh] flex flex-col bg-gradient-to-br from-purple-50 to-blue-50 overflow-hidden">
+      {/* Compact Header */}
+      <div className="flex-shrink-0 text-center py-3 px-4 bg-white/80 backdrop-blur-sm border-b">
+        <h2 className="text-xl font-bold text-purple-600">Mirror the {targetEmotion.charAt(0).toUpperCase() + targetEmotion.slice(1)} Emotion</h2>
+        {attempts > 0 && (
+          <Badge variant="outline" className="mt-1">
+            Attempt {attempts} of 3
+          </Badge>
         )}
       </div>
 
-      {/* Model Loading Progress */}
-      {!isInitialized && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Loading Face Detection Models</CardTitle>
-            <CardDescription>
-              {loadingProgress.currentModel} ({loadingProgress.modelsLoaded}/{loadingProgress.totalModels})
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Progress
-              value={(loadingProgress.modelsLoaded / loadingProgress.totalModels) * 100}
-              className="mb-2"
-            />
-            {loadingProgress.error && (
-              <Alert variant="destructive">
-                <AlertDescription>Error: {loadingProgress.error}</AlertDescription>
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
+      {/* Error Alerts - Compact */}
+      {(cameraError || faceApiError) && (
+        <div className="flex-shrink-0 p-2">
+          <Alert variant="destructive" className="text-sm">
+            <AlertDescription>
+              {cameraError ? 'Camera access needed. Please allow camera permissions.' : 'Loading face detection...'}
+            </AlertDescription>
+          </Alert>
+        </div>
       )}
 
-      {/* Main Mirroring Interface */}
+      {/* Model Loading - Compact */}
+      {!isInitialized && (
+        <div className="flex-shrink-0 p-4">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-2"></div>
+            <p className="text-sm text-muted-foreground">Loading AI models...</p>
+            <Progress value={(loadingProgress.modelsLoaded / loadingProgress.totalModels) * 100} className="mt-2" />
+          </div>
+        </div>
+      )}
+
+      {/* Main Interface - Single Screen */}
       {isInitialized && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Reference Image */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-center">Reference Image</CardTitle>
-              <CardDescription className="text-center">
-                Try to mirror this <span className="font-semibold capitalize">{targetEmotion}</span> expression
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-center">
-                <div className="relative border-2 border-border rounded-lg overflow-hidden bg-muted">
-                  <img
-                    src={referenceImage.path}
-                    alt={`Reference ${targetEmotion} emotion`}
-                    className="w-full h-auto max-w-sm"
-                    style={{ aspectRatio: '4/3', objectFit: 'cover' }}
-                  />
-                  <div className="absolute bottom-2 left-2 right-2">
-                    <Badge variant="secondary" className="w-full justify-center">
-                      Target: {targetEmotion.charAt(0).toUpperCase() + targetEmotion.slice(1)}
+        <div className="flex-1 flex flex-col min-h-0">
+          {/* Reference and Camera Side by Side */}
+          <div className="flex-1 grid grid-cols-2 gap-3 p-3 min-h-0">
+            {/* Reference Image - Scaled Down */}
+            <div className="flex flex-col bg-white rounded-xl shadow-lg overflow-hidden">
+              <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-center">
+                <h3 className="font-semibold text-sm">Target Expression</h3>
+              </div>
+              <div className="flex-1 flex items-center justify-center p-4">
+                {referenceImage ? (
+                  <div className="relative w-3/4 h-3/4 max-w-[200px] max-h-[200px]">
+                    <img
+                      src={referenceImage.path}
+                      alt={`Reference ${targetEmotion} emotion`}
+                      className="w-full h-full object-cover rounded-lg border-2 border-green-200"
+                    />
+                    <Badge className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs">
+                      {targetEmotion.charAt(0).toUpperCase() + targetEmotion.slice(1)}
                     </Badge>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex items-center justify-center w-3/4 h-3/4 max-w-[200px] max-h-[200px] bg-muted rounded-lg">
+                    <p className="text-muted-foreground text-sm">Loading...</p>
+                  </div>
+                )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Camera Feed */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-center">Your Camera</CardTitle>
-              <CardDescription className="text-center">
-                Express the emotion and click capture when ready
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {cameraActive && videoStream ? (
-                <div className="flex justify-center">
-                  <div className="relative border-2 border-border rounded-lg overflow-hidden">
+            {/* Camera Feed */}
+            <div className="flex flex-col bg-white rounded-xl shadow-lg overflow-hidden">
+              <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-center">
+                <h3 className="font-semibold text-sm">Your Expression</h3>
+              </div>
+              <div className="flex-1 flex items-center justify-center p-3 relative">
+                {cameraActive && videoStream ? (
+                  <div className="relative w-full h-full">
                     <video
                       ref={videoRef}
-                      width="640"
-                      height="480"
-                      className="block w-full h-auto max-w-sm bg-black"
+                      className="w-full h-full object-cover rounded-lg"
                       muted
                       autoPlay
                       playsInline
-                      style={{ aspectRatio: '4/3', objectFit: 'cover' }}
                     />
                     <canvas
                       ref={canvasRef}
                       width="640"
                       height="480"
-                      className="absolute top-0 left-0 pointer-events-none"
-                      style={{ aspectRatio: '4/3', objectFit: 'cover' }}
+                      className="absolute top-0 left-0 w-full h-full pointer-events-none rounded-lg"
                     />
+
+                    {/* Live Detection Indicator */}
+                    {detectionResult && isRealTimeActive && (
+                      <div className="absolute top-2 right-2">
+                        <Badge
+                          variant={detectionResult.expressions[targetEmotion as keyof typeof detectionResult.expressions] >= 0.6 ? "default" : "secondary"}
+                          className="text-xs"
+                        >
+                          {detectionResult.expressions[targetEmotion as keyof typeof detectionResult.expressions] >= 0.6 ? '✓ Ready!' : 'Keep trying...'}
+                        </Badge>
+                      </div>
+                    )}
                   </div>
-                </div>
+                ) : (
+                  <div className="flex items-center justify-center w-full h-full bg-muted rounded-lg">
+                    <p className="text-muted-foreground text-sm">Starting camera...</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Camera Shutter Button and Status */}
+          <div className="flex-shrink-0 flex flex-col items-center py-4 px-6 bg-white/80 backdrop-blur-sm">
+            {/* Status Message */}
+            <div className="text-center mb-3 min-h-[2rem]">
+              {guidance ? (
+                <p className="text-sm text-muted-foreground">{guidance}</p>
               ) : (
-                <div className="flex justify-center items-center h-64 bg-muted rounded-lg">
-                  <p className="text-muted-foreground">Starting camera...</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Controls and Status */}
-      {cameraActive && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Mirroring Controls</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-4 justify-center flex-wrap">
-              <Button
-                onClick={captureAndAnalyze}
-                disabled={!isInitialized || isCapturing}
-                variant="default"
-                size="lg"
-              >
-                {isCapturing ? 'Analyzing...' : 'Capture & Analyze'}
-              </Button>
-
-              {attempts > 0 && (
-                <Button
-                  onClick={handleRetry}
-                  variant="outline"
-                  size="lg"
-                >
-                  Try Again
-                </Button>
+                <p className="text-sm text-muted-foreground">
+                  Copy the target expression and tap the shutter when ready
+                </p>
               )}
             </div>
 
-            {attempts > 0 && (
-              <div className="text-center">
-                <Badge variant="outline">
-                  Attempt {attempts} of 3
-                </Badge>
-              </div>
-            )}
+            {/* Camera Shutter Button */}
+            <div className="relative">
+              <button
+                onClick={captureAndAnalyze}
+                disabled={!isInitialized || isCapturing || !cameraActive}
+                className={cn(
+                  "w-16 h-16 rounded-full border-4 border-white shadow-lg transition-all duration-200",
+                  "flex items-center justify-center",
+                  isCapturing
+                    ? "bg-orange-500 animate-pulse"
+                    : "bg-red-500 hover:bg-red-600 active:scale-95",
+                  (!isInitialized || !cameraActive) && "opacity-50 cursor-not-allowed"
+                )}
+                style={{
+                  boxShadow: '0 0 0 2px #374151, 0 4px 12px rgba(0,0,0,0.3)'
+                }}
+              >
+                {isCapturing ? (
+                  <div className="w-6 h-6 bg-white rounded-full animate-pulse" />
+                ) : (
+                  <div className="w-12 h-12 bg-white rounded-full" />
+                )}
+              </button>
 
-            <Separator />
+              {/* Retry Button */}
+              {attempts > 0 && (
+                <button
+                  onClick={handleRetry}
+                  className="absolute -right-12 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-500 hover:bg-gray-600 text-white rounded-full flex items-center justify-center text-xs transition-colors"
+                >
+                  ↻
+                </button>
+              )}
+            </div>
 
-            {/* Guidance */}
-            {guidance && (
-              <Alert>
-                <AlertDescription>{guidance}</AlertDescription>
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Detection Results */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Real-time Detection */}
-        {detectionResult && isRealTimeActive && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-blue-600">Live Detection</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Face Detection Confidence */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Face Detection</span>
-                  <Badge variant={detectionResult.detectionConfidence >= 0.7 ? "default" : "secondary"}>
-                    {(detectionResult.detectionConfidence * 100).toFixed(1)}%
-                  </Badge>
-                </div>
-                <Progress
-                  value={detectionResult.detectionConfidence * 100}
-                  className="h-2"
-                />
-              </div>
-
-              <Separator />
-
-              {/* Target Emotion Progress */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium capitalize">Target: {targetEmotion}</span>
-                  <Badge variant={detectionResult.expressions[targetEmotion as keyof typeof detectionResult.expressions] >= 0.6 ? "default" : "outline"}>
-                    {(detectionResult.expressions[targetEmotion as keyof typeof detectionResult.expressions] * 100).toFixed(1)}%
-                  </Badge>
-                </div>
-                <Progress
-                  value={detectionResult.expressions[targetEmotion as keyof typeof detectionResult.expressions] * 100}
-                  className="h-3"
-                />
-                {detectionResult.expressions[targetEmotion as keyof typeof detectionResult.expressions] >= 0.6 && (
-                  <p className="text-xs text-green-600 font-medium">✓ Good expression! Ready to capture</p>
+            {/* Result Feedback - Compact */}
+            {captureResult && (
+              <div className="mt-3 text-center">
+                {captureResult.isMatch && captureResult.confidence >= 0.6 ? (
+                  <div className="text-green-600 font-semibold text-sm">
+                    🎉 Perfect! You nailed the {targetEmotion} expression!
+                  </div>
+                ) : captureResult.success ? (
+                  <div className="text-orange-600 font-semibold text-sm">
+                    Close! Try to show more {targetEmotion}. {attempts < 3 ? 'Try again!' : 'Great effort!'}
+                  </div>
+                ) : (
+                  <div className="text-red-600 font-semibold text-sm">
+                    No face detected. Make sure you're clearly visible.
+                  </div>
                 )}
               </div>
-
-              <Separator />
-
-              {/* All Emotions */}
-              <div>
-                <h4 className="font-medium mb-2">All Detected Emotions:</h4>
-                <div className="space-y-2">
-                  {Object.entries(detectionResult.expressions)
-                    .sort(([, a], [, b]) => b - a)
-                    .map(([emotion, confidence]) => (
-                      <div key={emotion} className="flex justify-between items-center">
-                        <span className={`capitalize text-sm ${emotion === targetEmotion ? 'font-bold text-green-600' : ''}`}>
-                          {emotion}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <Progress value={confidence * 100} className="w-16 h-1" />
-                          <span className="text-xs font-mono w-10 text-right">
-                            {(confidence * 100).toFixed(0)}%
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Capture Analysis Results */}
-        {captureResult && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-purple-600">Analysis Result</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Overall Success Status */}
-              <div className="flex justify-between items-center">
-                <span className="font-medium">Detection Status:</span>
-                <Badge variant={captureResult.success ? "default" : "destructive"}>
-                  {captureResult.success ? 'Face Detected' : 'No Face Found'}
-                </Badge>
-              </div>
-
-              {captureResult.success && captureResult.result && (
-                <>
-                  {/* Face Detection Confidence */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Face Detection Quality:</span>
-                      <Badge variant={captureResult.result.detectionConfidence >= 0.7 ? "default" : "secondary"}>
-                        {(captureResult.result.detectionConfidence * 100).toFixed(1)}%
-                      </Badge>
-                    </div>
-                    <Progress value={captureResult.result.detectionConfidence * 100} className="h-2" />
-                  </div>
-
-                  <Separator />
-
-                  {/* Emotion Analysis */}
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Target Emotion:</span>
-                      <Badge variant="outline" className="capitalize">{targetEmotion}</Badge>
-                    </div>
-
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Detected Emotion:</span>
-                      <Badge
-                        variant={captureResult.isMatch ? "default" : "secondary"}
-                        className="capitalize"
-                      >
-                        {captureResult.detectedEmotion}
-                      </Badge>
-                    </div>
-
-                    {/* Emotion Confidence with Progress Bar */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">Emotion Confidence:</span>
-                        <span className="text-sm font-mono">{(captureResult.confidence * 100).toFixed(1)}%</span>
-                      </div>
-                      <Progress
-                        value={captureResult.confidence * 100}
-                        className={`h-2 ${captureResult.confidence >= 0.6 ? '' : 'opacity-60'}`}
-                      />
-                    </div>
-
-                    {/* Match Status */}
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Emotion Match:</span>
-                      <Badge variant={captureResult.isMatch ? "default" : "destructive"}>
-                        {captureResult.isMatch ? '✓ Perfect Match!' : '✗ Different Emotion'}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {/* Score Breakdown */}
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-sm">Score Breakdown:</h4>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex justify-between">
-                        <span>Face Quality:</span>
-                        <span>{Math.round(captureResult.result.detectionConfidence * 40)}/40</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Emotion Clarity:</span>
-                        <span>{Math.round(captureResult.confidence * 40)}/40</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Match Bonus:</span>
-                        <span>{captureResult.isMatch ? '20' : '0'}/20</span>
-                      </div>
-                      <div className="flex justify-between font-medium">
-                        <span>Total Score:</span>
-                        <span>
-                          {Math.min(100, Math.max(0,
-                            Math.round(captureResult.result.detectionConfidence * 40) +
-                            Math.round(captureResult.confidence * 40) +
-                            (captureResult.isMatch ? 20 : 0)
-                          ))}/100
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              <Separator />
-
-              {/* Success/Failure Messages */}
-              {captureResult.isMatch && captureResult.confidence >= 0.7 && (
-                <Alert>
-                  <AlertDescription className="text-green-600 font-medium">
-                    🎉 Excellent! You perfectly mirrored the {targetEmotion} emotion!
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {captureResult.isMatch && captureResult.confidence >= 0.5 && captureResult.confidence < 0.7 && (
-                <Alert>
-                  <AlertDescription className="text-blue-600 font-medium">
-                    👍 Good job! You showed the {targetEmotion} emotion clearly enough.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {!captureResult.success && (
-                <Alert variant="destructive">
-                  <AlertDescription>
-                    No face detected. Please ensure your face is clearly visible in the camera.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {captureResult.success && !captureResult.isMatch && attempts < 3 && (
-                <Alert>
-                  <AlertDescription>
-                    You're showing <strong>{captureResult.detectedEmotion}</strong> but we need <strong>{targetEmotion}</strong>.
-                    Look at the reference image and try again!
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {captureResult.success && captureResult.confidence < 0.5 && attempts < 3 && (
-                <Alert>
-                  <AlertDescription>
-                    The emotion detection confidence is low. Try to express the {targetEmotion} emotion more clearly.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {attempts >= 3 && (
-                <Alert>
-                  <AlertDescription className="text-orange-600">
-                    You've completed all 3 attempts. Great effort! You'll still earn points for trying.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {/* Instructions */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>How to Mirror Emotions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ol className="list-decimal list-inside space-y-2 text-sm">
-            <li>Look at the reference image on the left to see the target emotion</li>
-            <li>Position your face in the center of the camera view</li>
-            <li>Try to copy the facial expression shown in the reference image</li>
-            <li>When you think you have the right expression, click "Capture & Analyze"</li>
-            <li>The system will tell you if your expression matches the target emotion</li>
-            <li>You have up to 3 attempts to get it right!</li>
-          </ol>
-        </CardContent>
-      </Card>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

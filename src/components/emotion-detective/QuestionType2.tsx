@@ -2,13 +2,14 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { AspectRatio } from '../ui/aspect-ratio';
+import { SpeakerIcon } from './SpeakerIcon';
 import { QuestionComponentProps } from '../../types/emotion-detective';
 import { cn } from '../../lib/utils';
 
 /**
  * QuestionType2 Component (Emotion → Face)
  * Describes an emotion and displays 4 face images for selection
- * No speaker icons needed - visual selection only
+ * Includes proper attempts, sound effects, and improved UI
  */
 export const QuestionType2: React.FC<QuestionComponentProps> = ({
   question,
@@ -17,7 +18,10 @@ export const QuestionType2: React.FC<QuestionComponentProps> = ({
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
+  const [attempts, setAttempts] = useState(0);
   const hasSpokenQuestionRef = useRef(false);
+
+  const MAX_ATTEMPTS = 3;
 
   // Speak the question immediately when component loads - ONLY ONCE
   useEffect(() => {
@@ -25,25 +29,98 @@ export const QuestionType2: React.FC<QuestionComponentProps> = ({
 
     const speakQuestion = async () => {
       try {
-        console.log('🎵 QuestionType2: Speaking question once:', question.questionText);
+        const textToSpeak = `${question.questionText} Look for someone who is feeling ${question.emotion}.`;
+        console.log('🎵 QuestionType2: Speaking question once:', textToSpeak);
         hasSpokenQuestionRef.current = true; // Mark as spoken
-        onTTSRequest(question.questionText);
+        onTTSRequest(textToSpeak);
       } catch (error) {
         console.error('❌ QuestionType2: Error speaking question:', error);
       }
     };
 
     speakQuestion();
-  }, [question.questionText, onTTSRequest]);
+  }, [question.questionText, question.emotion, onTTSRequest]);
+
+  // Play sound effects using Web Audio API for better browser support
+  const playCorrectSound = () => {
+    try {
+      // Create a pleasant success sound (major chord)
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+      oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+      oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
+
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (error) {
+      console.log('Audio not supported, using visual feedback only');
+    }
+  };
+
+  const playIncorrectSound = () => {
+    try {
+      // Create a gentle error sound (descending notes)
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.setValueAtTime(400, audioContext.currentTime); // Start higher
+      oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.3); // Go lower
+
+      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (error) {
+      console.log('Audio not supported, using visual feedback only');
+    }
+  };
 
   const handleFaceSelect = (faceId: string) => {
-    if (hasAnswered) return;
-
-    setSelectedAnswer(faceId);
-    setHasAnswered(true);
+    if (hasAnswered && attempts >= MAX_ATTEMPTS) return;
 
     const isCorrect = faceId === question.correctAnswer;
-    onAnswer(faceId, isCorrect);
+    const newAttempts = attempts + 1;
+
+    setSelectedAnswer(faceId);
+    setAttempts(newAttempts);
+
+    if (isCorrect) {
+      playCorrectSound();
+      setHasAnswered(true);
+      // Wait a moment to show feedback, then proceed
+      setTimeout(() => {
+        onAnswer(faceId, true);
+      }, 1500);
+    } else {
+      playIncorrectSound();
+
+      if (newAttempts >= MAX_ATTEMPTS) {
+        // Out of attempts, show correct answer and proceed
+        setHasAnswered(true);
+        setTimeout(() => {
+          onAnswer(question.correctAnswer, false);
+        }, 2000);
+      } else {
+        // Allow another attempt
+        setTimeout(() => {
+          setSelectedAnswer(null);
+        }, 1500);
+      }
+    }
   };
 
   const getFaceCardClassName = (faceId: string) => {
@@ -75,31 +152,43 @@ export const QuestionType2: React.FC<QuestionComponentProps> = ({
   }
 
   return (
-    <div className="h-screen flex flex-col p-4 max-w-4xl mx-auto">
-      {/* Compact Question Header */}
-      <Card className="mb-4 flex-shrink-0">
-        <CardContent className="p-4">
+    <div className="w-full h-[90vh] max-h-[800px] flex flex-col p-2">
+      {/* Question Header - Compact */}
+      <Card className="mb-2 flex-shrink-0">
+        <CardHeader className="py-2 px-3">
+          <CardTitle className="text-base font-semibold text-center flex items-center justify-center gap-2">
+            {question.questionText}
+            <SpeakerIcon
+              text={`${question.questionText} Look for someone who is feeling ${question.emotion}.`}
+              className="ml-2"
+              aria-label="Repeat question"
+            />
+          </CardTitle>
           <div className="text-center">
-            <h2 className="text-lg font-semibold mb-2">{question.questionText}</h2>
             <p className="text-sm text-muted-foreground">
               Look for someone who is feeling <strong className="text-foreground capitalize">{question.emotion}</strong>
             </p>
+            {attempts > 0 && attempts < MAX_ATTEMPTS && !hasAnswered && (
+              <Badge variant="outline" className="text-xs mt-1">
+                Attempt {attempts + 1} of {MAX_ATTEMPTS}
+              </Badge>
+            )}
           </div>
-        </CardContent>
+        </CardHeader>
       </Card>
 
       {/* Face Options Grid - Optimized for single screen */}
-      <div className="flex-1 grid grid-cols-2 gap-4 min-h-0">
+      <div className="flex-1 grid grid-cols-2 gap-2 min-h-0">
         {question.faceOptions.map((face, index) => (
           <Card
             key={`${face.id}-${index}`}
             className={cn(
-              'transition-all duration-200 flex flex-col',
+              'transition-all duration-200 flex flex-col cursor-pointer',
               getFaceCardClassName(face.id)
             )}
             onClick={() => handleFaceSelect(face.id)}
           >
-            <CardContent className="p-3 flex-1 flex flex-col">
+            <CardContent className="p-2 flex-1 flex flex-col">
               {/* Fixed aspect ratio container */}
               <div className="flex-1 relative bg-muted rounded-lg overflow-hidden">
                 <img
@@ -114,16 +203,16 @@ export const QuestionType2: React.FC<QuestionComponentProps> = ({
               </div>
 
               {/* Selection indicator */}
-              {hasAnswered && (
-                <div className="mt-3 text-center">
+              {(selectedAnswer === face.id || (hasAnswered && face.id === question.correctAnswer)) && (
+                <div className="mt-2 text-center">
                   {face.id === question.correctAnswer && (
-                    <Badge className="bg-green-600 text-white">
+                    <Badge className="bg-green-600 text-white text-xs">
                       ✓ Correct
                     </Badge>
                   )}
                   {face.id === selectedAnswer && face.id !== question.correctAnswer && (
-                    <Badge variant="destructive">
-                      ✗ Incorrect
+                    <Badge variant="destructive" className="text-xs">
+                      ✗ Try Again
                     </Badge>
                   )}
                 </div>
@@ -133,18 +222,18 @@ export const QuestionType2: React.FC<QuestionComponentProps> = ({
         ))}
       </div>
 
-      {/* Compact Feedback Section */}
+      {/* Feedback Section - Compact */}
       {hasAnswered && (
-        <Card className="mt-4 flex-shrink-0">
-          <CardContent className="p-3">
+        <Card className="mt-2 flex-shrink-0">
+          <CardContent className="p-2">
             <div className="text-center text-sm">
               {selectedAnswer === question.correctAnswer ? (
-                <div className="text-green-600 font-medium">
+                <div className="text-green-600 font-semibold">
                   🎉 Excellent! You correctly identified the person who is feeling {question.emotion}.
                 </div>
               ) : (
-                <div className="text-red-600 font-medium">
-                  Not quite right. Look for the facial expression that shows {question.emotion}.
+                <div className="text-red-600 font-semibold">
+                  The correct answer shows someone feeling {question.emotion}. Great effort!
                 </div>
               )}
             </div>

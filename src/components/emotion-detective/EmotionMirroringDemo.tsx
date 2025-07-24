@@ -16,48 +16,48 @@ export const EmotionMirroringDemo: React.FC = () => {
   const sampleImages: Record<string, FaceImageData> = {
     happy: {
       id: '1',
-      filename: '001_25_female_happy_1.jpg',
+      filename: '140_y_f_h_a.jpg',
       age: 25,
       gender: 'female',
       emotion: 'happy',
       variant: 1,
-      path: 'public/Faces/001_25_female_happy_1.jpg'
+      path: '/Faces/140_y_f_h_a.jpg'
     },
     sad: {
       id: '2',
-      filename: '002_30_male_sad_1.jpg',
+      filename: '066_y_m_s_a.jpg',
       age: 30,
       gender: 'male',
       emotion: 'sad',
       variant: 1,
-      path: '/Faces/002_30_male_sad_1.jpg'
+      path: '/Faces/066_y_m_s_a.jpg'
     },
     angry: {
       id: '3',
-      filename: '003_28_female_angry_1.jpg',
+      filename: '079_o_f_a_a.jpg',
       age: 28,
       gender: 'female',
       emotion: 'angry',
       variant: 1,
-      path: '/Faces/003_28_female_angry_1.jpg'
+      path: '/Faces/079_o_f_a_a.jpg'
     },
     surprised: {
       id: '4',
-      filename: '004_35_male_surprised_1.jpg',
+      filename: '116_m_m_h_a.jpg',
       age: 35,
       gender: 'male',
       emotion: 'surprised',
       variant: 1,
-      path: '/Faces/004_35_male_surprised_1.jpg'
+      path: '/Faces/116_m_m_h_a.jpg'
     },
     neutral: {
       id: '5',
-      filename: '005_22_female_neutral_1.jpg',
+      filename: '168_m_f_n_a.jpg',
       age: 22,
       gender: 'female',
       emotion: 'neutral',
       variant: 1,
-      path: '/Faces/005_22_female_neutral_1.jpg'
+      path: '/Faces/168_m_f_n_a.jpg'
     }
   };
 
@@ -104,7 +104,7 @@ export const EmotionMirroringDemo: React.FC = () => {
 
           <EmotionMirroring
             targetEmotion={selectedEmotion}
-            referenceImage={sampleImages[selectedEmotion]}
+            referenceImage={sampleImages[selectedEmotion] || sampleImages.happy}
             onMirroringComplete={handleMirroringComplete}
             onRetry={handleRetry}
           />

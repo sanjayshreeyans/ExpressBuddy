@@ -288,7 +288,7 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
 
         switch (questionType) {
           case 1: // Face → Emotion
-            const faceImage = getFaceImageForEmotion(emotion);
+            const faceImage = getFaceImageForEmotion(emotion, []);
             question = {
               id: `q_${i + 1}`,
               type: 1,
@@ -301,9 +301,9 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
             break;
 
           case 2: // Emotion → Face
-            const correctFace = getFaceImageForEmotion(emotion);
+            const correctFace = getFaceImageForEmotion(emotion, []);
             const wrongEmotions = emotions.filter(e => e !== emotion).slice(0, 3);
-            const wrongFaces = wrongEmotions.map(e => getFaceImageForEmotion(e));
+            const wrongFaces = wrongEmotions.map(e => getFaceImageForEmotion(e, []));
             const allFaces = [correctFace, ...wrongFaces].sort(() => Math.random() - 0.5);
 
             question = {
@@ -313,16 +313,17 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
               correctAnswer: correctFace.id,
               options: allFaces.map(f => f.id),
               questionText: QUESTION_TEMPLATES.type2.replace('{emotion}', emotion),
-              faceOptions: allFaces
+              faceOptions: allFaces,
+              faceImage: correctFace // Add reference image for mirroring phase
             };
             break;
 
           case 3: // Scenario → Face
             const scenarios = emotionMeta.scenarios || [`Someone is feeling ${emotion}`];
             const selectedScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
-            const scenarioCorrectFace = getFaceImageForEmotion(emotion);
+            const scenarioCorrectFace = getFaceImageForEmotion(emotion, []);
             const scenarioWrongEmotions = emotions.filter(e => e !== emotion).slice(0, 3);
-            const scenarioWrongFaces = scenarioWrongEmotions.map(e => getFaceImageForEmotion(e));
+            const scenarioWrongFaces = scenarioWrongEmotions.map(e => getFaceImageForEmotion(e, []));
             const scenarioAllFaces = [scenarioCorrectFace, ...scenarioWrongFaces].sort(() => Math.random() - 0.5);
 
             question = {
@@ -338,7 +339,7 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
             break;
 
           case 4: // Face → Scenario
-            const faceScenariosImage = getFaceImageForEmotion(emotion);
+            const faceScenariosImage = getFaceImageForEmotion(emotion, []);
             const correctScenarios = emotionMeta.scenarios || [`Someone is feeling ${emotion}`];
             const correctScenario = correctScenarios[Math.floor(Math.random() * correctScenarios.length)];
 
@@ -367,7 +368,7 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
 
           default:
             // Fallback to type 1
-            const fallbackFaceImage = getFaceImageForEmotion(emotion);
+            const fallbackFaceImage = getFaceImageForEmotion(emotion, []);
             question = {
               id: `q_${i + 1}`,
               type: 1,
@@ -580,7 +581,7 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
   }, []);
 
   /**
-   * Handle question answer - now includes mirroring after each correct answer
+   * Handle question answer - includes mirroring only for question types with faceImage
    */
   const handleQuestionAnswer = useCallback(async (answer: string, isCorrect: boolean) => {
     if (!session || !session.questions[currentQuestionIndex]) return;
@@ -591,13 +592,24 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
     // Calculate XP for correct identification
     if (isCorrect) {
       earnedXP += XP_REWARDS.CORRECT_IDENTIFICATION;
-
-      // If correct, move to mirroring phase for this question
       setSessionXP(prev => prev + earnedXP);
-      setCurrentPhase('mirroring');
+
+      // Only transition to mirroring for question types that have faceImage (types 1 and 4)
+      if (question.faceImage && (question.type === 1 || question.type === 4)) {
+        setCurrentPhase('mirroring');
+      } else {
+        // For question types 2 and 3 (no faceImage), move directly to next question
+        setCompletedQuestions(prev => prev + 1);
+
+        if (currentQuestionIndex < session.questions.length - 1) {
+          setCurrentQuestionIndex(prev => prev + 1);
+        } else {
+          // All questions completed
+          setCurrentPhase('complete');
+        }
+      }
     } else {
-      // If incorrect, show feedback and allow retry or move to next question
-      // For now, just move to next question
+      // If incorrect, show feedback and move to next question
       setCompletedQuestions(prev => prev + 1);
 
       if (currentQuestionIndex < session.questions.length - 1) {

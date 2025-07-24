@@ -10,7 +10,7 @@ import { cn } from '../../lib/utils';
 /**
  * QuestionType4 Component (Face → Scenario)
  * Shows a face image with multiple scenario text options
- * Includes TTS for question and scenario options with speaker icons
+ * Includes proper attempts, sound effects, and improved UI
  */
 export const QuestionType4: React.FC<QuestionComponentProps> = ({
   question,
@@ -19,7 +19,10 @@ export const QuestionType4: React.FC<QuestionComponentProps> = ({
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
+  const [attempts, setAttempts] = useState(0);
   const hasSpokenQuestionRef = useRef(false);
+
+  const MAX_ATTEMPTS = 3;
 
   // Speak the question immediately when component loads - ONLY ONCE
   useEffect(() => {
@@ -38,14 +41,86 @@ export const QuestionType4: React.FC<QuestionComponentProps> = ({
     speakQuestion();
   }, [question.questionText, onTTSRequest]);
 
-  const handleScenarioSelect = (scenario: string) => {
-    if (hasAnswered) return;
+  // Play sound effects using Web Audio API for better browser support
+  const playCorrectSound = () => {
+    try {
+      // Create a pleasant success sound (major chord)
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
 
-    setSelectedAnswer(scenario);
-    setHasAnswered(true);
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+      oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+      oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
+
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (error) {
+      console.log('Audio not supported, using visual feedback only');
+    }
+  };
+
+  const playIncorrectSound = () => {
+    try {
+      // Create a gentle error sound (descending notes)
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.setValueAtTime(400, audioContext.currentTime); // Start higher
+      oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.3); // Go lower
+
+      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (error) {
+      console.log('Audio not supported, using visual feedback only');
+    }
+  };
+
+  const handleScenarioSelect = (scenario: string) => {
+    if (hasAnswered && attempts >= MAX_ATTEMPTS) return;
 
     const isCorrect = scenario === question.correctAnswer;
-    onAnswer(scenario, isCorrect);
+    const newAttempts = attempts + 1;
+
+    setSelectedAnswer(scenario);
+    setAttempts(newAttempts);
+
+    if (isCorrect) {
+      playCorrectSound();
+      setHasAnswered(true);
+      // Wait a moment to show feedback, then proceed
+      setTimeout(() => {
+        onAnswer(scenario, true);
+      }, 1500);
+    } else {
+      playIncorrectSound();
+
+      if (newAttempts >= MAX_ATTEMPTS) {
+        // Out of attempts, show correct answer and proceed
+        setHasAnswered(true);
+        setTimeout(() => {
+          onAnswer(question.correctAnswer, false);
+        }, 2000);
+      } else {
+        // Allow another attempt
+        setTimeout(() => {
+          setSelectedAnswer(null);
+        }, 1500);
+      }
+    }
   };
 
   const getButtonVariant = (scenario: string) => {
@@ -89,36 +164,41 @@ export const QuestionType4: React.FC<QuestionComponentProps> = ({
   }
 
   return (
-    <div className="h-screen flex flex-col p-4 max-w-5xl mx-auto">
-      {/* Compact Question Header */}
-      <Card className="mb-4 flex-shrink-0">
-        <CardContent className="p-4">
-          <div className="text-center">
-            <h2 className="text-lg font-semibold mb-2 flex items-center justify-center gap-2">
-              {question.questionText}
-              <SpeakerIcon
-                text={question.questionText}
-                className="ml-2"
-                aria-label="Repeat question"
-              />
-            </h2>
-          </div>
-        </CardContent>
+    <div className="w-full h-[90vh] max-h-[800px] flex flex-col p-2">
+      {/* Question Header - Compact */}
+      <Card className="mb-2 flex-shrink-0">
+        <CardHeader className="py-2 px-3">
+          <CardTitle className="text-base font-semibold text-center flex items-center justify-center gap-2">
+            {question.questionText}
+            <SpeakerIcon
+              text={question.questionText}
+              className="ml-2"
+              aria-label="Repeat question"
+            />
+          </CardTitle>
+          {attempts > 0 && attempts < MAX_ATTEMPTS && !hasAnswered && (
+            <div className="text-center mt-1">
+              <Badge variant="outline" className="text-xs">
+                Attempt {attempts + 1} of {MAX_ATTEMPTS}
+              </Badge>
+            </div>
+          )}
+        </CardHeader>
       </Card>
 
       {/* Main Content - Side by side layout */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2 min-h-0">
         {/* Face Image Section */}
         <Card className="flex flex-col">
-          <CardHeader className="pb-3 flex-shrink-0">
-            <CardTitle className="text-base">Look at this person's expression:</CardTitle>
+          <CardHeader className="py-2 px-3 flex-shrink-0">
+            <CardTitle className="text-sm">Look at this person's expression:</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col">
+          <CardContent className="flex-1 flex flex-col p-3">
             <div className="flex-1 relative bg-muted rounded-lg overflow-hidden">
               <img
                 src={question.faceImage.path}
                 alt={`Person showing an emotion`}
-                className="absolute inset-0 w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-contain"
                 onError={(e) => {
                   console.error('❌ Failed to load face image:', question.faceImage?.path);
                   e.currentTarget.src = '/placeholder-face.jpg';
@@ -130,21 +210,21 @@ export const QuestionType4: React.FC<QuestionComponentProps> = ({
 
         {/* Scenario Options Section */}
         <Card className="flex flex-col">
-          <CardHeader className="pb-3 flex-shrink-0">
-            <CardTitle className="text-base">What situation might cause this emotion?</CardTitle>
+          <CardHeader className="py-2 px-3 flex-shrink-0">
+            <CardTitle className="text-sm">What situation might cause this emotion?</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col">
-            <div className="space-y-2 flex-1">
+          <CardContent className="flex-1 flex flex-col p-2">
+            <div className="space-y-2 flex-1 overflow-y-auto">
               {question.options.map((scenario, index) => (
                 <Button
                   key={`${scenario}-${index}`}
                   variant={getButtonVariant(scenario)}
                   className={cn(
-                    'w-full justify-between text-left h-auto py-3 px-3',
+                    'w-full justify-between text-left h-auto py-2 px-3',
                     getButtonClassName(scenario)
                   )}
                   onClick={() => handleScenarioSelect(scenario)}
-                  disabled={hasAnswered}
+                  disabled={hasAnswered && attempts >= MAX_ATTEMPTS}
                 >
                   <span className="flex-1 text-xs leading-relaxed pr-2">
                     "{scenario}"
@@ -164,18 +244,18 @@ export const QuestionType4: React.FC<QuestionComponentProps> = ({
         </Card>
       </div>
 
-      {/* Compact Feedback Section */}
+      {/* Feedback Section - Compact */}
       {hasAnswered && (
-        <Card className="mt-4 flex-shrink-0">
-          <CardContent className="p-3">
+        <Card className="mt-2 flex-shrink-0">
+          <CardContent className="p-2">
             <div className="text-center text-sm">
               {selectedAnswer === question.correctAnswer ? (
-                <div className="text-green-600 font-medium">
+                <div className="text-green-600 font-semibold">
                   🎉 Excellent! That situation would likely make someone feel {question.emotion}.
                 </div>
               ) : (
-                <div className="text-red-600 font-medium">
-                  Not quite right. The correct situation is: "{question.correctAnswer}"
+                <div className="text-red-600 font-semibold">
+                  The correct situation is: "{question.correctAnswer}". Great effort!
                 </div>
               )}
             </div>

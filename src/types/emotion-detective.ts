@@ -88,13 +88,13 @@ export const EMOTION_LEVELS: Record<number, readonly string[]> = {
 export const FACE_API_EMOTION_MAPPING = {
   // Direct face-api.js emotions
   'happy': 'happy',
-  'sad': 'sad', 
+  'sad': 'sad',
   'angry': 'angry',
   'neutral': 'neutral',
   'surprised': 'surprised',
   'fearful': 'fearful',
   'disgusted': 'disgusted',
-  
+
   // Complex emotions mapped to face-api.js equivalents
   'excited': 'happy',
   'worried': 'fearful',
