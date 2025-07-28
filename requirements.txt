@@ -1,0 +1,312 @@
+# Google Gemini Live API Function Calling Implementation Guide
+
+This file contains the code example from Google's documentation for implementing function calling with the Live API.
+
+## Function Calling with Live API
+
+The Live API supports function calling, just like regular content generation requests. Function calling lets the Live API interact with external data and programs, greatly increasing what your applications can accomplish.
+
+You can define function declarations as part of the session configuration. After receiving tool calls, the client should respond with a list of FunctionResponse objects using the session.send_tool_response method.
+
+### Key Implementation Points:
+
+1. **Function Declarations**: Define tools in session configuration
+2. **Tool Response Handling**: Manually handle tool responses in client code (no automatic handling)
+3. **Asynchronous Function Calling**: Supported only in half-cascade audio generation
+4. **Behavior Types**: NON_BLOCKING for async execution
+5. **Scheduling Options**: INTERRUPT, WHEN_IDLE, or SILENT
+
+### Example Code (JavaScript):
+
+```javascript
+import { GoogleGenAI, Modality, Behavior, FunctionResponseScheduling } from '@google/genai';
+
+const ai = new GoogleGenAI({});
+const model = 'gemini-live-2.5-flash-preview';
+
+// Memory function definitions for ExpressBuddy
+const write_to_memory = {
+  name: "write_to_memory",
+  description: "Store a key-value pair in the child's memory for future reference",
+  parameters: {
+    type: "object",
+    properties: {
+      key: {
+        type: "string",
+        description: "The memory key (e.g., 'favorite_color', 'pet_name')"
+      },
+      value: {
+        type: "string", 
+        description: "The memory value to store"
+      }
+    },
+    required: ["key", "value"]
+  },
+  behavior: Behavior.NON_BLOCKING
+};
+
+const read_all_memories = {
+  name: "read_all_memories",
+  description: "Retrieve all stored memories about the child",
+  parameters: {
+    type: "object",
+    properties: {}
+  },
+  behavior: Behavior.NON_BLOCKING
+};
+
+const tools = [{ 
+  functionDeclarations: [write_to_memory, read_all_memories] 
+}];
+
+const config = {
+  responseModalities: [Modality.AUDIO],
+  tools: tools
+};
+
+async function live() {
+  const responseQueue = [];
+
+  async function waitMessage() {
+    let done = false;
+    let message = undefined;
+    while (!done) {
+      message = responseQueue.shift();
+      if (message) {
+        done = true;
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    }
+    return message;
+  }
+
+  async function handleTurn() {
+    const turns = [];
+    let done = false;
+    while (!done) {
+      const message = await waitMessage();
+      turns.push(message);
+      if (message.serverContent && message.serverContent.turnComplete) {
+        done = true;
+      } else if (message.toolCall) {
+        done = true;
+      }
+    }
+    return turns;
+  }
+
+  const session = await ai.live.connect({
+    model: model,
+    callbacks: {
+      onopen: function () {
+        console.debug('Opened');
+      },
+      onmessage: function (message) {
+        responseQueue.push(message);
+      },
+      onerror: function (e) {
+        console.debug('Error:', e.message);
+      },
+      onclose: function (e) {
+        console.debug('Close:', e.reason);
+      },
+    },
+    config: config,
+  });
+
+  const inputTurns = 'Tell me about my favorite things';
+  session.sendClientContent({ turns: inputTurns });
+
+  let turns = await handleTurn();
+
+  for (const turn of turns) {
+    if (turn.serverContent && turn.serverContent.modelTurn && turn.serverContent.modelTurn.parts) {
+      for (const part of turn.serverContent.modelTurn.parts) {
+        if (part.text) {
+          console.debug('Received text: %s\n', part.text);
+        }
+      }
+    }
+    else if (turn.toolCall) {
+      const functionResponses = [];
+      for (const fc of turn.toolCall.functionCalls) {
+        let result;
+        
+        // Handle memory functions
+        if (fc.name === 'write_to_memory') {
+          const { key, value } = fc.args;
+          localStorage.setItem(`memory_${key}`, value);
+          result = { success: true, message: `Stored ${key}: ${value}` };
+        } else if (fc.name === 'read_all_memories') {
+          const memories = {};
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('memory_')) {
+              const memoryKey = key.replace('memory_', '');
+              memories[memoryKey] = localStorage.getItem(key);
+            }
+          }
+          result = { memories };
+        }
+        
+        functionResponses.push({
+          id: fc.id,
+          name: fc.name,
+          response: { 
+            result,
+            scheduling: FunctionResponseScheduling.WHEN_IDLE
+          }
+        });
+      }
+
+      console.debug('Sending tool response...\n');
+      session.sendToolResponse({ functionResponses: functionResponses });
+    }
+  }
+
+  // Check again for new messages
+  turns = await handleTurn();
+
+  for (const turn of turns) {
+    if (turn.serverContent && turn.serverContent.modelTurn && turn.serverContent.modelTurn.parts) {
+      for (const part of turn.serverContent.modelTurn.parts) {
+        if (part.text) {
+          console.debug('Received text: %s\n', part.text);
+        }
+      }
+    }
+  }
+
+  session.close();
+}
+
+async function main() {
+  await live().catch((e) => console.error('got error', e));
+}
+
+main();
+```
+
+### Memory System Requirements for ExpressBuddy:
+
+1. **write_to_memory**: Store child-specific information (interests, experiences, preferences)
+2. **read_all_memories**: Retrieve all stored memories to provide context
+3. **Local Storage**: Use browser localStorage for memory persistence
+4. **Memory Prefix**: Use 'memory_' prefix for organization
+5. **Non-blocking Execution**: Allow conversation to continue while storing/retrieving
+6. **Scheduled Responses**: Use WHEN_IDLE to avoid interrupting conversation flow
+
+## ✅ CORRECT Asynchronous Function Calling Implementation
+
+### Exactly Following Google Documentation:
+
+1. **Function Declaration with Behavior**:
+```javascript
+const write_to_memory = {
+  name: "write_to_memory", 
+  behavior: Behavior.NON_BLOCKING,  // ✅ CORRECT: Enables async execution
+  parameters: { ... }
+}
+```
+
+2. **Function Response with Scheduling**:
+```javascript
+const functionResponse = {
+  id: fc.id,
+  name: fc.name,
+  response: {
+    result: "ok",
+    scheduling: FunctionResponseScheduling.WHEN_IDLE  // ✅ CORRECT: Controls when response is processed
+  }
+}
+```
+
+### Implementation Details:
+
+- ✅ **Behavior.NON_BLOCKING**: Added to function declarations  
+- ✅ **FunctionResponseScheduling.WHEN_IDLE**: Used in responses
+- ✅ **Half-Cascade Compatible**: Works with audio generation mode
+- ✅ **Extended TypeScript Types**: Custom types for new features
+
+### Async Scheduling Options:
+- **INTERRUPT**: Process immediately, interrupt current speech
+- **WHEN_IDLE**: Wait until Pico finishes speaking (✅ USED)
+- **SILENT**: Process in background without announcing
+
+### Key Benefits of Correct Implementation:
+1. **True Asynchronous Processing**: Memory operations don't block conversation
+2. **Natural Conversation Flow**: Pico continues speaking while storing memories  
+3. **Optimal Performance**: Zero delays or interruptions
+4. **Future-Proof**: Uses proper Google enums when available
+
+This implementation exactly matches Google's documentation for asynchronous function calling in Gemini Live API.
+
+## 🤫 **NATURAL MEMORY INTEGRATION (CRITICAL)**
+
+### Problem Solved:
+- **Issue**: Pico was reading off memory responses instead of naturally integrating them
+- **Solution**: Changed to SILENT scheduling and enhanced system prompt
+
+### Natural Integration Features:
+- ✅ **SILENT Scheduling**: Memory responses processed in background
+- ✅ **No Announcements**: Pico never says "I stored that" or "I found memories"  
+- ✅ **Seamless Conversation**: Memory information blended naturally
+- ✅ **Friend-like Behavior**: Acts like naturally remembering, not using tools
+
+### Examples of Natural Integration:
+**WRONG (Before)**:
+- "I just stored that you like soccer"
+- "I found 3 memories about you"
+- "My memory function returned that you had a bad day"
+
+**RIGHT (After)**:
+- "Soccer sounds so fun! I bet you're getting really good at it"
+- "Oh hi Emma! How's your dog Max doing today?"
+- "You seemed upset about school yesterday. Feeling better today?"
+
+This creates the most natural and engaging experience for children.
+
+## Implementation Status: ✅ COMPLETED
+
+### Files Modified:
+1. **MainInterfaceWithAvatar.tsx**: Added memory function declarations and tool call handler
+2. **requirements.txt**: Created with implementation guide
+3. **memoryUtils.ts**: Created utility functions for memory management
+
+### Features Implemented:
+- ✅ Memory function declarations (write_to_memory, read_all_memories)
+- ✅ Enhanced system prompt encouraging tool usage
+- ✅ Tool call handler with error handling and logging
+- ✅ localStorage-based persistence with 'memory_' prefix
+- ✅ Comprehensive debugging and logging
+- ✅ Memory utilities for development and testing
+- ✅ Global debug functions for browser console
+
+### Tool Configuration:
+- Memory tools are configured as function declarations
+- Combined tools setup ready for additional tools (Google Search, Code Execution)
+- Proper error handling and response formatting
+- Fast response times (50ms delay for responsiveness)
+
+### Debug Features:
+Available in browser console:
+- `debugMemories()`: View all stored memories and stats
+- `clearAllMemories()`: Reset all memories for testing
+- `exportMemories()`: Export memories as JSON backup
+- `importMemories(json)`: Import memories from JSON
+
+### Memory Storage Format:
+```
+localStorage key: 'memory_favorite_color'
+localStorage value: JSON object with value, timestamp, key
+```
+
+### Expected Behavior:
+1. Pico will actively use memory tools during conversations
+2. Child details are stored immediately when mentioned
+3. Memories are retrieved at conversation start for context
+4. Personalized responses based on stored information
+5. Continuous building of child's profile over time
+
+This implementation provides a robust memory system that allows Pico to remember and reference details about each child, creating more engaging and personalized conversations in the ExpressBuddy app.
