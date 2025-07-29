@@ -2,7 +2,14 @@
  * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this f🚨 **ASYNCHRONOUS TOOL USAGE**🚨 *1. **write_to_memory**: Store ANY important detail about the child immediately when they share it
+ * you may not use this f🚨 **ASYNCHRONOUS TOOL USAGE**🚨 *1. **write_to_memory**: Store ANY important detail abo�📝 **MEMORY USAGE EXAMPLES:**
+- Child: "My dog is named Max" → IMMEDIATELY call write_to_memory(key="pet_name", value="Max - a dog")
+- Child: "I had a bad day at school" → Store: write_to_memory(key="recent_school_experience", value="Had a difficult day at school, seemed upset")
+- Child: "I love playing soccer" → Store: write_to_memory(key="favorite_sport", value="Soccer - really enjoys playing")
+- Start of conversation → ALWAYS call read_all_memories() first to get context
+- When talking about pets → call get_memories_by_keys(keys=["pet_name", "pet_type", "pet_behavior"])
+- When discussing school → call get_memories_by_keys(keys=["teacher_opinion", "favorite_subject", "math_difficulty", "recent_school_experience"])
+- When asking about family → call get_memories_by_keys(keys=["family_dad_work", "family_mom", "siblings", "family_grandma_cookies"])e child immediately when they share it
    - Their name, age, interests, pets, family members
    - Recent experiences, achievements, challenges
    - Emotional states, preferences, fears, dreams
@@ -153,6 +160,25 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
         },
         // NON_BLOCKING behavior allows asynchronous execution without blocking conversation
         behavior: AsyncBehavior.NON_BLOCKING
+      },
+      {
+        name: "get_memories_by_keys",
+        description: "Retrieve specific memories by providing a list of keys. More efficient than reading all memories when you only need specific information about the child.",
+        parameters: {
+          type: Type.OBJECT,
+          properties: {
+            keys: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.STRING
+              },
+              description: "Array of memory keys to retrieve (e.g., ['pet_name', 'favorite_sport', 'recent_school_experience'])"
+            }
+          },
+          required: ["keys"]
+        },
+        // NON_BLOCKING behavior allows asynchronous execution without blocking conversation
+        behavior: AsyncBehavior.NON_BLOCKING
       }
     ];
 
@@ -191,6 +217,11 @@ You are Piko, a friendly and curious panda avatar inside the ExpressBuddy app. Y
    - Before asking questions to avoid repeating
    - To provide personalized, contextual responses
    - To reference past conversations naturally
+
+3. **get_memories_by_keys**: Retrieve specific memories when you need particular information:
+   - When the conversation relates to specific topics (e.g., pets, school, family)
+   - To follow up on previous experiences efficiently
+   - Examples: get_memories_by_keys(keys=["pet_name", "favorite_sport"]) or get_memories_by_keys(keys=["recent_school_experience", "math_difficulty"])
 
 � **TOOL USAGE MANDATE**: You MUST use your tools as much as possible! Don't just talk - actively use the memory functions throughout every conversation. This is not optional - it's essential for providing the best experience.
 
@@ -480,6 +511,60 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
                 memories: {},
                 memory_count: 0,
                 message: "No memories stored yet - this appears to be a new conversation with this child",
+                async_operation: true
+              };
+            }
+            
+          } else if (fc.name === 'get_memories_by_keys') {
+            // ASYNC: Retrieve specific memories by keys from localStorage (non-blocking)
+            const { keys } = fc.args;
+            
+            if (!keys || !Array.isArray(keys)) {
+              throw new Error('Missing or invalid keys array for get_memories_by_keys');
+            }
+            
+            const foundMemories: { [key: string]: string } = {};
+            const missingKeys: string[] = [];
+            
+            keys.forEach((key: string) => {
+              const memoryKey = `memory_${key}`;
+              const memoryValue = localStorage.getItem(memoryKey);
+              
+              if (memoryValue) {
+                foundMemories[key] = memoryValue;
+              } else {
+                missingKeys.push(key);
+              }
+            });
+            
+            const foundCount = Object.keys(foundMemories).length;
+            console.log(`🔍 ASYNC retrieved ${foundCount}/${keys.length} specific memories:`, foundMemories);
+            
+            if (foundCount > 0) {
+              const memoryList = Object.entries(foundMemories)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join('; ');
+              
+              result = {
+                success: true,
+                requested_keys: keys,
+                found_memories: foundMemories,
+                missing_keys: missingKeys,
+                found_count: foundCount,
+                total_requested: keys.length,
+                memory_summary: memoryList,
+                message: `Found ${foundCount} of ${keys.length} requested memories: ${memoryList}${missingKeys.length > 0 ? `. Missing: ${missingKeys.join(', ')}` : ''}`,
+                async_operation: true
+              };
+            } else {
+              result = {
+                success: true,
+                requested_keys: keys,
+                found_memories: {},
+                missing_keys: missingKeys,
+                found_count: 0,
+                total_requested: keys.length,
+                message: `None of the requested memory keys were found: ${keys.join(', ')}`,
                 async_operation: true
               };
             }
