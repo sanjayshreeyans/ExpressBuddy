@@ -6,7 +6,8 @@
 - Child: "My dog is named Max" → IMMEDIATELY call write_to_memory(key="pet_name", value="Max - a dog")
 - Child: "I had a bad day at school" → Store: write_to_memory(key="recent_school_experience", value="Had a difficult day at school, seemed upset")
 - Child: "I love playing soccer" → Store: write_to_memory(key="favorite_sport", value="Soccer - really enjoys playing")
-- Start of conversation → ALWAYS call read_all_memories() first to get context
+- Start of conversation → ALWAYS call get_available_memory_keys() first to see what's stored
+- Then call get_memories_by_keys(keys=["specific", "keys"]) to get what you need
 - When talking about pets → call get_memories_by_keys(keys=["pet_name", "pet_type", "pet_behavior"])
 - When discussing school → call get_memories_by_keys(keys=["teacher_opinion", "favorite_subject", "math_difficulty", "recent_school_experience"])
 - When asking about family → call get_memories_by_keys(keys=["family_dad_work", "family_mom", "siblings", "family_grandma_cookies"])e child immediately when they share it
@@ -152,8 +153,8 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
         behavior: AsyncBehavior.NON_BLOCKING
       },
       {
-        name: "read_all_memories",
-        description: "Retrieve all stored memories about the child to provide personalized and contextual responses. Use this at the beginning of conversations or when you need context.",
+        name: "get_available_memory_keys",
+        description: "Get a list of all available memory keys stored about the child. Use this first to see what memories are available, then use get_memories_by_keys to retrieve specific ones.",
         parameters: {
           type: Type.OBJECT,
           properties: {}
@@ -161,6 +162,16 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
         // NON_BLOCKING behavior allows asynchronous execution without blocking conversation
         behavior: AsyncBehavior.NON_BLOCKING
       },
+      // {
+      //   name: "read_all_memories",
+      //   description: "Retrieve all stored memories about the child to provide personalized and contextual responses. Use this at the beginning of conversations or when you need context.",
+      //   parameters: {
+      //     type: Type.OBJECT,
+      //     properties: {}
+      //   },
+      //   // NON_BLOCKING behavior allows asynchronous execution without blocking conversation
+      //   behavior: AsyncBehavior.NON_BLOCKING
+      // },
       {
         name: "get_memories_by_keys",
         description: "Retrieve specific memories by providing a list of keys. More efficient than reading all memories when you only need specific information about the child.",
@@ -212,16 +223,20 @@ You are Piko, a friendly and curious panda avatar inside the ExpressBuddy app. Y
    - School events, friends, hobbies, favorite things
    - ALWAYS store details as soon as the child mentions them!
 
-2. **read_all_memories**: Check stored memories frequently, especially:
-   - At the start of every conversation
-   - Before asking questions to avoid repeating
-   - To provide personalized, contextual responses
-   - To reference past conversations naturally
+2. **get_available_memory_keys**: Check what memory categories are available (use this first!)
+   - At the start of every conversation to see what's stored
+   - Before asking questions to see what you already know
+   - Returns a list of memory keys like ["pet_name", "favorite_sport", "recent_school_experience"]
 
 3. **get_memories_by_keys**: Retrieve specific memories when you need particular information:
+   - After checking available keys, get the specific memories you want
    - When the conversation relates to specific topics (e.g., pets, school, family)
-   - To follow up on previous experiences efficiently
    - Examples: get_memories_by_keys(keys=["pet_name", "favorite_sport"]) or get_memories_by_keys(keys=["recent_school_experience", "math_difficulty"])
+
+🔄 **DUPLEX MEMORY WORKFLOW**:
+1. START: Call get_available_memory_keys() to see what's stored
+2. SELECT: Call get_memories_by_keys(keys=["specific", "keys"]) for what you need
+3. STORE: Call write_to_memory() as new information comes up
 
 � **TOOL USAGE MANDATE**: You MUST use your tools as much as possible! Don't just talk - actively use the memory functions throughout every conversation. This is not optional - it's essential for providing the best experience.
 
@@ -469,6 +484,30 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
               stored_key: key,
               stored_value: value,
               timestamp: new Date().toISOString(),
+              async_operation: true
+            };
+            
+          } else if (fc.name === 'get_available_memory_keys') {
+            // ASYNC: Get list of available memory keys from localStorage (non-blocking)
+            const availableKeys: string[] = [];
+            
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i);
+              if (key && key.startsWith('memory_')) {
+                const memoryKey = key.replace('memory_', '');
+                availableKeys.push(memoryKey);
+              }
+            }
+            
+            console.log(`🔑 ASYNC found ${availableKeys.length} available memory keys:`, availableKeys);
+            
+            result = {
+              success: true,
+              available_keys: availableKeys,
+              key_count: availableKeys.length,
+              message: availableKeys.length > 0 
+                ? `Found ${availableKeys.length} memory categories: ${availableKeys.join(', ')}` 
+                : "No memories stored yet - this appears to be a new conversation with this child",
               async_operation: true
             };
             
