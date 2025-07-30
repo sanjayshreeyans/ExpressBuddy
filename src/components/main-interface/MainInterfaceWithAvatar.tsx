@@ -321,7 +321,7 @@ ${buildMemoryContextSection()}
 
 📝 **MEMORY USAGE EXAMPLES:**
 - Child: "My dog is named Max" → IMMEDIATELY call write_to_memory(key="pet_name", value="Max - a dog")
-- Child: "I had a bad day at school" → Store: write_to_memory(key="recent_school_experience", value="Had a difficult day at school, seemed upset")
+- Child: "I had a bad day a t school" → Store: write_to_memory(key="recent_school_experience", value="Had a difficult day at school, seemed upset")
 - Child: "I love playing soccer" → Store: write_to_memory(key="favorite_sport", value="Soccer - really enjoys playing")
 - When talking about pets → call get_memories_by_keys(keys=["pet_name", "pet_type", "pet_behavior"]) if you need more details
 - When discussing school → call get_memories_by_keys(keys=["teacher_opinion", "favorite_subject", "math_difficulty", "recent_school_experience"]) if you need more context
