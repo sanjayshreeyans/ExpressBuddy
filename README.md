@@ -1,10 +1,10 @@
 # ExpressBuddy - AI-Powered Communication Tool
 
-ExpressBuddy is an innovative AI-powered communication tool designed to help children with autism and speech challenges engage in natural conversations through multimodal interactions. Built with Google's Gemini Live API, ExpressBuddy features real-time voice conversations, emotion detection learning games, interactive avatars with lip-sync capabilities, and intelligent silence detection to maintain engagement.
+ExpressBuddy is an innovative AI-powered communication tool designed to help children with autism and speech challenges engage in natural conversations through multimodal interactions. Built with Google's Gemini Live API, ExpressBuddy features real-time voice conversations, emotion detection learning games, interactive avatars with lip-sync capabilities, and intelligent silence detection to maintain engagement. 
 
 ## Features Overview
 
-### 🗣️ Real-Time Voice Chat with AI Avatar
+### 🗣️ Real-Time Voice Chat with AI Avatar (The panda avatar or any other assets don't belong to us and are part of mascotbot so we can't use it)
 - **Live Conversations**: Natural voice conversations powered by Google Gemini Live API
 - **Animated Avatar**: Rive-based avatar with real-time lip-sync using ParakeetTDTV2-ASR backend
 - **Memory System**: Persistent child profiles that remember preferences and progress across sessions
