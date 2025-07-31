@@ -20,7 +20,7 @@ The integration layer that connects the memory system with the AI conversation s
 - Real-time memory access during conversations
 - Asynchronous memory operations
 - Natural memory integration into AI responses
-
+ 
 ### Data Storage
 
 **Storage Mechanism**: `localStorage`
