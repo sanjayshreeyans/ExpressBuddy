@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
+import { useUser } from '../../contexts/UserContext';
 import { motion } from 'framer-motion';
 import SupabaseTest from '../SupabaseTest';
 import {
@@ -62,7 +63,8 @@ export default function LearningPathHome() {
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { user, logout } = useKindeAuth();
+  const { logout } = useKindeAuth();
+  const { child } = useUser();
 
   const handleStartChat = () => {
     navigate('/chat');
@@ -441,7 +443,7 @@ export default function LearningPathHome() {
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                  {user?.given_name?.[0] || 'U'}
+                  {child?.name?.[0]?.toUpperCase() || 'U'}
                 </div>
                 <Button variant="ghost" size="sm" onClick={handleLogout}>
                   <LogOut className="w-4 h-4" />
@@ -461,7 +463,7 @@ export default function LearningPathHome() {
           <div className="xl:col-span-3">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Welcome back, {user?.given_name}!
+                Welcome back, {child?.name}!
               </h1>
               <p className="text-gray-600 mb-4">
                 Continue your journey and unlock new social-emotional skills

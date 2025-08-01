@@ -23,6 +23,7 @@ import LandingPage from "./components/landing-page/LandingPage";
 import LearningPathHome from "./components/home/LearningPathHome";
 import AuthPage from "./components/auth/AuthPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import OnboardingPage from "./components/auth/OnboardingPage";
 import TTSIntegrationTest from "./components/emotion-detective/TTSIntegrationTest";
 import TTSQuickDemo from "./components/emotion-detective/TTSQuickDemo";
 import TTSVisemeTest from "./components/emotion-detective/TTSVisemeTest";
@@ -35,6 +36,7 @@ import { ReactPlugin } from "@stagewise-plugins/react";
 import { useEffect } from "react";
 import { KindeProvider, useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import { SupabaseProvider } from "./contexts/SupabaseContext";
+import { UserProvider, useUser } from "./contexts/UserContext";
 
 const API_KEY = process.env.REACT_APP_GEMINI_API_KEY as string;
 if (typeof API_KEY !== "string") {
@@ -46,16 +48,25 @@ const apiOptions: LiveClientOptions = {
 };
 
 function AppContent() {
-  const { isAuthenticated, isLoading } = useKindeAuth();
+  const { isAuthenticated, isLoading: kindeLoading } = useKindeAuth();
+  const { child, loading: userLoading, isFirstTimeUser } = useUser();
 
   useEffect(() => {
-    // Redirect to dashboard after authentication
-    if (isAuthenticated && window.location.pathname === '/login') {
-      window.location.href = '/dashboard';
+    // Handle redirects after authentication
+    if (isAuthenticated && !userLoading && !kindeLoading) {
+      const currentPath = window.location.pathname;
+      
+      if (currentPath === '/login') {
+        if (isFirstTimeUser) {
+          window.location.href = '/onboarding';
+        } else if (child) {
+          window.location.href = '/dashboard';
+        }
+      }
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, child, isFirstTimeUser, userLoading, kindeLoading]);
 
-  if (isLoading) {
+  if (kindeLoading || userLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
@@ -75,15 +86,22 @@ function AppContent() {
         {/* Authentication - Public Route */}
         <Route path="/login" element={<AuthPage />} />
 
+        {/* Onboarding - Semi-Protected Route (authenticated but no profile) */}
+        <Route path="/onboarding" element={
+          <ProtectedRoute>
+            <OnboardingPage />
+          </ProtectedRoute>
+        } />
+
         {/* Protected Routes */}
         <Route path="/dashboard" element={
-          <ProtectedRoute>
+          <ProtectedRoute requiresProfile={true}>
             <LearningPathHome />
           </ProtectedRoute>
         } />
 
         <Route path="/chat" element={
-          <ProtectedRoute>
+          <ProtectedRoute requiresProfile={true}>
             <>
               <StagewiseToolbar config={{ plugins: [ReactPlugin] }} />
               <LiveAPIProvider options={apiOptions}>
@@ -129,7 +147,7 @@ function AppContent() {
 
         {/* Emotion Detective Learning - Production Route */}
         <Route path="/emotion-detective" element={
-          <ProtectedRoute>
+          <ProtectedRoute requiresProfile={true}>
             <EmotionDetectiveLearning
               lessonId="emotion-detective-level-1"
               childId="current-child"
@@ -153,7 +171,7 @@ function AppContent() {
 
         {/* Emotion Mirroring - Production Route */}
         <Route path="/emotion-mirroring" element={
-          <ProtectedRoute>
+          <ProtectedRoute requiresProfile={true}>
             <EmotionMirroringDemo />
           </ProtectedRoute>
         } />
@@ -181,7 +199,9 @@ function App() {
       logoutUri="http://localhost:3000"
     >
       <SupabaseProvider>
-        <AppContent />
+        <UserProvider>
+          <AppContent />
+        </UserProvider>
       </SupabaseProvider>
     </KindeProvider>
   );
