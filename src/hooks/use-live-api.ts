@@ -59,6 +59,9 @@ export type UseLiveAPIResults = {
   // **NEW**: Nudge system state
   isNudgeIndicatorVisible: boolean;
   sendNudgeToGemini: (message: string) => Promise<void>;
+  // **NEW**: Avatar animation callbacks
+  onAITurnComplete: (callback: () => void) => void;
+  onAITurnStart: (callback: () => void) => void;
 };
 
 export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
@@ -77,6 +80,10 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   
   // **NEW**: Nudge indicator state
   const [isNudgeIndicatorVisible, setIsNudgeIndicatorVisible] = useState(false);
+  
+  // **NEW**: Avatar animation callback refs
+  const aiTurnCompleteCallbackRef = useRef<(() => void) | null>(null);
+  const aiTurnStartCallbackRef = useRef<(() => void) | null>(null);
   
   // Audio control
   const [isBuffering, setIsBuffering] = useState<boolean>(false);
@@ -303,6 +310,20 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       console.log(`🎯 Gemini turn complete! Processing full audio (${audioBufferRef.current.length} packets)`);
       processCompleteAudio();
     }
+    
+    console.log('🎯 GEMINI TURN COMPLETE - Triggering turn complete callback');
+    
+    // **CRITICAL**: Reset audio start time so next turn can trigger properly
+    audioStartTimeRef.current = null;
+    console.log('🔄 Reset audioStartTimeRef for next turn');
+    
+    // **NEW**: Call avatar animation callback
+    if (aiTurnCompleteCallbackRef.current) {
+      console.log('🎯 Calling aiTurnCompleteCallback');
+      aiTurnCompleteCallbackRef.current();
+    } else {
+      console.warn('⚠️ aiTurnCompleteCallback is null - not registered!');
+    }
   }, [enableChunking, processCompleteAudio, silenceDetection.config.enabled]);
 
   // **GEMINI INTERRUPTED** - User started speaking while AI was talking  
@@ -466,6 +487,15 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       // Track timing for synchronization
       if (!audioStartTimeRef.current) {
         audioStartTimeRef.current = now;
+        console.log('🎯 FIRST AI AUDIO PACKET - Triggering turn start callback');
+        
+        // **NEW**: Call avatar animation callback for turn start
+        if (aiTurnStartCallbackRef.current) {
+          console.log('🎯 Calling aiTurnStartCallback');
+          aiTurnStartCallbackRef.current();
+        } else {
+          console.warn('⚠️ aiTurnStartCallback is null - not registered!');
+        }
       }
       
       const timeSinceLastPacket = lastPacketTimeRef.current ? now - lastPacketTimeRef.current : 0;
@@ -763,5 +793,14 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     // **NEW**: Nudge system state
     isNudgeIndicatorVisible,
     sendNudgeToGemini,
+    // **NEW**: Avatar animation callbacks
+    onAITurnComplete: (callback: () => void) => {
+      console.log('🔄 Registering AI turn complete callback');
+      aiTurnCompleteCallbackRef.current = callback;
+    },
+    onAITurnStart: (callback: () => void) => {
+      console.log('🔄 Registering AI turn start callback');
+      aiTurnStartCallbackRef.current = callback;
+    },
   };
 }

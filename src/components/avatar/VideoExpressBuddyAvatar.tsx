@@ -1,6 +1,22 @@
 /**
  * Video-based ExpressBuddy Avatar that uses MP4 animations for idle and talking states
- * This version removes Rive and l  // Handle state changes based on isListening prop
+ * This version removes Rive and l  // Handle stat  // Handle state changes based on isListening prop
+  useEffect(() => {
+    const targetState = isListening ? 'talking' : 'idle';
+    
+    console.log(`🎭 VideoAvatar: isListening=${isListening}, currentState=${currentState}, targetState=${targetState}`);
+    
+    if (targetState !== currentState && isLoaded) {
+      console.log(`🎭 State transition: ${currentState} -> ${targetState}`);
+      setCurrentState(targetState);
+      
+      if (targetState === 'talking') {
+        playTalkingAnimation();
+      } else {
+        playIdleAnimation();
+      }
+    }
+  }, [isListening, isLoaded]); // Remove currentState dependency to allow transitions on isListening prop
   useEffect(() => {
     const targetState = isListening ? 'talking' : 'idle';
     
@@ -85,6 +101,17 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
 
         // Start with idle animation
         setCurrentState('idle');
+        
+        // Initialize video opacity states
+        if (idleVideoRef.current) {
+          idleVideoRef.current.style.opacity = '1';
+          idleVideoRef.current.style.pointerEvents = 'auto';
+        }
+        if (talkingVideoRef.current) {
+          talkingVideoRef.current.style.opacity = '0';
+          talkingVideoRef.current.style.pointerEvents = 'none';
+        }
+        
         await playIdleAnimation();
         
       } catch (err) {
@@ -107,13 +134,15 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
     if (!idleVideoRef.current) return;
     
     try {
-      // Hide talking video, show idle video
+      // Pause talking video, show idle video
       if (talkingVideoRef.current) {
         talkingVideoRef.current.pause();
-        talkingVideoRef.current.style.display = 'none';
+        talkingVideoRef.current.style.opacity = '0';
+        talkingVideoRef.current.style.pointerEvents = 'none';
       }
       
-      idleVideoRef.current.style.display = 'block';
+      idleVideoRef.current.style.opacity = '1';
+      idleVideoRef.current.style.pointerEvents = 'auto';
       idleVideoRef.current.currentTime = 0;
       await idleVideoRef.current.play();
       console.log('📹 Playing idle animation');
@@ -127,13 +156,15 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
     if (!talkingVideoRef.current) return;
     
     try {
-      // Hide idle video, show talking video
+      // Pause idle video, show talking video
       if (idleVideoRef.current) {
         idleVideoRef.current.pause();
-        idleVideoRef.current.style.display = 'none';
+        idleVideoRef.current.style.opacity = '0';
+        idleVideoRef.current.style.pointerEvents = 'none';
       }
       
-      talkingVideoRef.current.style.display = 'block';
+      talkingVideoRef.current.style.opacity = '1';
+      talkingVideoRef.current.style.pointerEvents = 'auto';
       talkingVideoRef.current.currentTime = 0;
       await talkingVideoRef.current.play();
       console.log('📹 Playing talking animation');
@@ -225,7 +256,8 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
           isLoaded ? 'opacity-100' : 'opacity-0'
         }`}
         style={{ 
-          display: currentState === 'idle' ? 'block' : 'none',
+          opacity: currentState === 'idle' ? 1 : 0,
+          pointerEvents: currentState === 'idle' ? 'auto' : 'none',
           cursor: 'pointer'
         }}
         loop
@@ -243,7 +275,8 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
           isLoaded ? 'opacity-100' : 'opacity-0'
         }`}
         style={{ 
-          display: currentState === 'talking' ? 'block' : 'none',
+          opacity: currentState === 'talking' ? 1 : 0,
+          pointerEvents: currentState === 'talking' ? 'auto' : 'none',
           cursor: 'pointer'
         }}
         loop

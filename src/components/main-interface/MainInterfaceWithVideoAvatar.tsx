@@ -2,7 +2,22 @@
  * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this f🚨 **ASYNCHRONOUS TOOL USAGE**🚨 *1. **write_to_memory**: Store ANY important detail abo�📝 **MEMORY USAGE EXAMPLES:**
+ * you may not use th  // **NEW**: Register avatar animation callbacks with LiveAPI
+  useEffect(() => {
+    console.log('� Registering avatar animation callbacks...');
+    
+    onAITurnStart(() => {
+      console.log('🎬 AI Turn Started - Switching to TALKING animation');
+      setIsAvatarSpeaking(true);
+    });
+    
+    onAITurnComplete(() => {
+      console.log('🎬 AI Turn Complete - Switching to IDLE animation');
+      setIsAvatarSpeaking(false);
+    });
+    
+    console.log('✅ Avatar animation callbacks registered');
+  }, [onAITurnStart, onAITurnComplete]);NCHRONOUS TOOL USAGE**🚨 *1. **write_to_memory**: Store ANY important detail abo�📝 **MEMORY USAGE EXAMPLES:**
 - Child: "My dog is named Max" → IMMEDIATELY call write_to_memory(key="pet_name", value="Max - a dog")
 - Child: "I had a bad day at school" → Store: write_to_memory(key="recent_school_experience", value="Had a difficult day at school, seemed upset")
 - Child: "I love playing soccer" → Store: write_to_memory(key="favorite_sport", value="Soccer - really enjoys playing")
@@ -102,7 +117,7 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
 
   // FIX: Destructure from the context to send the system prompt.
-  // **NEW**: Include silence detection functionality and volume for avatar state
+  // **NEW**: Include silence detection functionality, volume, and avatar callbacks
   const { 
     connected, 
     client, 
@@ -111,7 +126,10 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
     silenceDetection,
     isNudgeIndicatorVisible,
     sendNudgeToGemini,
-    setEnableChunking
+    setEnableChunking,
+    // **NEW**: Avatar animation callbacks
+    onAITurnComplete,
+    onAITurnStart
   } = useLiveAPIContext();
   const { log } = useLoggerStore();
 
@@ -121,19 +139,20 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
     hasGeneratedContent: false
   });
   const [currentAvatarSubtitle, setCurrentAvatarSubtitle] = useState<string>('');
-  const [isAvatarSpeaking, setIsAvatarSpeaking] = useState<boolean>(false); // New state for video avatar
+  const [isAvatarSpeaking, setIsAvatarSpeaking] = useState<boolean>(false); // Avatar state for video
   
-  // **NEW**: Use volume to detect AI speaking for video avatar state
+  // **NEW**: Register avatar animation callbacks with LiveAPI
   useEffect(() => {
-    // Volume threshold for speech detection (same as used in AudioPulse component)
-    const speechThreshold = 0.01; // Adjust as needed
-    const isSpeaking = volume > speechThreshold;
+    onAITurnStart(() => {
+      console.log('� AI Turn Started - Switching to TALKING animation');
+      setIsAvatarSpeaking(true);
+    });
     
-    if (isSpeaking !== isAvatarSpeaking) {
-      console.log(`🎭 AI Speaking State Change: ${isAvatarSpeaking} -> ${isSpeaking} (volume: ${volume.toFixed(4)})`);
-      setIsAvatarSpeaking(isSpeaking);
-    }
-  }, [volume, isAvatarSpeaking]);
+    onAITurnComplete(() => {
+      console.log('🎬 AI Turn Complete - Switching to IDLE animation');
+      setIsAvatarSpeaking(false);
+    });
+  }, [onAITurnStart, onAITurnComplete]);
   
   // **NEW**: Silence detection settings visibility
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
@@ -573,9 +592,10 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
     }
   }, [videoStream]);
 
-  // Set up logging and handle streaming content for the avatar
+  // Set up logging and handle streaming content (no more turn event handling needed)
   useEffect(() => {
     const handleLog = (streamingLog: any) => {
+      console.log('🔍 MainInterfaceWithVideoAvatar received log:', streamingLog.type, streamingLog);
       log(streamingLog);
 
       if (streamingLog.type === 'server.content' &&
@@ -589,14 +609,14 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
         }
       }
 
-      if (streamingLog.type === 'server.turn.complete') {
+      if (streamingLog.type === 'server.turn.complete' || streamingLog.type === 'turncomplete') {
         markComplete();
-        console.log('🎬 Turn complete - avatar will return to idle via volume detection');
+        console.log('🎬 Turn complete (' + streamingLog.type + ') - processed in callbacks');
       }
 
-      if (streamingLog.type === 'server.turn.start') {
+      if (streamingLog.type === 'server.turn.start' || streamingLog.type === 'turnstart') {
         reset();
-        console.log('🎬 Turn start - avatar will switch to talking via volume detection');
+        console.log('🎬 Turn start (' + streamingLog.type + ') - processed in callbacks');
       }
     };
 
