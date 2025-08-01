@@ -1,13 +1,18 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
+import { useUser } from '../../contexts/UserContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requiresProfile?: boolean;
 }
 
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading } = useKindeAuth();
+export default function ProtectedRoute({ children, requiresProfile = false }: ProtectedRouteProps) {
+  const { isAuthenticated, isLoading: kindeLoading } = useKindeAuth();
+  const { child, loading: userLoading, isFirstTimeUser } = useUser();
+
+  const isLoading = kindeLoading || userLoading;
 
   if (isLoading) {
     return (
@@ -22,6 +27,16 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  // If route requires profile and user is first time, redirect to onboarding
+  if (requiresProfile && isFirstTimeUser) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  // If user is on onboarding but already has a profile, redirect to dashboard
+  if (window.location.pathname === '/onboarding' && !isFirstTimeUser && child) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;
