@@ -18,12 +18,14 @@ import "./App.scss";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { LiveAPIProvider } from "./contexts/LiveAPIContext";
 import MainInterfaceWithAvatar from "./components/main-interface/MainInterfaceWithAvatar";
+import MainInterfaceWithVideoAvatar from "./components/main-interface/MainInterfaceWithVideoAvatar";
 import LandingPage from "./components/landing-page/LandingPage";
 
 import LearningPathHome from "./components/home/LearningPathHome";
 import AuthPage from "./components/auth/AuthPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import OnboardingPage from "./components/auth/OnboardingPage";
+import VideoAvatarDemo from "./components/demo/VideoAvatarDemo";
 import TTSIntegrationTest from "./components/emotion-detective/TTSIntegrationTest";
 import TTSQuickDemo from "./components/emotion-detective/TTSQuickDemo";
 import TTSVisemeTest from "./components/emotion-detective/TTSVisemeTest";
@@ -106,6 +108,18 @@ function AppContent() {
               <StagewiseToolbar config={{ plugins: [ReactPlugin] }} />
               <LiveAPIProvider options={apiOptions}>
                 <MainInterfaceWithAvatar />
+              </LiveAPIProvider>
+            </>
+          </ProtectedRoute>
+        } />
+
+        {/* Video Avatar Chat - Real-time chat with video avatar */}
+        <Route path="/video-avatar-demo" element={
+          <ProtectedRoute requiresProfile={true}>
+            <>
+              <StagewiseToolbar config={{ plugins: [ReactPlugin] }} />
+              <LiveAPIProvider options={apiOptions}>
+                <MainInterfaceWithVideoAvatar onGoToLanding={() => window.location.href = '/'} />
               </LiveAPIProvider>
             </>
           </ProtectedRoute>

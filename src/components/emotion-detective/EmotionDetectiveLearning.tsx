@@ -232,7 +232,7 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
       path: `/Faces/${filename}`,
       ageGroup: selectedFace.ageGroup
     };
-  });
+  }, []); // Added dependency array
 
   /**
    * Get multiple diverse face images for an emotion (for question types 2 & 3)
