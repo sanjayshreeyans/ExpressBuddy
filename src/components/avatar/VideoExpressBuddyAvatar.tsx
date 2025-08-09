@@ -248,6 +248,27 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
 
   return (
     <div className={`relative h-full w-full ${className}`}>
+      {/* Improve top-right debug panel positioning to avoid overlap in demo */}
+      {process.env.NODE_ENV === 'development' && (
+        <div
+          className="absolute top-4 right-4 bg-black bg-opacity-75 text-white p-2 rounded text-xs font-mono"
+          style={{ zIndex: 20 }}
+        >
+          <div>State: {currentState}</div>
+          <div>Listening: {isListening ? '🔴 Yes' : '⚪ No'}</div>
+          <div>Loaded: {isLoaded ? '✅' : '❌'}</div>
+          <div>Time: {currentTime.toFixed(2)}s</div>
+          {silenceDetection && silenceDetection.config.enabled && (
+            <div className="mt-2 pt-2 border-t border-gray-600">
+              <div>Piko Status: {silenceDetection.state.conversationState}</div>
+              {silenceDetection.state.nudgeCount > 0 && (
+                <div>Tries: {silenceDetection.state.nudgeCount}/{silenceDetection.config.maxNudges}</div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Idle Video */}
       <video
         ref={idleVideoRef}
@@ -297,25 +318,6 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
           <div className="text-center bg-red-100 text-red-700 p-4 rounded-lg">
             <p className="text-sm">{error}</p>
           </div>
-        </div>
-      )}
-
-      {/* Debug info */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="absolute top-4 right-[-15rem] bg-black bg-opacity-75 text-white p-1 rounded text-xs font-mono">
-          <div>State: {currentState}</div>
-          <div>Listening: {isListening ? '🔴 Yes' : '⚪ No'}</div>
-          <div>Loaded: {isLoaded ? '✅' : '❌'}</div>
-          <div>Time: {currentTime.toFixed(2)}s</div>
-          {/* Silence detection debug info */}
-          {silenceDetection && silenceDetection.config.enabled && (
-            <div className="mt-2 pt-2 border-t border-gray-600">
-              <div>Piko Status: {silenceDetection.state.conversationState}</div>
-              {silenceDetection.state.nudgeCount > 0 && (
-                <div>Tries: {silenceDetection.state.nudgeCount}/{silenceDetection.config.maxNudges}</div>
-              )}
-            </div>
-          )}
         </div>
       )}
     </div>

@@ -857,13 +857,46 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
           <h1>ExpressBuddy</h1>
           <p>AI Voice & Vision Assistant</p>
         </div>
-        <div className="header-actions">
-          {onGoToLanding && (
+        <div
+          className="header-actions"
+          style={{
+            display: 'flex',
+            gap: '8px',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            justifyContent: 'flex-end'
+          }}
+        >
+          {/* Demo navigation buttons group */}
+          <div className="demo-nav-group" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {onGoToLanding && (
+              <button
+                onClick={onGoToLanding}
+                className="back-to-landing-btn"
+                style={{
+                  background: 'var(--primary)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.background = 'var(--primary-hover)')}
+                onMouseOut={(e) => (e.currentTarget.style.background = 'var(--primary)')}
+              >
+                ← Back to Home
+              </button>
+            )}
+
+            {/* New: Emotion Detective CTA inside header (no overlap) */}
             <button
-              onClick={onGoToLanding}
-              className="back-to-landing-btn"
+              onClick={() => (window.location.href = '/emotion-detective')}
+              className="go-emotion-detective-btn"
               style={{
-                background: 'var(--primary)',
+                background: '#2563eb',
                 color: 'white',
                 border: 'none',
                 padding: '8px 16px',
@@ -871,21 +904,20 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
                 fontSize: '14px',
                 fontWeight: 'bold',
                 cursor: 'pointer',
-                marginRight: '16px',
                 transition: 'all 0.3s ease'
               }}
-              onMouseOver={(e) => e.currentTarget.style.background = 'var(--primary-hover)'}
-              onMouseOut={(e) => e.currentTarget.style.background = 'var(--primary)'}
+              onMouseOver={(e) => (e.currentTarget.style.background = '#1d4ed8')}
+              onMouseOut={(e) => (e.currentTarget.style.background = '#2563eb')}
             >
-              ← Back to Home
+              Go to Emotion Detective
             </button>
-          )}
-          <div className="connection-status">
-            <div className={cn("status-bubble", { connected })}>
-              {connected ? "● Connected" : "○ Disconnected"}
-            </div>
-            
-            {/* **NEW**: Silence Detection Settings Button */}
+          </div>
+
+          {/* Keep connection status and settings on the right with spacing */}
+          <div className="connection-status" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div className={cn('status-bubble', { connected })}>{connected ? '● Connected' : '○ Disconnected'}</div>
+
+            {/* **NEW**: Silence Detection Settings Button (unchanged behavior) */}
             <button
               onClick={() => setIsSettingsVisible(true)}
               className="silence-settings-btn"
@@ -910,18 +942,20 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
               </span>
               Silence Detection
               {silenceDetection.state.nudgeCount > 0 && (
-                <span className="nudge-count" style={{
-                  background: '#ff4444',
-                  color: 'white',
-                  borderRadius: '50%',
-                  width: '20px',
-                  height: '20px',
-                  fontSize: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginLeft: '4px'
-                }}>
+                <span
+                  className="nudge-count"
+                  style={{
+                    background: '#ff4444',
+                    color: 'white',
+                    borderRadius: '50%',
+                    width: '20px',
+                    height: '20px',
+                    fontSize: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
                   {silenceDetection.state.nudgeCount}
                 </span>
               )}

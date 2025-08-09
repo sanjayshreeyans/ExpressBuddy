@@ -120,15 +120,7 @@ function AppContent() {
         {/* Video Avatar Chat - Public Demo Route */}
         <Route path="/video-avatar-demo" element={
           <>
-            {/* Demo nav to Emotion Detective */}
-            <div className="fixed top-4 right-4 z-50">
-              <button
-                onClick={() => (window.location.href = '/emotion-detective')}
-                className="px-4 py-2 rounded bg-blue-600 text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              >
-                Go to Emotion Detective
-              </button>
-            </div>
+            {/* Integrated toolbar only; moved demo nav button into header of the interface */}
             <StagewiseToolbar config={{ plugins: [ReactPlugin] }} />
             <LiveAPIProvider options={apiOptions}>
               <MainInterfaceWithVideoAvatar onGoToLanding={() => window.location.href = '/'} />
