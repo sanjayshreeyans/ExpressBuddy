@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Progress } from '../ui/progress';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { useSupabase } from '../../contexts/SupabaseContext';
-import { useTTSPlayback } from '../../hooks/useTTSPlayback';
+// import { useTTSPlayback } from '../../hooks/useTTSPlayback'; // Disabled for demo
 import { supabaseService } from '../../services/supabaseService';
 import {
   EmotionDetectiveError,
@@ -44,7 +44,7 @@ import QuestionType2 from './QuestionType2';
 import QuestionType3 from './QuestionType3';
 import QuestionType4 from './QuestionType4';
 import EmotionMirroring from './EmotionMirroring';
-import { RealtimeExpressBuddyAvatar } from '../avatar/RealtimeExpressBuddyAvatar';
+import { VideoExpressBuddyAvatar } from '../avatar/VideoExpressBuddyAvatar';
 import LessonCompletionScreen from './LessonCompletionScreen';
 
 /**
@@ -74,66 +74,51 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
   } | null>(null);
   const [dismissedErrors, setDismissedErrors] = useState<Set<string>>(new Set());
 
-  // TTS integration with proper viseme support
-  const [ttsState, ttsActions] = useTTSPlayback({
-    autoConnect: true,
-    transitionDuration: 21,
-    setSpeakingState: true,
-    manualSpeakingStateControl: false
-  });
-  const [riveInputs, setRiveInputs] = useState<any>(null);
+  // TTS integration disabled for demo to prevent WebSocket errors that interfere with camera
+  // const [ttsState, ttsActions] = useTTSPlayback({
+  //   autoConnect: false,
+  //   transitionDuration: 21,
+  //   setSpeakingState: true,
+  //   manualSpeakingStateControl: false
+  // });
 
-  // Get visemes and subtitles directly from the TTS state
-  const visemes = ttsState.visemes || [];
-  const subtitles = ttsState.subtitles || [];
-  const currentSubtitle = ttsState.currentSubtitle || '';
+  // Mock TTS state for demo
+  const ttsState = {
+    isPlaying: false,
+    isConnected: false,
+    currentSubtitle: '',
+    error: null
+  };
+  const ttsActions = {
+    speak: (options: any) => {
+      console.log('TTS disabled in demo mode, would speak:', options);
+      return Promise.resolve();
+    },
+    stop: () => {},
+    pause: () => {},
+    resume: () => {}
+  };
 
-  // Debug visemes and TTS state
-  useEffect(() => {
-    console.log('🎯 EmotionDetective TTS State:', {
-      isPlaying: ttsState.isPlaying,
-      isConnected: ttsState.isConnected,
-      visemesCount: visemes.length,
-      subtitlesCount: subtitles.length,
-      currentSubtitle,
-      error: ttsState.error
-    });
+  // Current subtitle for display (disabled for demo)
+  const currentSubtitle = '';
 
-    if (visemes.length > 0) {
-      console.log('🎯 EmotionDetective: Received visemes for avatar:', visemes.length, visemes.slice(0, 3));
-      console.log('🎯 EmotionDetective: Passing visemes to RealtimeExpressBuddyAvatar');
-    }
-
-    if (ttsState.error) {
-      console.error('❌ EmotionDetective TTS Error:', ttsState.error);
-    }
-  }, [ttsState, visemes, subtitles, currentSubtitle]);
-
-  // Additional debugging for viseme state changes
-  useEffect(() => {
-    console.log('🔍 EmotionDetective: Visemes state changed:', {
-      visemesLength: visemes.length,
-      visemesArray: visemes,
-      timestamp: Date.now()
-    });
-  }, [visemes]);
-
-  // Debug the actual viseme data being passed to avatar
-  useEffect(() => {
-    if (visemes.length > 0) {
-      console.log('🎯 EmotionDetective: About to pass visemes to avatar:', {
-        count: visemes.length,
-        firstViseme: visemes[0],
-        lastViseme: visemes[visemes.length - 1]
-      });
-    }
-  }, [visemes]);
+  // TTS debug logging disabled for demo
+  // useEffect(() => {
+  //   if (ttsState.error) {
+  //     console.warn('TTS not available in demo mode:', ttsState.error);
+  //   }
+  // }, [ttsState.error]);
 
   // Refs for cleanup
   const mountedRef = useRef(true);
   const sessionStartTime = useRef<Date>(new Date());
 
   const { child } = useSupabase();
+
+  // Memoize current question to prevent unnecessary re-renders of EmotionMirroring
+  const currentQuestion = useMemo(() => {
+    return session?.questions[currentQuestionIndex] || null;
+  }, [session?.questions, currentQuestionIndex]);
 
   // Accessibility hooks
   const { preferences, isReducedMotion, isHighContrast, isKeyboardNavigation } = useAccessibilityPreferences();
@@ -721,14 +706,6 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
     }
   }, [ttsActions]);
 
-  // Update TTS system with Rive inputs when they become available
-  useEffect(() => {
-    if (riveInputs) {
-      console.log('🎯 EmotionDetectiveLearning: Updating TTS system with Rive inputs');
-      ttsActions.updateRiveInputs(riveInputs);
-    }
-  }, [riveInputs, ttsActions]);
-
   // Initialize lesson on mount - only run once
   useEffect(() => {
     let mounted = true;
@@ -845,7 +822,7 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="w-full max-w-2xl space-y-4">
           {/* Browser compatibility warning */}
           {browserCompatibility && !browserCompatibility.isSupported && (
@@ -883,7 +860,7 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
 
   return (
     <div
-      className={`h-screen max-h-screen overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50 ${isReducedMotion ? 'reduce-motion' : ''
+      className={`h-screen max-h-screen overflow-hidden bg-white ${isReducedMotion ? 'reduce-motion' : ''
         } ${isHighContrast ? 'high-contrast' : ''} ${isKeyboardNavigation ? 'keyboard-navigation' : ''
         }`}
       role="main"
@@ -993,32 +970,20 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
               <div className="lg:col-span-1">
                 <Card className="h-full max-h-[500px] sticky top-24">
                   <CardContent className="p-3 h-full flex flex-col">
-                    <div className="flex-1 flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-b from-blue-50 to-purple-50">
+                    <div className="flex-1 flex items-center justify-center overflow-hidden rounded-lg bg-white">
                       <div className="w-full h-full flex items-center justify-center relative">
-                        <div className="w-[350px] h-[350px] flex items-center justify-center">
-                          <RealtimeExpressBuddyAvatar
+                        <div className="w-full max-w-[450px] h-full max-h-[450px] flex items-center justify-center" style={{ aspectRatio: '1/1' }}>
+                          <VideoExpressBuddyAvatar
                             className="w-full h-full"
-                            visemes={visemes}
-                            subtitles={subtitles}
+                            isListening={false} // Keep in idle animation
+                            hideDebugInfo={true} // Hide debug overlays for clean display
+                            onAvatarStateChange={(state) => {
+                              console.log('🎯 Avatar state changed:', state);
+                            }}
                             onCurrentSubtitleChange={(subtitle) => {
                               console.log('🎯 Current subtitle changed:', subtitle);
                             }}
-                            onRiveInputsReady={(inputs) => {
-                              console.log('🎯 Rive inputs ready in EmotionDetective:', inputs);
-                              setRiveInputs(inputs);
-                            }}
                           />
-                          {/* Debug info for visemes */}
-                          {process.env.NODE_ENV === 'development' && (
-                            <div className="mt-2 text-xs text-gray-600 bg-gray-100 p-2 rounded">
-                              <div>Visemes: {visemes.length}</div>
-                              <div>TTS Playing: {ttsState.isPlaying ? 'Yes' : 'No'}</div>
-                              <div>TTS Connected: {ttsState.isConnected ? 'Yes' : 'No'}</div>
-                              {visemes.length > 0 && (
-                                <div>First viseme: {JSON.stringify(visemes[0])}</div>
-                              )}
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -1074,16 +1039,17 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
 
           {currentPhase === 'mirroring' && (
             <motion.div
-              key="mirroring"
+              key={`mirroring-${currentQuestionIndex}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
             >
-              {session.questions[currentQuestionIndex] && (
+              {currentQuestion && (
                 <EmotionMirroring
-                  targetEmotion={session.questions[currentQuestionIndex].emotion}
-                  referenceImage={session.questions[currentQuestionIndex].faceImage!}
+                  key={`emotion-mirror-${currentQuestionIndex}`}
+                  targetEmotion={currentQuestion.emotion}
+                  referenceImage={currentQuestion.faceImage!}
                   onMirroringComplete={handleMirroringComplete}
                   onRetry={() => {
                     // Reset any mirroring state if needed

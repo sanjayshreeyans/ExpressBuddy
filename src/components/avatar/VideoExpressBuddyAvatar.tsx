@@ -45,6 +45,7 @@ interface VideoExpressBuddyAvatarProps {
   onPlaybackStateChange?: (state: PlaybackState) => void;
   onCurrentSubtitleChange?: (subtitle: string) => void;
   silenceDetection?: any; // For displaying silence status
+  hideDebugInfo?: boolean; // Hide debug overlay for cleaner display
 }
 
 export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = ({
@@ -54,6 +55,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
   onPlaybackStateChange,
   onCurrentSubtitleChange,
   silenceDetection,
+  hideDebugInfo = false,
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -248,8 +250,8 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
 
   return (
     <div className={`relative h-full w-full ${className}`}>
-      {/* Improve top-right debug panel positioning to avoid overlap in demo */}
-      {process.env.NODE_ENV === 'development' && (
+      {/* Debug info - only show if not hidden and in development */}
+      {!hideDebugInfo && process.env.NODE_ENV === 'development' && (
         <div
           className="absolute top-4 right-4 bg-black bg-opacity-75 text-white p-2 rounded text-xs font-mono"
           style={{ zIndex: 20 }}
@@ -273,7 +275,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
       <video
         ref={idleVideoRef}
         src={idleVideoSrc}
-        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+        className={`absolute inset-0 w-full object-cover transition-opacity duration-300 ${
           isLoaded ? 'opacity-100' : 'opacity-0'
         }`}
         style={{ 
@@ -292,7 +294,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
       <video
         ref={talkingVideoRef}
         src={talkingVideoSrc}
-        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+        className={`absolute inset-0 w-full object-cover transition-opacity duration-300 ${
           isLoaded ? 'opacity-100' : 'opacity-0'
         }`}
         style={{ 

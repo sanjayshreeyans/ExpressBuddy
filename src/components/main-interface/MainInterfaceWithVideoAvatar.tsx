@@ -73,6 +73,7 @@
  */
 
 import React, { useRef, useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import cn from "classnames";
 import ControlTray from "../control-tray/ControlTray";
 import { VideoExpressBuddyAvatar } from "../avatar/VideoExpressBuddyAvatar";
@@ -113,6 +114,7 @@ interface MainInterfaceWithAvatarProps {
 }
 
 export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterfaceWithAvatarProps) {
+  const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
 
@@ -893,7 +895,7 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
 
             {/* New: Emotion Detective CTA inside header (no overlap) */}
             <button
-              onClick={() => (window.location.href = '/emotion-detective')}
+              onClick={() => navigate('/emotion-detective')}
               className="go-emotion-detective-btn"
               style={{
                 background: '#2563eb',
