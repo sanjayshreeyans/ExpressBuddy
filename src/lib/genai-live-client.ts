@@ -195,6 +195,12 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
     // or contentUpdate { end_of_turn: true }
     if (message.serverContent) {
       const { serverContent } = message;
+      // Always log server content so consumers can inspect any fields (incl. transcriptions)
+      try {
+        // Log once per server content message with full payload for downstream handlers
+        this.log("server.content", message);
+      } catch {}
+
       if ("interrupted" in serverContent) {
         this.log("server.content", "interrupted");
         this.emit("interrupted");
@@ -203,6 +209,21 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
       if ("turnComplete" in serverContent) {
         this.log("server.content", "turnComplete");
         this.emit("turncomplete");
+      }
+
+      // If the message contains input/output transcription (snake_case or camelCase),
+      // emit it as content so listeners can handle it even when there's no modelTurn.
+      const hasInputTx =
+        (serverContent as any).input_transcription ||
+        (serverContent as any).inputTranscription;
+      const hasOutputTx =
+        (serverContent as any).output_transcription ||
+        (serverContent as any).outputTranscription;
+      if (hasInputTx || hasOutputTx) {
+        try {
+          this.emit("content", serverContent);
+        } catch {}
+        // Do not return here; there might also be a modelTurn we need to process below.
       }
 
       if ("modelTurn" in serverContent) {
@@ -231,9 +252,8 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
 
         parts = otherParts;
 
-        const content: { modelTurn: Content } = { modelTurn: { parts } };
-        this.emit("content", content);
-        this.log(`server.content`, message);
+  const content: { modelTurn: Content } = { modelTurn: { parts } };
+  this.emit("content", content);
       }
     } else {
       console.log("received unmatched message", message);

@@ -72,7 +72,7 @@
  * limitations under the License.
  */
 
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import cn from "classnames";
 import ControlTray from "../control-tray/ControlTray";
@@ -85,6 +85,8 @@ import { AvatarState } from "../../types/avatar";
 // **NEW**: Import silence detection components
 import { NudgeIndicator } from "../nudge-indicator/NudgeIndicator";
 import { SilenceDetectionSettings } from "../silence-settings/SilenceDetectionSettings";
+// **NEW**: Import transcript service for saving conversation transcripts
+import TranscriptService from "../../services/transcript-service";
 import "./main-interface.scss";
 import {
   Modality,
@@ -142,6 +144,9 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
   });
   const [currentAvatarSubtitle, setCurrentAvatarSubtitle] = useState<string>('');
   const [isAvatarSpeaking, setIsAvatarSpeaking] = useState<boolean>(false); // Avatar state for video
+  
+  // **NEW**: Transcript service for saving conversation transcripts
+  const transcriptService = TranscriptService;
   
   // **NEW**: Register avatar animation callbacks with LiveAPI
   useEffect(() => {
@@ -557,11 +562,14 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
 
     // Set the configuration for the Live API client.
     if (setConfig) {
-      setConfig({
+      const config: any = {
         responseModalities: [Modality.AUDIO],
         systemInstruction: {
           parts: [{ text: systemPrompt }],
         },
+        // Enable transcription for both input and output (JS SDK expects camelCase)
+        outputAudioTranscription: {},
+        inputAudioTranscription: {},
         // Combine multiple tools for enhanced capabilities
         tools: [
           memoryTool, // Memory functions for personalization
@@ -569,7 +577,16 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
           // { googleSearch: {} }, // For looking up information
           // { codeExecution: {} }, // For computational tasks
         ],
+      };
+      
+      console.log('🔧 Setting Gemini Live API config with transcription enabled:', {
+        hasInputTranscription: !!config.inputAudioTranscription,
+        hasOutputTranscription: !!config.outputAudioTranscription,
+        responseModalities: config.responseModalities,
+        toolCount: config.tools.length
       });
+      
+      setConfig(config);
     }
   }, [setConfig]); // This effect runs once when setConfig is available.
 
@@ -580,6 +597,8 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
       console.log('🎬 Video avatar: FLASH mode enabled (viseme service disabled)');
     }
   }, [setEnableChunking]);
+
+
 
   // Set the video stream to the video element for display purposes
   useEffect(() => {
@@ -600,13 +619,103 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
       console.log('🔍 MainInterfaceWithVideoAvatar received log:', streamingLog.type, streamingLog);
       log(streamingLog);
 
-      if (streamingLog.type === 'server.content' &&
-          streamingLog.message?.serverContent?.modelTurn?.parts) {
-        reset(); // Clear previous content to show only the newest full message
-        const parts = streamingLog.message.serverContent.modelTurn.parts;
-        for (const part of parts) {
-          if (part.text && part.text.trim()) {
-            addChunk(part.text);
+      // **DEBUG**: Comprehensive transcription detection across all message fields
+      const checkForTranscriptions = (obj: any, path = '') => {
+        if (!obj || typeof obj !== 'object') return;
+        
+        for (const [key, value] of Object.entries(obj)) {
+          const currentPath = path ? `${path}.${key}` : key;
+          
+          // Look for transcription-related fields anywhere in the message
+          if (key.toLowerCase().includes('transcription') || key === 'inputTranscription' || key === 'outputTranscription') {
+            console.log('🔍 TRANSCRIPTION FIELD FOUND:', {
+              path: currentPath,
+              key,
+              value,
+              messageType: streamingLog.type,
+              hasText: !!(value as any)?.text,
+              text: (value as any)?.text,
+              finished: (value as any)?.finished
+            });
+          }
+          
+          // Recursively check nested objects
+          if (typeof value === 'object' && value !== null) {
+            checkForTranscriptions(value, currentPath);
+          }
+        }
+      };
+      
+      // Check the entire streaming log for transcription data
+      checkForTranscriptions(streamingLog);
+
+      // Handle transcription data emitted in server.content logs (SDK emits full message as log)
+      if (streamingLog.type === 'server.content' && streamingLog.message?.serverContent) {
+        const serverContent = streamingLog.message.serverContent as any;
+        
+        // **DEBUG**: Log all server content to see what we're getting
+        console.log('🔍 DEBUG: Server content received:', {
+          hasInputTranscription_snake: !!serverContent.input_transcription,
+          hasOutputTranscription_snake: !!serverContent.output_transcription,
+          hasInputTranscription_camel: !!serverContent.inputTranscription,
+          hasOutputTranscription_camel: !!serverContent.outputTranscription,
+          hasModelTurn: !!serverContent.modelTurn,
+          serverContentKeys: Object.keys(serverContent),
+          fullServerContent: serverContent
+        });
+        
+        // Try both snake_case and camelCase formats for input transcription
+        const inputTranscription = serverContent.input_transcription || serverContent.inputTranscription;
+        if (inputTranscription) {
+          const { text, finished } = inputTranscription;
+          console.log('🎤 INPUT transcription detected:', { 
+            text, 
+            finished, 
+            confidence: inputTranscription.confidence,
+            fieldName: serverContent.input_transcription ? 'input_transcription' : 'inputTranscription'
+          });
+          if (text && text.trim()) {
+            console.log('📝 ✅ Processing user transcription:', { text, finished });
+            transcriptService.addUserTranscription(text, { 
+              finished, 
+              timestamp: Date.now(),
+              confidence: inputTranscription.confidence 
+            });
+          } else {
+            console.log('📝 ⚠️ Empty user transcription, skipping');
+          }
+        }
+        
+  // Try both snake_case and camelCase formats for output transcription
+  const outputTranscription = serverContent.output_transcription || serverContent.outputTranscription;
+        if (outputTranscription) {
+          const { text, finished } = outputTranscription;
+          console.log('🔊 OUTPUT transcription detected:', { 
+            text, 
+            finished, 
+            confidence: outputTranscription.confidence,
+            fieldName: serverContent.output_transcription ? 'output_transcription' : 'outputTranscription'
+          });
+          if (text && text.trim()) {
+            console.log('📝 ✅ Processing AI transcription:', { text, finished });
+            transcriptService.addAITranscription(text, { 
+              finished, 
+              timestamp: Date.now(),
+              confidence: outputTranscription.confidence 
+            });
+          } else {
+            console.log('📝 ⚠️ Empty AI transcription, skipping');
+          }
+        }
+        
+        // Handle model turn parts for UI display
+        if (serverContent.modelTurn?.parts) {
+          reset(); // Clear previous content to show only the newest full message
+          const parts = serverContent.modelTurn.parts;
+          for (const part of parts) {
+            if (part.text && part.text.trim()) {
+              addChunk(part.text);
+            }
           }
         }
       }

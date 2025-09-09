@@ -24,6 +24,8 @@ import { LiveConnectConfig } from "@google/genai";
 import { VisemeTranscriptionService, VisemeData, SubtitleData } from "../lib/viseme-transcription-service";
 // **NEW**: Import silence detection hook
 import { useSilenceDetection, SilenceDetectionConfig, SilenceDetectionState, SilenceAnalytics } from "./use-silence-detection";
+// **NEW**: Import transcript service for saving conversation transcripts
+import TranscriptService from "../services/transcript-service";
 
 export type UseLiveAPIResults = {
   client: GenAILiveClient;
@@ -657,13 +659,21 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     
     console.log("🎉 ExpressBuddy ultra-fast connection sequence completed!");
     
+    // **NEW**: Start transcript session when successfully connected
+    if (!TranscriptService.hasActiveSession()) {
+      const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      TranscriptService.startConversation(sessionId);
+      console.log("📝 Started transcript collection for session:", sessionId);
+    }
+    
     // Log final connection status
     setTimeout(() => {
       console.log("📊 Connection Status Summary:", {
         geminiConnected: connected,
         visemeConnected: visemeService.connected,
         totalConnectionTime: `${(performance.now() - visemeConnectionStart).toFixed(2)}ms`,
-        readyForUltraFastSync: connected && visemeService.connected
+        readyForUltraFastSync: connected && visemeService.connected,
+        transcriptSessionActive: TranscriptService.hasActiveSession()
       });
     }, 500);
     
@@ -671,6 +681,34 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
 
   const disconnect = useCallback(async () => {
     console.log("🛑 Starting ExpressBuddy disconnect sequence...");
+    
+    // **NEW**: Save conversation transcript before disconnecting
+    if (TranscriptService.hasActiveSession()) {
+      console.log("📝 Goodbye! Saving your conversation transcript...");
+      console.log("📋 Current transcript status:", TranscriptService.getSessionStatus());
+      
+      try {
+        const saved = await TranscriptService.endConversationAndSave();
+        if (saved) {
+          console.log("✅ 👋 Goodbye! Your conversation transcript has been saved successfully!");
+          console.log("📚 Your conversation is now stored and can be reviewed later.");
+        } else {
+          console.warn("⚠️ 😔 Sorry, we couldn't save your conversation transcript this time.");
+          console.warn("💡 Please check your internet connection and Supabase settings.");
+        }
+      } catch (error) {
+        console.error("❌ Error saving transcript on disconnect:", error);
+        console.error("🔧 Debug info - Transcript save error details:", {
+          errorMessage: error instanceof Error ? error.message : String(error),
+          hasSupabaseEnv: !!(process.env.REACT_APP_SUPABASE_URL && process.env.REACT_APP_SUPABASE_ANON_KEY),
+          supabaseUrl: process.env.REACT_APP_SUPABASE_URL ? 'configured' : 'missing',
+          supabaseKey: process.env.REACT_APP_SUPABASE_ANON_KEY ? 'configured' : 'missing'
+        });
+        // Continue with disconnect even if transcript save fails
+      }
+    } else {
+      console.log("📝 No active transcript session found - nothing to save.");
+    }
     
     // Log final statistics before disconnecting
     const stats = packetStatsRef.current;
