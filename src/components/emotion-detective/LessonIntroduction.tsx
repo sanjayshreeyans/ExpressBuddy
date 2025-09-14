@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
-import { RealtimeExpressBuddyAvatar } from '../avatar/RealtimeExpressBuddyAvatar';
+import { VideoExpressBuddyAvatar } from '../avatar/VideoExpressBuddyAvatar';
 import { useTTSPlayback } from '../../hooks/useTTSPlayback';
 import { LessonIntroductionProps, EMOTION_LEVELS, EMOTION_METADATA } from '../../types/emotion-detective';
 import { RiveInputs } from '../../types/avatar';
@@ -205,12 +205,9 @@ const LessonIntroduction: React.FC<LessonIntroductionProps> = ({
           >
             <Card className={`${picoPosition === 'center' ? 'h-96' : 'h-80'} transition-all duration-800`}>
               <CardContent className="p-4 h-full">
-                <RealtimeExpressBuddyAvatar
+                <VideoExpressBuddyAvatar
                   className="w-full h-full"
-                  visemes={ttsState.visemes}
-                  subtitles={ttsState.subtitles}
                   onCurrentSubtitleChange={handleSubtitleChange}
-                  onRiveInputsReady={handleRiveInputsReady}
                 />
               </CardContent>
             </Card>

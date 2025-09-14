@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { RealtimeExpressBuddyAvatar } from '../avatar/RealtimeExpressBuddyAvatar';
+import { VideoExpressBuddyAvatar } from '../avatar/VideoExpressBuddyAvatar';
 import { useTTSPlayback } from '../../hooks/useTTSPlayback';
 import { useRiveInputs } from '../../utils/riveInputs';
 import { SpeakerIcon, SpeakerButton } from './SpeakerIcon';
@@ -60,10 +60,8 @@ export const TTSExample: React.FC = () => {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Pico Avatar</h3>
               <div className="h-64 bg-gray-100 rounded-lg overflow-hidden">
-                <RealtimeExpressBuddyAvatar
+                <VideoExpressBuddyAvatar
                   className="w-full h-full"
-                  visemes={visemes}
-                  subtitles={subtitles}
                   onCurrentSubtitleChange={setCurrentSubtitle}
                 />
               </div>

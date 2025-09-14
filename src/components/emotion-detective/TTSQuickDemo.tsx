@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RealtimeExpressBuddyAvatar } from '../avatar/RealtimeExpressBuddyAvatar';
+import { VideoExpressBuddyAvatar } from '../avatar/VideoExpressBuddyAvatar';
 import { useTTSPlayback } from '../../hooks/useTTSPlayback';
 
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -74,15 +74,12 @@ export const TTSQuickDemo: React.FC = () => {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Pico Avatar</h3>
                 <div className="h-[40rem] bg-gray-100 rounded-lg overflow-hidden border-2 border-gray-200">
-                  <RealtimeExpressBuddyAvatar
+                  <VideoExpressBuddyAvatar
                     className="w-full h-full"
-                    visemes={visemes}
-                    subtitles={subtitles}
-                    onCurrentSubtitleChange={(subtitle) => {
+                    onCurrentSubtitleChange={(subtitle: string) => {
                       // The subtitle is already handled by the TTS hook
                       console.log('Current subtitle:', subtitle);
                     }}
-                    onRiveInputsReady={setRiveInputs}
                   />
                 </div>
 
