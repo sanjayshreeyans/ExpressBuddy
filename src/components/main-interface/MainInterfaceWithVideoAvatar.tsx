@@ -1061,62 +1061,6 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
 
           <Captions subtitleText={currentAvatarSubtitle} />
 
-          {/* **NEW**: Space Bar Hint Overlay - positioned near avatar */}
-          {connected && hintSystem.config.enabled && (
-            <div
-              className="space-hint-overlay"
-              style={{
-                position: 'absolute',
-                bottom: '120px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                background: hintSystem.state.isProcessing ? 
-                  'linear-gradient(135deg, #ff6b6b, #ffa500)' : 
-                  'linear-gradient(135deg, #4f46e5, #7c3aed)',
-                color: 'white',
-                padding: '12px 20px',
-                borderRadius: '25px',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-                transition: 'all 0.3s ease',
-                animation: hintSystem.state.isProcessing ? 'pulse 1s infinite' : 'none',
-                userSelect: 'none',
-                zIndex: 10,
-                border: '2px solid rgba(255,255,255,0.2)'
-              }}
-              title="Hold the space bar for 500ms to get a helpful hint from ExpressBuddy"
-            >
-              <span style={{ fontSize: '20px' }}>
-                {hintSystem.state.isProcessing ? '⏳' : '🎯'}
-              </span>
-              {hintSystem.state.isProcessing ? 
-                'Getting your hint...' : 
-                'Hold SPACE for hint'
-              }
-              {hintSystem.state.hintCount > 0 && (
-                <span
-                  style={{
-                    background: 'rgba(255,255,255,0.3)',
-                    borderRadius: '50%',
-                    width: '24px',
-                    height: '24px',
-                    fontSize: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginLeft: '8px'
-                  }}
-                >
-                  {hintSystem.state.hintCount}
-                </span>
-              )}
-            </div>
-          )}
-
           <div className="panda-status">
             {avatarState.status === 'listening' && (
               <div className="status-bubble listening">● Listening</div>

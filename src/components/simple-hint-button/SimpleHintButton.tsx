@@ -43,10 +43,23 @@ export function SimpleHintButton() {
       disabled={!connected || isProcessing}
       variant="outline"
       size="sm"
-      className="flex items-center gap-2"
+      style={{
+        backgroundColor: '#FFD700', // Bright yellow
+        color: '#000000', // Black text for contrast
+        border: '2px solid #FFA500', // Orange border
+        fontWeight: 'bold',
+        boxShadow: '0 2px 8px rgba(255, 215, 0, 0.5)', // Yellow glow
+        fontSize: '14px',
+        padding: '8px 16px',
+        borderRadius: '12px',
+        minWidth: '100px'
+      }}
+      className="flex items-center gap-2 hover:bg-yellow-400 transition-all duration-200 transform hover:scale-105"
     >
-      <Lightbulb className={`h-4 w-4 ${isProcessing ? 'animate-pulse' : ''}`} />
-      {isProcessing ? 'Sending Hint...' : 'Get Hint'}
+      <Lightbulb className={`h-4 w-4 ${isProcessing ? 'animate-pulse text-orange-600' : 'text-orange-600'}`} />
+      <span className="font-semibold">
+        {isProcessing ? 'Sending...' : 'Get Hint'}
+      </span>
     </Button>
   );
 }
