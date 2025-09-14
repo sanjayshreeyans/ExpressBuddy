@@ -50,9 +50,9 @@ export function SimpleHintButton() {
         fontWeight: 'bold',
         boxShadow: '0 2px 8px rgba(255, 215, 0, 0.5)', // Yellow glow
         fontSize: '14px',
-        padding: '8px 16px',
+        padding: '8px 20px', // Increased horizontal padding
         borderRadius: '12px',
-        minWidth: '100px'
+        minWidth: '120px' // Increased minimum width
       }}
       className="flex items-center gap-2 hover:bg-yellow-400 transition-all duration-200 transform hover:scale-105"
     >
