@@ -23,6 +23,7 @@ import { useScreenCapture } from "../../hooks/use-screen-capture";
 import { useWebcam } from "../../hooks/use-webcam";
 import { AudioRecorder } from "../../lib/audio-recorder";
 import AudioPulse from "../audio-pulse/AudioPulse";
+import { SimpleHintButton } from "../simple-hint-button/SimpleHintButton";
 import "./control-tray.scss";
 import SettingsDialog from "../settings-dialog/SettingsDialog";
 
@@ -77,8 +78,16 @@ function ControlTray({
   const renderCanvasRef = useRef<HTMLCanvasElement>(null);
   const connectButtonRef = useRef<HTMLButtonElement>(null);
 
-  const { client, connected, connect, disconnect, volume, isBuffering, enableChunking, setEnableChunking } =
-    useLiveAPIContext();
+  const { 
+    client, 
+    connected, 
+    connect, 
+    disconnect, 
+    volume, 
+    isBuffering, 
+    enableChunking, 
+    setEnableChunking
+  } = useLiveAPIContext();
 
   useEffect(() => {
     if (!connected && connectButtonRef.current) {
@@ -271,6 +280,12 @@ function ControlTray({
             />
           </>
         )}
+
+        {/* Simple Hint Button - Always available when connected */}
+        {connected && (
+          <SimpleHintButton />
+        )}
+
         {children}
       </nav>
 

@@ -82,12 +82,12 @@ import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import { useLoggerStore } from "../../lib/store-logger";
 import { useResponseBuffer } from "../../hooks/useResponseBuffer";
 import { AvatarState } from "../../types/avatar";
-// **NEW**: Import silence detection components
+// **NEW**: Import hint indicator component
 import { NudgeIndicator } from "../nudge-indicator/NudgeIndicator";
-import { SilenceDetectionSettings } from "../silence-settings/SilenceDetectionSettings";
 // **NEW**: Import transcript service for saving conversation transcripts
 import TranscriptService from "../../services/transcript-service";
 import "./main-interface.scss";
+import "../../styles/hint-animations.css";
 import {
   Modality,
   FunctionDeclaration,
@@ -127,9 +127,9 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
     client, 
     setConfig, 
     volume, // Add volume to detect when AI is speaking
-    silenceDetection,
-    isNudgeIndicatorVisible,
-    sendNudgeToGemini,
+    hintSystem,
+    isHintIndicatorVisible,
+    sendHintToGemini,
     setEnableChunking,
     // **NEW**: Avatar animation callbacks
     onAITurnComplete,
@@ -160,9 +160,6 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
       setIsAvatarSpeaking(false);
     });
   }, [onAITurnStart, onAITurnComplete]);
-  
-  // **NEW**: Silence detection settings visibility
-  const [isSettingsVisible, setIsSettingsVisible] = useState(false);
 
   const { buffer, addChunk, markComplete, reset, accumulatedText } = useResponseBuffer();
 
@@ -1024,53 +1021,9 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
             </button>
           </div>
 
-          {/* Keep connection status and settings on the right with spacing */}
+          {/* Keep connection status on the right */}
           <div className="connection-status" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <div className={cn('status-bubble', { connected })}>{connected ? '● Connected' : '○ Disconnected'}</div>
-
-            {/* **NEW**: Silence Detection Settings Button (unchanged behavior) */}
-            <button
-              onClick={() => setIsSettingsVisible(true)}
-              className="silence-settings-btn"
-              title="Configure silence detection and nudge system"
-              style={{
-                background: silenceDetection.config.enabled ? 'var(--primary)' : '#6b7280',
-                color: 'white',
-                border: 'none',
-                padding: '8px 12px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                transition: 'all 0.3s ease'
-              }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                {silenceDetection.config.enabled ? 'notifications_active' : 'notifications_off'}
-              </span>
-              Silence Detection
-              {silenceDetection.state.nudgeCount > 0 && (
-                <span
-                  className="nudge-count"
-                  style={{
-                    background: '#ff4444',
-                    color: 'white',
-                    borderRadius: '50%',
-                    width: '20px',
-                    height: '20px',
-                    fontSize: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  {silenceDetection.state.nudgeCount}
-                </span>
-              )}
-            </button>
           </div>
         </div>
       </div>
@@ -1104,10 +1057,65 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
             isListening={isAvatarSpeaking}
             onAvatarStateChange={handleAvatarStateChange}
             onCurrentSubtitleChange={handleAvatarSubtitleChange}
-            silenceDetection={silenceDetection} // **NEW**: Pass silence detection data
           />
 
           <Captions subtitleText={currentAvatarSubtitle} />
+
+          {/* **NEW**: Space Bar Hint Overlay - positioned near avatar */}
+          {connected && hintSystem.config.enabled && (
+            <div
+              className="space-hint-overlay"
+              style={{
+                position: 'absolute',
+                bottom: '120px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                background: hintSystem.state.isProcessing ? 
+                  'linear-gradient(135deg, #ff6b6b, #ffa500)' : 
+                  'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                color: 'white',
+                padding: '12px 20px',
+                borderRadius: '25px',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                transition: 'all 0.3s ease',
+                animation: hintSystem.state.isProcessing ? 'pulse 1s infinite' : 'none',
+                userSelect: 'none',
+                zIndex: 10,
+                border: '2px solid rgba(255,255,255,0.2)'
+              }}
+              title="Hold the space bar for 500ms to get a helpful hint from ExpressBuddy"
+            >
+              <span style={{ fontSize: '20px' }}>
+                {hintSystem.state.isProcessing ? '⏳' : '🎯'}
+              </span>
+              {hintSystem.state.isProcessing ? 
+                'Getting your hint...' : 
+                'Hold SPACE for hint'
+              }
+              {hintSystem.state.hintCount > 0 && (
+                <span
+                  style={{
+                    background: 'rgba(255,255,255,0.3)',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
+                    fontSize: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginLeft: '8px'
+                  }}
+                >
+                  {hintSystem.state.hintCount}
+                </span>
+              )}
+            </div>
+          )}
 
           <div className="panda-status">
             {avatarState.status === 'listening' && (
@@ -1136,20 +1144,10 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
         />
       </div>
       
-      {/* **NEW**: Nudge Indicator */}
+      {/* **NEW**: Hint Indicator */}
       <NudgeIndicator 
-        visible={isNudgeIndicatorVisible}
-        message="Piko has a question for you!"
-      />
-      
-      {/* **NEW**: Silence Detection Settings */}
-      <SilenceDetectionSettings
-        isVisible={isSettingsVisible}
-        onClose={() => setIsSettingsVisible(false)}
-        config={silenceDetection.config}
-        analytics={silenceDetection.getAnalytics()}
-        onConfigUpdate={silenceDetection.updateConfig}
-        onManualNudge={silenceDetection.triggerManualNudge}
+        visible={isHintIndicatorVisible}
+        message="Piko has a helpful hint for you!"
       />
     </div>
   );

@@ -60,15 +60,14 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import cn from "classnames";
 import ControlTray from "../control-tray/ControlTray";
-import { RealtimeExpressBuddyAvatar } from "../avatar/RealtimeExpressBuddyAvatar";
+import { VideoExpressBuddyAvatar } from "../avatar/VideoExpressBuddyAvatar";
 import Captions from "../captions/Captions";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import { useLoggerStore } from "../../lib/store-logger";
 import { useResponseBuffer } from "../../hooks/useResponseBuffer";
 import { AvatarState } from "../../types/avatar";
-// **NEW**: Import silence detection components
+// **NEW**: Import hint indicator component (replaces silence detection components)
 import { NudgeIndicator } from "../nudge-indicator/NudgeIndicator";
-import { SilenceDetectionSettings } from "../silence-settings/SilenceDetectionSettings";
 import "./main-interface.scss";
 import {
   Modality,
@@ -102,17 +101,14 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
 
   // FIX: Destructure `setConfig` from the context to send the system prompt.
-  // **NEW**: Include silence detection functionality
+  // **NEW**: Include hint system functionality
   const { 
     connected, 
     client, 
     setConfig, 
-    visemeService, 
-    currentVisemes, 
-    currentSubtitles,
-    silenceDetection,
-    isNudgeIndicatorVisible,
-    sendNudgeToGemini
+    hintSystem,
+    isHintIndicatorVisible,
+    sendHintToGemini
   } = useLiveAPIContext();
   const { log } = useLoggerStore();
 
@@ -123,8 +119,7 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
   });
   const [currentAvatarSubtitle, setCurrentAvatarSubtitle] = useState<string>('');
   
-  // **NEW**: Silence detection settings visibility
-  const [isSettingsVisible, setIsSettingsVisible] = useState(false);
+  // **REMOVED**: No longer need settings visibility state since we removed silence detection settings
 
   const { buffer, addChunk, markComplete, reset, accumulatedText } = useResponseBuffer();
 
@@ -843,32 +838,46 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
               {connected ? "● Connected" : "○ Disconnected"}
             </div>
             
-            {/* **NEW**: Silence Detection Settings Button */}
+            {/* **NEW**: Get Hint Button (replaces silence detection) */}
             <button
-              onClick={() => setIsSettingsVisible(true)}
-              className="silence-settings-btn"
-              title="Configure silence detection and nudge system"
+              onClick={() => hintSystem.triggerHint()}
+              className="get-hint-btn"
+              title="Get a helpful hint or suggestion from Piko"
+              disabled={!connected || !hintSystem.config.enabled}
               style={{
-                background: silenceDetection.config.enabled ? 'var(--primary)' : '#6b7280',
+                background: connected && hintSystem.config.enabled ? 'var(--primary)' : '#6b7280',
                 color: 'white',
                 border: 'none',
-                padding: '8px 12px',
-                borderRadius: '6px',
-                fontSize: '12px',
+                padding: '10px 16px',
+                borderRadius: '8px',
+                fontSize: '14px',
                 fontWeight: 'bold',
-                cursor: 'pointer',
+                cursor: connected && hintSystem.config.enabled ? 'pointer' : 'not-allowed',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
-                transition: 'all 0.3s ease'
+                gap: '6px',
+                transition: 'all 0.3s ease',
+                opacity: connected && hintSystem.config.enabled ? 1 : 0.6
+              }}
+              onMouseOver={(e) => {
+                if (connected && hintSystem.config.enabled) {
+                  e.currentTarget.style.background = 'var(--primary-hover)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }
+              }}
+              onMouseOut={(e) => {
+                if (connected && hintSystem.config.enabled) {
+                  e.currentTarget.style.background = 'var(--primary)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }
               }}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                {silenceDetection.config.enabled ? 'notifications_active' : 'notifications_off'}
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                lightbulb
               </span>
-              Silence Detection
-              {silenceDetection.state.nudgeCount > 0 && (
-                <span className="nudge-count" style={{
+              Get Hint
+              {hintSystem.state.hintCount > 0 && (
+                <span className="hint-count" style={{
                   background: '#ff4444',
                   color: 'white',
                   borderRadius: '50%',
@@ -880,7 +889,7 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
                   justifyContent: 'center',
                   marginLeft: '4px'
                 }}>
-                  {silenceDetection.state.nudgeCount}
+                  {hintSystem.state.hintCount}
                 </span>
               )}
             </button>
@@ -912,14 +921,10 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
 
 
         <div className="panda-stage">
-          <RealtimeExpressBuddyAvatar
+          <VideoExpressBuddyAvatar
             className="panda-container"
-            visemes={currentVisemes}
-            subtitles={currentSubtitles}
-            visemeService={visemeService}
             onAvatarStateChange={handleAvatarStateChange}
             onCurrentSubtitleChange={handleAvatarSubtitleChange}
-           silenceDetection={silenceDetection} // **NEW**: Pass silence detection data
           />
 
           <Captions subtitleText={currentAvatarSubtitle} />
@@ -947,20 +952,10 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
         />
       </div>
       
-      {/* **NEW**: Nudge Indicator */}
+      {/* **NEW**: Hint Indicator (replaces nudge indicator) */}
       <NudgeIndicator 
-        visible={isNudgeIndicatorVisible}
-        message="Piko has a question for you!"
-      />
-      
-      {/* **NEW**: Silence Detection Settings */}
-      <SilenceDetectionSettings
-        isVisible={isSettingsVisible}
-        onClose={() => setIsSettingsVisible(false)}
-        config={silenceDetection.config}
-        analytics={silenceDetection.getAnalytics()}
-        onConfigUpdate={silenceDetection.updateConfig}
-        onManualNudge={silenceDetection.triggerManualNudge}
+        visible={isHintIndicatorVisible}
+        message="Piko has a helpful hint for you!"
       />
     </div>
   );
