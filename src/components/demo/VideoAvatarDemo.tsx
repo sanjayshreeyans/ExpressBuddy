@@ -6,6 +6,8 @@
 import React, { useState, useEffect } from 'react';
 import { VideoExpressBuddyAvatar } from '../avatar/VideoExpressBuddyAvatar';
 import { AvatarState, PlaybackState } from '../../types/avatar';
+import { useHintSystem, HintSystemCallbacks } from '../../hooks/use-hint-system';
+import '../../styles/hint-animations.css';
 
 interface VideoAvatarDemoProps {
   // Add any props if needed
@@ -17,6 +19,27 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
   const [playbackState, setPlaybackState] = useState<PlaybackState | null>(null);
   const [currentSubtitle, setCurrentSubtitle] = useState<string>('');
   const [autoToggle, setAutoToggle] = useState(false);
+  const [isHintIndicatorVisible, setIsHintIndicatorVisible] = useState(false);
+  const [lastHintMessage, setLastHintMessage] = useState<string>('');
+
+  // Initialize hint system for demo
+  const hintSystemCallbacks: HintSystemCallbacks = {
+    onHintTriggered: async (hintMessage: string) => {
+      console.log('🎯 Demo hint triggered:', hintMessage);
+      setLastHintMessage(hintMessage);
+      // In a real app, this would send to Gemini
+      // For demo, just show a message
+      alert('Demo Hint Triggered!\n\n' + hintMessage);
+    },
+    onShowHintIndicator: (show: boolean) => {
+      setIsHintIndicatorVisible(show);
+    },
+    onAnalyticsEvent: (event: string, data: any) => {
+      console.log('📊 Demo Analytics:', event, data);
+    }
+  };
+
+  const hintSystem = useHintSystem(hintSystemCallbacks);
 
   // Auto-toggle demo for showcasing transitions
   useEffect(() => {
@@ -28,15 +51,6 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
 
     return () => clearInterval(interval);
   }, [autoToggle]);
-
-  // Mock silence detection object for debug info
-  const mockSilenceDetection = {
-    config: { enabled: true, maxNudges: 3 },
-    state: { 
-      conversationState: isListening ? 'listening' : 'idle',
-      nudgeCount: 0 
-    }
-  };
 
   const handleAvatarStateChange = (state: AvatarState) => {
     setAvatarState(state);
@@ -77,8 +91,81 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
                 onAvatarStateChange={handleAvatarStateChange}
                 onPlaybackStateChange={handlePlaybackStateChange}
                 onCurrentSubtitleChange={handleCurrentSubtitleChange}
-                silenceDetection={mockSilenceDetection}
               />
+
+              {/* **NEW**: Space Bar Hint Overlay for Demo */}
+              <div
+                className="absolute bottom-4 left-1/2 transform -translate-x-1/2"
+                style={{
+                  background: hintSystem.state.isProcessing ? 
+                    'linear-gradient(135deg, #ff6b6b, #ffa500)' : 
+                    'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                  color: 'white',
+                  padding: '10px 16px',
+                  borderRadius: '20px',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+                  transition: 'all 0.3s ease',
+                  animation: hintSystem.state.isProcessing ? 'pulse 1s infinite' : 'none',
+                  userSelect: 'none',
+                  zIndex: 10,
+                  border: '2px solid rgba(255,255,255,0.2)'
+                }}
+                title="Hold the space bar for 500ms to trigger demo hint"
+              >
+                <span style={{ fontSize: '16px' }}>
+                  {hintSystem.state.isProcessing ? '⏳' : '🎯'}
+                </span>
+                {hintSystem.state.isProcessing ? 
+                  'Demo hint...' : 
+                  'Hold SPACE for hint'
+                }
+                {hintSystem.state.hintCount > 0 && (
+                  <span
+                    style={{
+                      background: 'rgba(255,255,255,0.3)',
+                      borderRadius: '50%',
+                      width: '20px',
+                      height: '20px',
+                      fontSize: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginLeft: '4px'
+                    }}
+                  >
+                    {hintSystem.state.hintCount}
+                  </span>
+                )}
+              </div>
+
+              {/* Hint success indicator */}
+              {isHintIndicatorVisible && (
+                <div
+                  className="absolute top-4 left-1/2 transform -translate-x-1/2"
+                  style={{
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    color: 'white',
+                    padding: '8px 16px',
+                    borderRadius: '15px',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)',
+                    zIndex: 15,
+                    animation: 'bounce 0.5s ease'
+                  }}
+                >
+                  <span>✅</span>
+                  Hint triggered!
+                </div>
+              )}
             </div>
 
             {/* Avatar Controls */}
@@ -105,6 +192,13 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
                 >
                   {autoToggle ? '⏹️ Stop Auto Demo' : '🔄 Auto Demo'}
                 </button>
+
+                <button
+                  onClick={() => hintSystem.triggerHint()}
+                  className="px-4 py-2 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 transition-colors"
+                >
+                  🎯 Manual Hint
+                </button>
               </div>
 
               <div className="text-sm text-gray-600">
@@ -114,6 +208,8 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
                   <li>Click "Stop Talking" to return to idle animation</li>
                   <li>Enable "Auto Demo" to see automatic transitions</li>
                   <li>Click on the avatar to manually toggle states</li>
+                  <li><strong>Hold SPACE BAR</strong> for 500ms to trigger hint system</li>
+                  <li>Click "Manual Hint" button to trigger hint directly</li>
                 </ul>
               </div>
             </div>
@@ -207,6 +303,48 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
                 </div>
               )}
 
+              {/* Hint System Status */}
+              <div className="bg-purple-50 rounded-lg p-4">
+                <h3 className="font-semibold text-purple-800 mb-2">Hint System Status</h3>
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <span className="text-gray-600">Processing:</span>
+                    <span className={`ml-2 font-medium ${
+                      hintSystem.state.isProcessing ? 'text-orange-600' : 'text-gray-600'
+                    }`}>
+                      {hintSystem.state.isProcessing ? '⏳ Yes' : '⚪ No'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Hints Sent:</span>
+                    <span className="ml-2 font-medium text-purple-600">
+                      🎯 {hintSystem.state.hintCount}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Indicator Visible:</span>
+                    <span className={`ml-2 font-medium ${
+                      isHintIndicatorVisible ? 'text-green-600' : 'text-gray-600'
+                    }`}>
+                      {isHintIndicatorVisible ? '✅ Yes' : '❌ No'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Enabled:</span>
+                    <span className={`ml-2 font-medium ${
+                      hintSystem.config.enabled ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {hintSystem.config.enabled ? '✅ Yes' : '❌ No'}
+                    </span>
+                  </div>
+                  {lastHintMessage && (
+                    <div className="mt-2 p-2 bg-purple-100 rounded text-xs">
+                      <strong>Last hint:</strong> {lastHintMessage.substring(0, 100)}...
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Features */}
               <div className="bg-blue-50 rounded-lg p-4">
                 <h3 className="font-semibold text-blue-800 mb-2">Features</h3>
@@ -218,6 +356,8 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
                   <li>✅ Debug information</li>
                   <li>✅ No backend server required</li>
                   <li>✅ Lightweight implementation</li>
+                  <li>✅ <strong>Space bar hint system</strong></li>
+                  <li>✅ <strong>Manual hint triggering</strong></li>
                 </ul>
               </div>
 
