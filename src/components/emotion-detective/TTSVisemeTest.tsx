@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { useTTSPlayback } from '../../hooks/useTTSPlayback';
-import { RealtimeExpressBuddyAvatar } from '../avatar/RealtimeExpressBuddyAvatar';
+import { VideoExpressBuddyAvatar } from '../avatar/VideoExpressBuddyAvatar';
 
 /**
  * Simple TTS Viseme Test Component
@@ -51,17 +51,10 @@ export const TTSVisemeTest: React.FC = () => {
                                 <CardContent className="p-4 h-full flex flex-col">
                                     <div className="flex-1 flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-b from-blue-50 to-purple-50">
                                         <div className="w-[250px] h-[350px] flex items-center justify-center">
-                                            <RealtimeExpressBuddyAvatar
+                                            <VideoExpressBuddyAvatar
                                                 className="w-full h-full"
-                                                visemes={ttsState.visemes || []}
-                                                subtitles={ttsState.subtitles || []}
-                                                onCurrentSubtitleChange={(subtitle) => {
+                                                onCurrentSubtitleChange={(subtitle: string) => {
                                                     console.log('🎯 Test: Current subtitle changed:', subtitle);
-                                                }}
-                                                onRiveInputsReady={(inputs) => {
-                                                    console.log('🎯 Test: Rive inputs ready:', inputs);
-                                                    setRiveInputs(inputs);
-                                                    ttsActions.updateRiveInputs(inputs);
                                                 }}
                                             />
                                         </div>

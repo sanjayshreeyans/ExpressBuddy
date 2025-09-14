@@ -23,6 +23,7 @@ import { useScreenCapture } from "../../hooks/use-screen-capture";
 import { useWebcam } from "../../hooks/use-webcam";
 import { AudioRecorder } from "../../lib/audio-recorder";
 import AudioPulse from "../audio-pulse/AudioPulse";
+import { SimpleHintButton } from "../simple-hint-button/SimpleHintButton";
 import "./control-tray.scss";
 import SettingsDialog from "../settings-dialog/SettingsDialog";
 
@@ -32,6 +33,7 @@ export type ControlTrayProps = {
   supportsVideo: boolean;
   onVideoStreamChange?: (stream: MediaStream | null) => void;
   enableEditingSettings?: boolean;
+  disableChunkingToggle?: boolean; // Disable chunking controls for video avatar
 };
 
 type MediaStreamButtonProps = {
@@ -64,6 +66,7 @@ function ControlTray({
   onVideoStreamChange = () => {},
   supportsVideo,
   enableEditingSettings,
+  disableChunkingToggle = false, // Default to false for backward compatibility
 }: ControlTrayProps) {
   const videoStreams = [useWebcam(), useScreenCapture()];
   const [activeVideoStream, setActiveVideoStream] =
@@ -75,8 +78,16 @@ function ControlTray({
   const renderCanvasRef = useRef<HTMLCanvasElement>(null);
   const connectButtonRef = useRef<HTMLButtonElement>(null);
 
-  const { client, connected, connect, disconnect, volume, isBuffering, enableChunking, setEnableChunking } =
-    useLiveAPIContext();
+  const { 
+    client, 
+    connected, 
+    connect, 
+    disconnect, 
+    volume, 
+    isBuffering, 
+    enableChunking, 
+    setEnableChunking
+  } = useLiveAPIContext();
 
   useEffect(() => {
     if (!connected && connectButtonRef.current) {
@@ -230,31 +241,33 @@ function ControlTray({
           <AudioPulse volume={volume} active={connected} hover={false} />
         </div>
         
-        {/* Simple Audio Mode Controls */}
-        <div className="chunk-controls">
-          <div className="chunk-mode-toggle">
-            <button
-              className={`action-button ${enableChunking ? 'connected' : ''}`}
-              onClick={() => setEnableChunking(!enableChunking)}
-              disabled={!connected}
-              title={enableChunking ? "Waterfall mode: Wait for complete audio, then sync with visemes" : "Immediate mode: Stream audio as received (legacy)"}
-            >
-              <span className="material-symbols-outlined">
-                {enableChunking ? 'sync' : 'flash_on'}
+        {/* Simple Audio Mode Controls - Hidden for video avatar */}
+        {!disableChunkingToggle && (
+          <div className="chunk-controls">
+            <div className="chunk-mode-toggle">
+              <button
+                className={`action-button ${enableChunking ? 'connected' : ''}`}
+                onClick={() => setEnableChunking(!enableChunking)}
+                disabled={!connected}
+                title={enableChunking ? "Waterfall mode: Wait for complete audio, then sync with visemes" : "Immediate mode: Stream audio as received (legacy)"}
+              >
+                <span className="material-symbols-outlined">
+                  {enableChunking ? 'sync' : 'flash_on'}
+                </span>
+              </button>
+              <span className="mode-label">
+                {enableChunking ? 'Sync' : 'Stream'}
               </span>
-            </button>
-            <span className="mode-label">
-              {enableChunking ? 'Sync' : 'Stream'}
-            </span>
-          </div>
-          
-          {isBuffering && (
-            <div className="buffering-indicator">
-              <span className="material-symbols-outlined">schedule</span>
-              <span>Processing...</span>
             </div>
-          )}
-        </div>
+            
+            {isBuffering && (
+              <div className="buffering-indicator">
+                <span className="material-symbols-outlined">schedule</span>
+                <span>Processing...</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {supportsVideo && (
           <>
@@ -267,6 +280,12 @@ function ControlTray({
             />
           </>
         )}
+
+        {/* Simple Hint Button - Always available when connected */}
+        {connected && (
+          <SimpleHintButton />
+        )}
+
         {children}
       </nav>
 

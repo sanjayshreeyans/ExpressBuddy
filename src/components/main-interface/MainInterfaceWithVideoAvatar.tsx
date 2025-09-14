@@ -2,7 +2,22 @@
  * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this f🚨 **ASYNCHRONOUS TOOL USAGE**🚨 *1. **write_to_memory**: Store ANY important detail abo�📝 **MEMORY USAGE EXAMPLES:**
+ * you may not use th  // **NEW**: Register avatar animation callbacks with LiveAPI
+  useEffect(() => {
+    console.log('� Registering avatar animation callbacks...');
+    
+    onAITurnStart(() => {
+      console.log('🎬 AI Turn Started - Switching to TALKING animation');
+      setIsAvatarSpeaking(true);
+    });
+    
+    onAITurnComplete(() => {
+      console.log('🎬 AI Turn Complete - Switching to IDLE animation');
+      setIsAvatarSpeaking(false);
+    });
+    
+    console.log('✅ Avatar animation callbacks registered');
+  }, [onAITurnStart, onAITurnComplete]);NCHRONOUS TOOL USAGE**🚨 *1. **write_to_memory**: Store ANY important detail abo�📝 **MEMORY USAGE EXAMPLES:**
 - Child: "My dog is named Max" → IMMEDIATELY call write_to_memory(key="pet_name", value="Max - a dog")
 - Child: "I had a bad day at school" → Store: write_to_memory(key="recent_school_experience", value="Had a difficult day at school, seemed upset")
 - Child: "I love playing soccer" → Store: write_to_memory(key="favorite_sport", value="Soccer - really enjoys playing")
@@ -57,7 +72,8 @@
  * limitations under the License.
  */
 
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import cn from "classnames";
 import ControlTray from "../control-tray/ControlTray";
 import { VideoExpressBuddyAvatar } from "../avatar/VideoExpressBuddyAvatar";
@@ -66,9 +82,12 @@ import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import { useLoggerStore } from "../../lib/store-logger";
 import { useResponseBuffer } from "../../hooks/useResponseBuffer";
 import { AvatarState } from "../../types/avatar";
-// **NEW**: Import hint indicator component (replaces silence detection components)
+// **NEW**: Import hint indicator component
 import { NudgeIndicator } from "../nudge-indicator/NudgeIndicator";
+// **NEW**: Import transcript service for saving conversation transcripts
+import TranscriptService from "../../services/transcript-service";
 import "./main-interface.scss";
+import "../../styles/hint-animations.css";
 import {
   Modality,
   FunctionDeclaration,
@@ -97,18 +116,24 @@ interface MainInterfaceWithAvatarProps {
 }
 
 export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterfaceWithAvatarProps) {
+  const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
 
-  // FIX: Destructure `setConfig` from the context to send the system prompt.
-  // **NEW**: Include hint system functionality
+  // FIX: Destructure from the context to send the system prompt.
+  // **NEW**: Include silence detection functionality, volume, and avatar callbacks
   const { 
     connected, 
     client, 
     setConfig, 
+    volume, // Add volume to detect when AI is speaking
     hintSystem,
     isHintIndicatorVisible,
-    sendHintToGemini
+    sendHintToGemini,
+    setEnableChunking,
+    // **NEW**: Avatar animation callbacks
+    onAITurnComplete,
+    onAITurnStart
   } = useLiveAPIContext();
   const { log } = useLoggerStore();
 
@@ -118,8 +143,23 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
     hasGeneratedContent: false
   });
   const [currentAvatarSubtitle, setCurrentAvatarSubtitle] = useState<string>('');
+  const [isAvatarSpeaking, setIsAvatarSpeaking] = useState<boolean>(false); // Avatar state for video
   
-  // **REMOVED**: No longer need settings visibility state since we removed silence detection settings
+  // **NEW**: Transcript service for saving conversation transcripts
+  const transcriptService = TranscriptService;
+  
+  // **NEW**: Register avatar animation callbacks with LiveAPI
+  useEffect(() => {
+    onAITurnStart(() => {
+      console.log('� AI Turn Started - Switching to TALKING animation');
+      setIsAvatarSpeaking(true);
+    });
+    
+    onAITurnComplete(() => {
+      console.log('🎬 AI Turn Complete - Switching to IDLE animation');
+      setIsAvatarSpeaking(false);
+    });
+  }, [onAITurnStart, onAITurnComplete]);
 
   const { buffer, addChunk, markComplete, reset, accumulatedText } = useResponseBuffer();
 
@@ -519,11 +559,14 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
 
     // Set the configuration for the Live API client.
     if (setConfig) {
-      setConfig({
+      const config: any = {
         responseModalities: [Modality.AUDIO],
         systemInstruction: {
           parts: [{ text: systemPrompt }],
         },
+        // Enable transcription for both input and output (JS SDK expects camelCase)
+        outputAudioTranscription: {},
+        inputAudioTranscription: {},
         // Combine multiple tools for enhanced capabilities
         tools: [
           memoryTool, // Memory functions for personalization
@@ -531,9 +574,28 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
           // { googleSearch: {} }, // For looking up information
           // { codeExecution: {} }, // For computational tasks
         ],
+      };
+      
+      console.log('🔧 Setting Gemini Live API config with transcription enabled:', {
+        hasInputTranscription: !!config.inputAudioTranscription,
+        hasOutputTranscription: !!config.outputAudioTranscription,
+        responseModalities: config.responseModalities,
+        toolCount: config.tools.length
       });
+      
+      setConfig(config);
     }
   }, [setConfig]); // This effect runs once when setConfig is available.
+
+  // **VIDEO AVATAR FIX**: Set FLASH mode (disable chunking) to avoid viseme service errors
+  useEffect(() => {
+    if (setEnableChunking) {
+      setEnableChunking(false); // FLASH mode - no viseme service needed
+      console.log('🎬 Video avatar: FLASH mode enabled (viseme service disabled)');
+    }
+  }, [setEnableChunking]);
+
+
 
   // Set the video stream to the video element for display purposes
   useEffect(() => {
@@ -548,28 +610,121 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
     }
   }, [videoStream]);
 
-  // Set up logging and handle streaming content for the avatar
+  // Set up logging and handle streaming content (no more turn event handling needed)
   useEffect(() => {
     const handleLog = (streamingLog: any) => {
+      console.log('🔍 MainInterfaceWithVideoAvatar received log:', streamingLog.type, streamingLog);
       log(streamingLog);
 
-      if (streamingLog.type === 'server.content' &&
-          streamingLog.message?.serverContent?.modelTurn?.parts) {
-        reset(); // Clear previous content to show only the newest full message
-        const parts = streamingLog.message.serverContent.modelTurn.parts;
-        for (const part of parts) {
-          if (part.text && part.text.trim()) {
-            addChunk(part.text);
+      // **DEBUG**: Comprehensive transcription detection across all message fields
+      const checkForTranscriptions = (obj: any, path = '') => {
+        if (!obj || typeof obj !== 'object') return;
+        
+        for (const [key, value] of Object.entries(obj)) {
+          const currentPath = path ? `${path}.${key}` : key;
+          
+          // Look for transcription-related fields anywhere in the message
+          if (key.toLowerCase().includes('transcription') || key === 'inputTranscription' || key === 'outputTranscription') {
+            console.log('🔍 TRANSCRIPTION FIELD FOUND:', {
+              path: currentPath,
+              key,
+              value,
+              messageType: streamingLog.type,
+              hasText: !!(value as any)?.text,
+              text: (value as any)?.text,
+              finished: (value as any)?.finished
+            });
+          }
+          
+          // Recursively check nested objects
+          if (typeof value === 'object' && value !== null) {
+            checkForTranscriptions(value, currentPath);
+          }
+        }
+      };
+      
+      // Check the entire streaming log for transcription data
+      checkForTranscriptions(streamingLog);
+
+      // Handle transcription data emitted in server.content logs (SDK emits full message as log)
+      if (streamingLog.type === 'server.content' && streamingLog.message?.serverContent) {
+        const serverContent = streamingLog.message.serverContent as any;
+        
+        // **DEBUG**: Log all server content to see what we're getting
+        console.log('🔍 DEBUG: Server content received:', {
+          hasInputTranscription_snake: !!serverContent.input_transcription,
+          hasOutputTranscription_snake: !!serverContent.output_transcription,
+          hasInputTranscription_camel: !!serverContent.inputTranscription,
+          hasOutputTranscription_camel: !!serverContent.outputTranscription,
+          hasModelTurn: !!serverContent.modelTurn,
+          serverContentKeys: Object.keys(serverContent),
+          fullServerContent: serverContent
+        });
+        
+        // Try both snake_case and camelCase formats for input transcription
+        const inputTranscription = serverContent.input_transcription || serverContent.inputTranscription;
+        if (inputTranscription) {
+          const { text, finished } = inputTranscription;
+          console.log('🎤 INPUT transcription detected:', { 
+            text, 
+            finished, 
+            confidence: inputTranscription.confidence,
+            fieldName: serverContent.input_transcription ? 'input_transcription' : 'inputTranscription'
+          });
+          if (text && text.trim()) {
+            console.log('📝 ✅ Processing user transcription:', { text, finished });
+            transcriptService.addUserTranscription(text, { 
+              finished, 
+              timestamp: Date.now(),
+              confidence: inputTranscription.confidence 
+            });
+          } else {
+            console.log('📝 ⚠️ Empty user transcription, skipping');
+          }
+        }
+        
+  // Try both snake_case and camelCase formats for output transcription
+  const outputTranscription = serverContent.output_transcription || serverContent.outputTranscription;
+        if (outputTranscription) {
+          const { text, finished } = outputTranscription;
+          console.log('🔊 OUTPUT transcription detected:', { 
+            text, 
+            finished, 
+            confidence: outputTranscription.confidence,
+            fieldName: serverContent.output_transcription ? 'output_transcription' : 'outputTranscription'
+          });
+          if (text && text.trim()) {
+            console.log('📝 ✅ Processing AI transcription:', { text, finished });
+            transcriptService.addAITranscription(text, { 
+              finished, 
+              timestamp: Date.now(),
+              confidence: outputTranscription.confidence 
+            });
+          } else {
+            console.log('📝 ⚠️ Empty AI transcription, skipping');
+          }
+        }
+        
+        // Handle model turn parts for UI display
+        if (serverContent.modelTurn?.parts) {
+          reset(); // Clear previous content to show only the newest full message
+          const parts = serverContent.modelTurn.parts;
+          for (const part of parts) {
+            if (part.text && part.text.trim()) {
+              addChunk(part.text);
+            }
           }
         }
       }
 
-      if (streamingLog.type === 'server.turn.complete') {
+      if (streamingLog.type === 'server.turn.complete' || streamingLog.type === 'turncomplete') {
         markComplete();
+        console.log('🎬 Turn complete (' + streamingLog.type + ') - processed in callbacks');
       }
 
-      if (streamingLog.type === 'server.turn.start') {
+      if (streamingLog.type === 'server.turn.start' || streamingLog.type === 'turnstart') {
         reset();
+        console.log('🎬 Turn start (' + streamingLog.type + ') - processed in callbacks');
       }
     };
 
@@ -810,13 +965,46 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
           <h1>ExpressBuddy</h1>
           <p>AI Voice & Vision Assistant</p>
         </div>
-        <div className="header-actions">
-          {onGoToLanding && (
+        <div
+          className="header-actions"
+          style={{
+            display: 'flex',
+            gap: '8px',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            justifyContent: 'flex-end'
+          }}
+        >
+          {/* Demo navigation buttons group */}
+          <div className="demo-nav-group" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {onGoToLanding && (
+              <button
+                onClick={onGoToLanding}
+                className="back-to-landing-btn"
+                style={{
+                  background: 'var(--primary)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.background = 'var(--primary-hover)')}
+                onMouseOut={(e) => (e.currentTarget.style.background = 'var(--primary)')}
+              >
+                ← Back to Home
+              </button>
+            )}
+
+            {/* New: Emotion Detective CTA inside header (no overlap) */}
             <button
-              onClick={onGoToLanding}
-              className="back-to-landing-btn"
+              onClick={() => navigate('/emotion-detective')}
+              className="go-emotion-detective-btn"
               style={{
-                background: 'var(--primary)',
+                background: '#2563eb',
                 color: 'white',
                 border: 'none',
                 padding: '8px 16px',
@@ -824,75 +1012,18 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
                 fontSize: '14px',
                 fontWeight: 'bold',
                 cursor: 'pointer',
-                marginRight: '16px',
                 transition: 'all 0.3s ease'
               }}
-              onMouseOver={(e) => e.currentTarget.style.background = 'var(--primary-hover)'}
-              onMouseOut={(e) => e.currentTarget.style.background = 'var(--primary)'}
+              onMouseOver={(e) => (e.currentTarget.style.background = '#1d4ed8')}
+              onMouseOut={(e) => (e.currentTarget.style.background = '#2563eb')}
             >
-              ← Back to Home
+              Go to Emotion Detective
             </button>
-          )}
-          <div className="connection-status">
-            <div className={cn("status-bubble", { connected })}>
-              {connected ? "● Connected" : "○ Disconnected"}
-            </div>
-            
-            {/* **NEW**: Get Hint Button (replaces silence detection) */}
-            <button
-              onClick={() => hintSystem.triggerHint()}
-              className="get-hint-btn"
-              title="Get a helpful hint or suggestion from Piko"
-              disabled={!connected || !hintSystem.config.enabled}
-              style={{
-                background: connected && hintSystem.config.enabled ? 'var(--primary)' : '#6b7280',
-                color: 'white',
-                border: 'none',
-                padding: '10px 16px',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                cursor: connected && hintSystem.config.enabled ? 'pointer' : 'not-allowed',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.3s ease',
-                opacity: connected && hintSystem.config.enabled ? 1 : 0.6
-              }}
-              onMouseOver={(e) => {
-                if (connected && hintSystem.config.enabled) {
-                  e.currentTarget.style.background = 'var(--primary-hover)';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                }
-              }}
-              onMouseOut={(e) => {
-                if (connected && hintSystem.config.enabled) {
-                  e.currentTarget.style.background = 'var(--primary)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }
-              }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                lightbulb
-              </span>
-              Get Hint
-              {hintSystem.state.hintCount > 0 && (
-                <span className="hint-count" style={{
-                  background: '#ff4444',
-                  color: 'white',
-                  borderRadius: '50%',
-                  width: '20px',
-                  height: '20px',
-                  fontSize: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginLeft: '4px'
-                }}>
-                  {hintSystem.state.hintCount}
-                </span>
-              )}
-            </button>
+          </div>
+
+          {/* Keep connection status on the right */}
+          <div className="connection-status" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div className={cn('status-bubble', { connected })}>{connected ? '● Connected' : '○ Disconnected'}</div>
           </div>
         </div>
       </div>
@@ -923,6 +1054,7 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
         <div className="panda-stage">
           <VideoExpressBuddyAvatar
             className="panda-container"
+            isListening={isAvatarSpeaking}
             onAvatarStateChange={handleAvatarStateChange}
             onCurrentSubtitleChange={handleAvatarSubtitleChange}
           />
@@ -936,8 +1068,11 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
             {avatarState.status === 'processing' && (
               <div className="status-bubble thinking">● Processing</div>
             )}
+            {(avatarState.status === 'speaking' || isAvatarSpeaking) && (
+              <div className="status-bubble speaking">● Speaking</div>
+            )}
             {avatarState.isBuffering && (
-              <div className="status-bubble buffering">● Preparing</div>
+              <div className="status-bubble buffering">● Loading Avatar</div>
             )}
           </div>
         </div>
@@ -949,10 +1084,11 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
           supportsVideo={true}
           onVideoStreamChange={setVideoStream}
           enableEditingSettings={true}
+          disableChunkingToggle={true} // Disable viseme/chunking controls for video avatar
         />
       </div>
       
-      {/* **NEW**: Hint Indicator (replaces nudge indicator) */}
+      {/* **NEW**: Hint Indicator */}
       <NudgeIndicator 
         visible={isHintIndicatorVisible}
         message="Piko has a helpful hint for you!"

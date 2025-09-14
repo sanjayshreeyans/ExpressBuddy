@@ -18,12 +18,14 @@ import "./App.scss";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { LiveAPIProvider } from "./contexts/LiveAPIContext";
 import MainInterfaceWithAvatar from "./components/main-interface/MainInterfaceWithAvatar";
+import MainInterfaceWithVideoAvatar from "./components/main-interface/MainInterfaceWithVideoAvatar";
 import LandingPage from "./components/landing-page/LandingPage";
 
 import LearningPathHome from "./components/home/LearningPathHome";
 import AuthPage from "./components/auth/AuthPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import OnboardingPage from "./components/auth/OnboardingPage";
+import VideoAvatarDemo from "./components/demo/VideoAvatarDemo";
 import TTSIntegrationTest from "./components/emotion-detective/TTSIntegrationTest";
 import TTSQuickDemo from "./components/emotion-detective/TTSQuickDemo";
 import TTSVisemeTest from "./components/emotion-detective/TTSVisemeTest";
@@ -66,7 +68,11 @@ function AppContent() {
     }
   }, [isAuthenticated, child, isFirstTimeUser, userLoading, kindeLoading]);
 
-  if (kindeLoading || userLoading) {
+  // Do not block demo/public routes with auth loading spinners
+  const publicPaths = ['/', '/video-avatar-demo', '/emotion-detective'];
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
+
+  if (!publicPaths.includes(currentPath) && (kindeLoading || userLoading)) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
@@ -80,10 +86,10 @@ function AppContent() {
   return (
     <Router>
       <Routes>
-        {/* Landing Page - Public Route */}
-        <Route path="/" element={<LandingPage />} />
+        {/* Default route - redirect straight to Video Avatar Demo */}
+        <Route path="/" element={<Navigate to="/video-avatar-demo" replace />} />
 
-        {/* Authentication - Public Route */}
+        {/* Authentication - Public Route (kept for completeness) */}
         <Route path="/login" element={<AuthPage />} />
 
         {/* Onboarding - Semi-Protected Route (authenticated but no profile) */}
@@ -109,6 +115,17 @@ function AppContent() {
               </LiveAPIProvider>
             </>
           </ProtectedRoute>
+        } />
+
+        {/* Video Avatar Chat - Public Demo Route */}
+        <Route path="/video-avatar-demo" element={
+          <>
+            {/* Integrated toolbar only; moved demo nav button into header of the interface */}
+            <StagewiseToolbar config={{ plugins: [ReactPlugin] }} />
+            <LiveAPIProvider options={apiOptions}>
+              <MainInterfaceWithVideoAvatar onGoToLanding={() => window.location.href = '/'} />
+            </LiveAPIProvider>
+          </>
         } />
 
         {/* TTS Quick Demo - Development Route */}
@@ -145,19 +162,17 @@ function AppContent() {
           </ProtectedRoute>
         } />
 
-        {/* Emotion Detective Learning - Production Route */}
+        {/* Emotion Detective Learning - Public Demo Route */}
         <Route path="/emotion-detective" element={
-          <ProtectedRoute requiresProfile={true}>
-            <EmotionDetectiveLearning
-              lessonId="emotion-detective-level-1"
-              childId="current-child"
-              onComplete={(results) => {
-                console.log('Lesson completed:', results);
-                // Navigate back to dashboard after completion
-                window.location.href = '/dashboard';
-              }}
-            />
-          </ProtectedRoute>
+          <EmotionDetectiveLearning
+            lessonId="emotion-detective-level-1"
+            childId="current-child"
+            onComplete={(results) => {
+              console.log('Lesson completed:', results);
+              // Navigate back to dashboard after completion
+              window.location.href = '/dashboard';
+            }}
+          />
         } />
 
         {/* Question Types Demo - Development Route */}
@@ -183,8 +198,8 @@ function AppContent() {
           </ProtectedRoute>
         } />
 
-        {/* Catch all route - redirect to landing */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Catch all route - redirect to demo */}
+        <Route path="*" element={<Navigate to="/video-avatar-demo" replace />} />
       </Routes>
     </Router>
   );
