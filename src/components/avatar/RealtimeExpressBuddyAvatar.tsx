@@ -55,6 +55,12 @@ export const RealtimeExpressBuddyAvatar: React.FC<RealtimeExpressBuddyAvatarProp
 
   const riveInputs = useRiveInputs(rive);
 
+  // Local viseme/subtitle state (in earlier versions these were passed as props)
+  const [visemes, setVisemes] = useState<VisemeData[]>([]);
+  const [subtitles, setSubtitles] = useState<SubtitleData[]>([]);
+  // Placeholder for any viseme service/debug object referenced in dev-only UI
+  const visemeService: any = null;
+
   // Initialize playback controller
   useEffect(() => {
     if (isLoaded && rive) {
