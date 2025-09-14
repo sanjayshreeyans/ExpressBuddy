@@ -44,7 +44,6 @@ interface VideoExpressBuddyAvatarProps {
   onAvatarStateChange?: (state: AvatarState) => void;
   onPlaybackStateChange?: (state: PlaybackState) => void;
   onCurrentSubtitleChange?: (subtitle: string) => void;
-  silenceDetection?: any; // For displaying silence status
   hideDebugInfo?: boolean; // Hide debug overlay for cleaner display
 }
 
@@ -54,7 +53,6 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
   onAvatarStateChange,
   onPlaybackStateChange,
   onCurrentSubtitleChange,
-  silenceDetection,
   hideDebugInfo = false,
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -260,14 +258,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
           <div>Listening: {isListening ? '🔴 Yes' : '⚪ No'}</div>
           <div>Loaded: {isLoaded ? '✅' : '❌'}</div>
           <div>Time: {currentTime.toFixed(2)}s</div>
-          {silenceDetection && silenceDetection.config.enabled && (
-            <div className="mt-2 pt-2 border-t border-gray-600">
-              <div>Piko Status: {silenceDetection.state.conversationState}</div>
-              {silenceDetection.state.nudgeCount > 0 && (
-                <div>Tries: {silenceDetection.state.nudgeCount}/{silenceDetection.config.maxNudges}</div>
-              )}
-            </div>
-          )}
+          {/* Removed silence detection status - now using manual hint system */}
         </div>
       )}
 

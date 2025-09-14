@@ -42,22 +42,26 @@ export function SimpleHintButton() {
       onClick={handleHintClick}
       disabled={!connected || isProcessing}
       variant="outline"
-      size="sm"
+      // Use gap-0 to remove all default flex spacing
+      className="flex flex-col items-center justify-center gap-0 font-bold hover:bg-yellow-400 transition-all duration-200 transform hover-scale-105"
       style={{
-        backgroundColor: '#FFD700', // Bright yellow
-        color: '#000000', // Black text for contrast
-        border: '2px solid #FFA500', // Orange border
-        fontWeight: 'bold',
-        boxShadow: '0 2px 8px rgba(255, 215, 0, 0.5)', // Yellow glow
-        fontSize: '14px',
-        padding: '8px 20px', // Increased horizontal padding
-        borderRadius: '12px',
-        minWidth: '120px' // Increased minimum width
+        backgroundColor: '#FFD700',
+        color: '#000000',
+        border: '2px solid #FFA500',
+        boxShadow: '0 2px 8px rgba(255, 215, 0, 0.5)',
+        borderRadius: '16px',
+        width: '80px',
+        height: '50px', // Adjusted height for the new layout
+        padding: '0', 
       }}
-      className="flex items-center gap-2 hover:bg-yellow-400 transition-all duration-200 transform hover:scale-105"
     >
-      <Lightbulb className={`h-4 w-4 ${isProcessing ? 'animate-pulse text-orange-600' : 'text-orange-600'}`} />
-      <span className="font-semibold">
+      <Lightbulb 
+        className={`h-8 w-8 ${isProcessing ? 'animate-pulse text-orange-600' : 'text-orange-600'}`} 
+      />
+      {/* KEY CHANGE: Added -mt-1 to pull the text up.
+        You can make this value more negative (e.g., -mt-1.5) for an even tighter fit.
+      */}
+      <span className="text-xs font-semibold leading-none -mt-3.5">
         {isProcessing ? 'Sending...' : 'Get Hint'}
       </span>
     </Button>

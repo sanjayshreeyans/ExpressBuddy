@@ -12,34 +12,22 @@ import { VisemeData, SubtitleData } from '../../lib/viseme-transcription-service
 
 interface RealtimeExpressBuddyAvatarProps {
   className?: string;
-  visemes?: VisemeData[];
-  subtitles?: SubtitleData[];
+  // Viseme props removed - using simple hint button instead
   onAvatarStateChange?: (state: AvatarState) => void;
   onPlaybackStateChange?: (state: PlaybackState) => void;
   onCurrentSubtitleChange?: (subtitle: string) => void;
   onRiveInputsReady?: (riveInputs: any) => void; // **NEW**: Callback to expose Rive inputs
-  visemeService?: any; // For debug info
-  silenceDetection?: any; // **NEW**: For displaying silence status
+  // Debug props removed
 }
 
 export const RealtimeExpressBuddyAvatar: React.FC<RealtimeExpressBuddyAvatarProps> = ({
   className = '',
-  visemes = [],
-  subtitles = [],
   onAvatarStateChange,
   onPlaybackStateChange,
   onCurrentSubtitleChange,
   onRiveInputsReady, // **NEW**: Callback to expose Rive inputs
-  visemeService,
-  silenceDetection, // **NEW**
 }) => {
-  // Debug visemes received by avatar
-  useEffect(() => {
-    console.log('🎯 RealtimeExpressBuddyAvatar: Props changed - Visemes:', visemes.length, 'Subtitles:', subtitles.length);
-    if (visemes.length > 0) {
-      console.log('🎯 RealtimeExpressBuddyAvatar: Received visemes:', visemes.slice(0, 3));
-    }
-  }, [visemes, subtitles]);
+  // Viseme debug logic removed - using simple hint button instead
   const [isLoaded, setIsLoaded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -267,15 +255,7 @@ export const RealtimeExpressBuddyAvatar: React.FC<RealtimeExpressBuddyAvatarProp
               <div>Ultra-fast: {visemeService.isUltraFast ? '⚡' : '🐌'}</div>
             </>
           )}
-          {/* **NEW**: Silence detection debug info */}
-          {silenceDetection && silenceDetection.config.enabled && (
-            <div className="mt-2 pt-2 border-t border-gray-600">
-              <div>Piko Status: {silenceDetection.state.conversationState}</div>
-              {silenceDetection.state.nudgeCount > 0 && (
-                <div>Tries: {silenceDetection.state.nudgeCount}/{silenceDetection.config.maxNudges}</div>
-              )}
-            </div>
-          )}
+          {/* Removed silence detection debug info - now using manual hint system */}
         </div>
       )}
     </div>
