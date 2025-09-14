@@ -21,9 +21,8 @@ import { AudioStreamer } from "../lib/audio-streamer";
 import { audioContext } from "../lib/utils";
 import VolMeterWorket from "../lib/worklets/vol-meter";
 import { LiveConnectConfig } from "@google/genai";
-import { VisemeTranscriptionService, VisemeData, SubtitleData } from "../lib/viseme-transcription-service";
-// **NEW**: Import silence detection hook
-import { useSilenceDetection, SilenceDetectionConfig, SilenceDetectionState, SilenceAnalytics } from "./use-silence-detection";
+// **NEW**: Import hint system hook (replaces silence detection)
+import { useHintSystem, HintSystemConfig, HintSystemState, HintAnalytics } from "./use-hint-system";
 // **NEW**: Import transcript service for saving conversation transcripts
 import TranscriptService from "../services/transcript-service";
 
@@ -37,9 +36,6 @@ export type UseLiveAPIResults = {
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
   volume: number;
-  visemeService: VisemeTranscriptionService;
-  currentVisemes: VisemeData[];
-  currentSubtitles: SubtitleData[];
   // Ultra-fast monitoring and debugging utilities
   getPacketStatistics: () => any;
   logPerformanceReport: () => any;
@@ -49,18 +45,17 @@ export type UseLiveAPIResults = {
   setEnableChunking: (enabled: boolean) => void;
   forceProcessAudio: () => void;
   replayLastAudio: () => void;
-  // **NEW**: Silence detection and nudge system
-  silenceDetection: {
-    config: SilenceDetectionConfig;
-    updateConfig: (updates: Partial<SilenceDetectionConfig>) => void;
-    state: SilenceDetectionState;
-    triggerManualNudge: () => Promise<void>;
-    resetSilenceTimer: () => void;
-    getAnalytics: () => SilenceAnalytics;
+  // **NEW**: Manual hint system (replaces silence detection)
+  hintSystem: {
+    config: HintSystemConfig;
+    updateConfig: (updates: Partial<HintSystemConfig>) => void;
+    state: HintSystemState;
+    triggerHint: () => Promise<void>;
+    getAnalytics: () => HintAnalytics;
   };
-  // **NEW**: Nudge system state
-  isNudgeIndicatorVisible: boolean;
-  sendNudgeToGemini: (message: string) => Promise<void>;
+  // **NEW**: Hint system state
+  isHintIndicatorVisible: boolean;
+  sendHintToGemini: (message: string) => Promise<void>;
   // **NEW**: Avatar animation callbacks
   onAITurnComplete: (callback: () => void) => void;
   onAITurnStart: (callback: () => void) => void;
@@ -69,7 +64,6 @@ export type UseLiveAPIResults = {
 export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   const client = useMemo(() => new GenAILiveClient(options), [options]);
   const audioStreamerRef = useRef<AudioStreamer | null>(null);
-  const visemeService = useMemo(() => new VisemeTranscriptionService(), []);
 
   const [model, setModel] = useState<string>("models/gemini-live-2.5-flash-preview");
   const [config, setConfig] = useState<LiveConnectConfig>({});
@@ -77,11 +71,9 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   // Ref to track up-to-date connection status inside callbacks
   const connectedRef = useRef(false);
   const [volume, setVolume] = useState(0);
-  const [currentVisemes, setCurrentVisemes] = useState<VisemeData[]>([]);
-  const [currentSubtitles, setCurrentSubtitles] = useState<SubtitleData[]>([]);
   
   // **NEW**: Nudge indicator state
-  const [isNudgeIndicatorVisible, setIsNudgeIndicatorVisible] = useState(false);
+  const [isHintIndicatorVisible, setIsHintIndicatorVisible] = useState(false);
   
   // **NEW**: Avatar animation callback refs
   const aiTurnCompleteCallbackRef = useRef<(() => void) | null>(null);
@@ -91,36 +83,54 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   const [isBuffering, setIsBuffering] = useState<boolean>(false);
   const [enableChunking, setEnableChunking] = useState<boolean>(true); // Allow disabling chunking for compatibility
   
-  // **NEW**: Send nudge to Gemini function
-  const sendNudgeToGemini = useCallback(async (message: string) => {
+  // **NEW**: Send hint to Gemini function
+  const sendHintToGemini = useCallback(async (message: string) => {
+    console.log('🔍 sendHintToGemini called with:', { message, connected, clientExists: !!client });
+    
     if (!connected || !client) {
+      console.error('❌ Cannot send hint - not connected to Gemini');
+      console.error('❌ Connection state:', { connected, clientExists: !!client });
       throw new Error('Not connected to Gemini');
     }
     
-    console.log('📤 Sending nudge text message to Gemini:', message);
-    
-    // Send text message to Gemini using proper text format (not binary input)
-    client.send({ text: message }, true);
-    
-    console.log('✅ Nudge text message sent to Gemini successfully');
+    try {
+      console.log('📤 Sending hint text message to Gemini:', message);
+      console.log('📤 Client send method type:', typeof client.send);
+      
+      // Send text message to Gemini using proper Part format
+      const textPart = { text: message };
+      console.log('📤 TextPart prepared:', textPart);
+      
+      const result = client.send(textPart, true);
+      console.log('📤 Client.send result:', result);
+      
+      console.log('✅ Hint text message sent to Gemini successfully');
+      
+      // **NEW**: Save hint to transcript for conversation history
+      if (TranscriptService.hasActiveSession()) {
+        TranscriptService.addUserTranscription(`[HINT: ${message}]`, { 
+          type: 'hint', 
+          method: 'space_bar_hold',
+          timestamp: new Date().toISOString()
+        });
+        console.log('📝 Hint saved to transcript');
+      } else {
+        console.log('📝 No active transcript session');
+      }
+    } catch (error) {
+      console.error('❌ Failed to send hint to Gemini:', error);
+      console.error('❌ Error details:', error);
+      throw error;
+    }
   }, [connected, client]);
   
-  // **NEW**: Initialize silence detection with callbacks
-  const silenceDetection = useSilenceDetection({
-    onNudgeTriggered: sendNudgeToGemini,
-    onShowNudgeIndicator: setIsNudgeIndicatorVisible,
+  // **NEW**: Initialize hint system with callbacks
+  const hintSystem = useHintSystem({
+    onHintTriggered: sendHintToGemini,
+    onShowHintIndicator: setIsHintIndicatorVisible,
     onAnalyticsEvent: (event: string, data: any) => {
-      console.log(`📊 Silence Analytics - ${event}:`, data);
+      console.log(`📊 Hint Analytics - ${event}:`, data);
       // Could integrate with existing logger here
-    },
-    onSessionTerminated: () => {
-      console.log('🚫 Session terminated due to maximum nudges reached');
-      // Disconnect the client and show termination message
-      if (connected) {
-        disconnect();
-      }
-      // Show termination message
-      alert("Session ended: Maximum interaction attempts reached. Please try again later.");
     },
   });
   
@@ -182,10 +192,8 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       console.log("🔇 Stopped AI audio playback");
     }
     
-    // Reset viseme playback by clearing current visemes
-    setCurrentVisemes([]);
-    setCurrentSubtitles([]);
-    console.log("👄 Reset viseme and subtitle playback");
+    // Reset playback state
+    console.log("🎵 Reset audio playback");
     
     // Clear any buffered audio to prioritize new user input
     audioBufferRef.current = [];
@@ -233,9 +241,8 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     console.log(`🔄 Combined ${audioBufferRef.current.length} audio packets into ${(combinedAudio.length / 1024).toFixed(2)} KB for backend processing`);
     
     try {
-      // **STEP 1: Send complete audio to backend for viseme processing**
-      await visemeService.sendAudioChunk(combinedAudio);
-      console.log(`✅ Complete audio sent to viseme service (${(combinedAudio.length / 1024).toFixed(2)} KB)`);
+      // Simplified audio processing without viseme sync
+      console.log(`🎵 Playing audio immediately (${(combinedAudio.length / 1024).toFixed(2)} KB)`);
       
       // **STEP 2: Wait for viseme response and then play audio with sync**
       // The viseme response will trigger the viseme callbacks, and then we play the audio
@@ -268,7 +275,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       const processingTime = performance.now() - startTime;
       console.log(`⚡ Complete audio processing took ${processingTime.toFixed(2)}ms`);
     }
-  }, [visemeService]);
+  }, []);
 
   // **MANUAL FORCE SEND** - For emergency use when auto-detection fails
   const forceProcessAudio = useCallback(() => {
@@ -302,11 +309,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       autoSendTimeoutRef.current = null;
     }
     
-    // **NEW**: Only update conversation state if silence detection is enabled
-    if (silenceDetection.config.enabled) {
-      console.log('🎯 AI turn complete - transitioning to listening for user');
-      silenceDetection.setConversationState('listening-for-user');
-    }
+    // Note: Removed automatic silence detection - now using manual hint system
     
     if (enableChunking && audioBufferRef.current.length > 0) {
       console.log(`🎯 Gemini turn complete! Processing full audio (${audioBufferRef.current.length} packets)`);
@@ -326,20 +329,16 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     } else {
       console.warn('⚠️ aiTurnCompleteCallback is null - not registered!');
     }
-  }, [enableChunking, processCompleteAudio, silenceDetection.config.enabled]);
+  }, [enableChunking, processCompleteAudio]);  // Removed silence detection dependency
 
   // **GEMINI INTERRUPTED** - User started speaking while AI was talking  
   const onGeminiInterrupted = useCallback(() => {
     console.log("🛑 Gemini interrupted by user - triggering AI interruption");
     
-    // **NEW**: Only reset silence detection if enabled
-    if (silenceDetection.config.enabled) {
-      silenceDetection.resetSilenceTimer();
-      silenceDetection.setConversationState('user-speaking');
-    }
+    // Note: Removed automatic silence detection reset - using manual hint system
     
     interruptAIPlayback();
-  }, [interruptAIPlayback, silenceDetection.config.enabled]);
+  }, [interruptAIPlayback]);  // Removed silence detection dependency
 
   // register audio for streaming server -> speakers
   useEffect(() => {
@@ -366,83 +365,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     }
   }, [audioStreamerRef]);
 
-  // Setup viseme service callbacks
-  useEffect(() => {
-    visemeService.setCallbacks({
-      onVisemes: (visemes, subtitles) => {
-        const now = performance.now();
-        const latency = audioStartTimeRef.current ? now - audioStartTimeRef.current : 0;
-        
-        // Update latency statistics
-        const stats = packetStatsRef.current;
-        stats.averageLatency = (stats.averageLatency * stats.totalPackets + latency) / (stats.totalPackets + 1);
-        stats.maxLatency = Math.max(stats.maxLatency, latency);
-        stats.minLatency = Math.min(stats.minLatency, latency);
-        
-        console.log(`🎯 Viseme/Subtitle sync complete - Latency: ${latency.toFixed(2)}ms, Visemes: ${visemes.length}, Subtitles: ${subtitles.length}`);
-        
-        setCurrentVisemes(visemes);
-        setCurrentSubtitles(subtitles);
-        
-        // **WATERFALL: Play audio immediately when visemes are ready**
-        if (enableChunking && pendingCompleteAudioRef.current) {
-          console.log(`🎵 Starting synchronized audio + viseme playback (${(pendingCompleteAudioRef.current.length / 1024).toFixed(2)} KB)`);
-          
-          // **CRITICAL**: Mark AI as playing and start audio playback to sync with visemes
-          isAIPlayingRef.current = true;
-          audioStreamerRef.current?.addPCM16(pendingCompleteAudioRef.current);
-          pendingCompleteAudioRef.current = null;
-          
-          console.log(`✅ Audio and visemes synchronized successfully`);
-        }
-      },
-      onStreamingChunk: (chunkText, visemes) => {
-        const now = performance.now();
-        const latency = audioStartTimeRef.current ? now - audioStartTimeRef.current : 0;
-        
-        console.log(`⚡ Real-time streaming chunk - Latency: ${latency.toFixed(2)}ms, Text: "${chunkText}", Visemes: ${visemes.length}`);
-        
-        // Update visemes in real-time for streaming chunks (ultra-fast response)
-        setCurrentVisemes(visemes);
-      },
-      onError: (error) => {
-        console.error("❌ Viseme service error:", error);
-        packetStatsRef.current.droppedPackets++;
-      },
-      onConnected: (sessionId) => {
-        console.log("✅ Viseme service connected with session:", sessionId);
-        // Reset packet tracking on new connection
-        packetSequenceRef.current = 0;
-        audioStartTimeRef.current = null;
-        lastPacketTimeRef.current = 0;
-        packetStatsRef.current = {
-          totalPackets: 0,
-          totalBytes: 0,
-          droppedPackets: 0,
-          averageLatency: 0,
-          maxLatency: 0,
-          minLatency: Infinity
-        };
-      },
-      onFinalResults: (response) => {
-        const now = performance.now();
-        const latency = audioStartTimeRef.current ? now - audioStartTimeRef.current : 0;
-        
-        console.log("🏁 Final viseme results received:", {
-          latency: `${latency.toFixed(2)}ms`,
-          visemeCount: response.visemeCount,
-          subtitleCount: response.subtitles.length,
-          processingTime: response.state_tracking.processing_time,
-          totalWords: response.state_tracking.total_words,
-          totalPhonemes: response.state_tracking.total_phonemes,
-          duration: response.state_tracking.duration
-        });
-        
-        setCurrentVisemes(response.visemes);
-        setCurrentSubtitles(response.subtitles);
-      }
-    });
-  }, [visemeService]);
+  // Viseme callbacks removed - using simple hint button instead
 
   useEffect(() => {
     const onOpen = () => {
@@ -516,7 +439,6 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
         sequenceNumber: packetId,
         cumulativeBytes: stats.totalBytes,
         geminiConnected: connectedRef.current,
-        visemeConnected: visemeService.connected,
         mode: enableChunking ? 'waterfall' : 'immediate',
         bufferedChunks: audioBufferRef.current.length
       });
@@ -560,16 +482,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
         isAIPlayingRef.current = true;
         audioStreamerRef.current?.addPCM16(audioData);
         
-        // **2. IMMEDIATE FORWARDING TO VISEME SERVICE** (ultra-fast processing)
-        visemeService.sendAudioChunk(audioData)
-          .then(() => {
-            const processingLatency = performance.now() - now;
-            console.log(`⚡ Viseme service packet #${packetId} sent - Processing latency: ${processingLatency.toFixed(2)}ms`);
-          })
-          .catch((error) => {
-            console.error(`❌ Failed to send packet #${packetId} to viseme service:`, error);
-            stats.droppedPackets++;
-          });
+        // **2. Viseme service removed - using simple hint button instead**
       }
       
       // **WARN FOR SYNCHRONIZATION ISSUES**
@@ -627,19 +540,8 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     // Ensure clean disconnection first
     console.log("🔄 Ensuring clean disconnection...");
     client.disconnect();
-    visemeService.disconnect();
     
-    // Connect viseme service independently (non-blocking, ultra-fast)
-    console.log("🎯 Connecting viseme service (ultra-fast mode)...");
-    const visemeConnectionStart = performance.now();
-    
-    visemeService.connect().then(() => {
-      const visemeLatency = performance.now() - visemeConnectionStart;
-      console.log(`✅ Viseme service connected successfully - Connection latency: ${visemeLatency.toFixed(2)}ms`);
-    }).catch((error) => {
-      console.warn("⚠️ Viseme service connection failed (continuing anyway):", error);
-      // Continue even if viseme service fails - packets will be queued
-    });
+    // Viseme service connection removed - using simple hint button instead
     
     // Small delay to ensure client is fully disconnected before reconnecting
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -666,18 +568,9 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       console.log("📝 Started transcript collection for session:", sessionId);
     }
     
-    // Log final connection status
-    setTimeout(() => {
-      console.log("📊 Connection Status Summary:", {
-        geminiConnected: connected,
-        visemeConnected: visemeService.connected,
-        totalConnectionTime: `${(performance.now() - visemeConnectionStart).toFixed(2)}ms`,
-        readyForUltraFastSync: connected && visemeService.connected,
-        transcriptSessionActive: TranscriptService.hasActiveSession()
-      });
-    }, 500);
+    // Connection status logging removed - viseme service not needed
     
-  }, [client, config, model, visemeService, connected]);
+  }, [client, config, model, connected]);
 
   const disconnect = useCallback(async () => {
     console.log("🛑 Starting ExpressBuddy disconnect sequence...");
@@ -722,12 +615,11 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       minLatency: stats.minLatency === Infinity ? "N/A" : `${stats.minLatency.toFixed(2)}ms`
     });
     
-    // Disconnect both services
+    // Disconnect client
     client.disconnect();
-    visemeService.disconnect();
     setConnected(false);
-    setCurrentVisemes([]);
-    setCurrentSubtitles([]);
+    
+    // Viseme service disconnect removed - not needed for simple hint button
     
     // Reset all tracking variables
     packetSequenceRef.current = 0;
@@ -745,7 +637,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     };
     
     console.log("✅ ExpressBuddy disconnect sequence completed");
-  }, [setConnected, client, visemeService]);
+  }, [setConnected, client]);
 
   // Utility functions for monitoring and debugging
   const getPacketStatistics = useCallback(() => {
@@ -761,13 +653,8 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
         maxLatency: stats.maxLatency,
         minLatency: stats.minLatency === Infinity ? 0 : stats.minLatency
       },
-      visemeService: {
-        connected: visemeService.connected,
-        queueSize: 0 // TODO: Implement getQueueSize in viseme service
-      },
       connectionStatus: {
         geminiConnected: connected,
-        visemeConnected: visemeService.connected,
       },
       synchronization: {
         audioStartTime: audioStartTimeRef.current,
@@ -775,7 +662,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
         currentSequence: packetSequenceRef.current
       }
     };
-  }, [connected, visemeService]);
+  }, [connected]);
 
   const logPerformanceReport = useCallback(() => {
     const report = getPacketStatistics();
@@ -796,13 +683,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     return () => clearInterval(interval);
   }, [connected, logPerformanceReport]);
 
-  // **NEW**: Integration with silence detection system (simplified to prevent loops)
-  // Update volume for speech detection only
-  useEffect(() => {
-    if (silenceDetection.config.enabled) {
-      silenceDetection.updateVolume(volume);
-    }
-  }, [volume, silenceDetection.config.enabled]); // Only depend on enabled flag to prevent loops
+  // Note: Volume monitoring for hint system not needed - using manual triggers only
 
   return {
     client,
@@ -814,9 +695,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     connect,
     disconnect,
     volume,
-    visemeService,
-    currentVisemes,
-    currentSubtitles,
+    // Viseme service removed - using simple hint button instead
     // Debugging and monitoring utilities
     getPacketStatistics,
     logPerformanceReport,
@@ -826,11 +705,11 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     setEnableChunking,
     forceProcessAudio,
     replayLastAudio,
-    // **NEW**: Silence detection and nudge system
-    silenceDetection,
-    // **NEW**: Nudge system state
-    isNudgeIndicatorVisible,
-    sendNudgeToGemini,
+    // **NEW**: Manual hint system (replaces silence detection)
+    hintSystem,
+    // **NEW**: Hint system state
+    isHintIndicatorVisible,
+    sendHintToGemini,
     // **NEW**: Avatar animation callbacks
     onAITurnComplete: (callback: () => void) => {
       console.log('🔄 Registering AI turn complete callback');
