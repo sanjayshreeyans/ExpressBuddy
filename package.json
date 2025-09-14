@@ -84,6 +84,7 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@craco/craco": "^7.1.0",
     "@stagewise-plugins/react": "^0.4.9",
     "@stagewise/toolbar-react": "^0.4.9",
