@@ -1,5 +1,5 @@
 {
-  "name": "ExpressBuddy",
+  "name": "expressbuddy",
   "version": "1.0.0",
   "description": "ExpressBuddy Real-time AI Streaming Console with MainInterface",
   "author": "Sanjay Javangula",
@@ -47,10 +47,10 @@
     "zustand": "^5.0.1"
   },
   "scripts": {
-    "start-https": "HTTPS=true react-scripts start",
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
+    "start-https": "HTTPS=true craco start",
+    "start": "craco start",
+    "build": "craco build",
+    "test": "craco test",
     "eject": "react-scripts eject",
     "dev": "npm start",
     "dev:network": "HOST=0.0.0.0 npm start",
@@ -84,6 +84,7 @@
     ]
   },
   "devDependencies": {
+    "@craco/craco": "^7.1.0",
     "@stagewise-plugins/react": "^0.4.9",
     "@stagewise/toolbar-react": "^0.4.9",
     "@testing-library/jest-dom": "^5.17.0",
@@ -95,12 +96,26 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "assert": "^2.1.0",
     "autoprefixer": "^10.4.21",
+    "browserify-zlib": "^0.2.0",
+    "buffer": "^6.0.3",
+    "crypto-browserify": "^3.12.1",
+    "https-browserify": "^1.0.0",
+    "os-browserify": "^0.3.0",
+    "path-browserify": "^1.0.1",
     "postcss": "^8.5.6",
+    "process": "^0.11.10",
+    "querystring-es3": "^0.2.1",
     "source-map-explorer": "^2.5.3",
+    "stream-browserify": "^3.0.0",
+    "stream-http": "^3.2.0",
     "tailwindcss": "^3.4.17",
     "ts-node": "^10.9.2",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "url": "^0.11.4",
+    "util": "^0.12.5",
+    "vm-browserify": "^1.1.2"
   },
   "overrides": {
     "typescript": "^5.6.3"
