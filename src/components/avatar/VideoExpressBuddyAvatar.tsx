@@ -37,6 +37,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { AvatarState, PlaybackState } from '../../types/avatar';
+import RealtimeSubtitles from '../subtitles/RealtimeSubtitles';
 
 interface VideoExpressBuddyAvatarProps {
   className?: string;
@@ -45,6 +46,10 @@ interface VideoExpressBuddyAvatarProps {
   onPlaybackStateChange?: (state: PlaybackState) => void;
   onCurrentSubtitleChange?: (subtitle: string) => void;
   hideDebugInfo?: boolean; // Hide debug overlay for cleaner display
+  // **NEW**: Real-time subtitle props
+  currentSubtitleText?: string; // Current AI transcript text to display
+  showSubtitles?: boolean; // Whether to show real-time subtitles
+  subtitlePreset?: 'default' | 'large' | 'compact' | 'cinematic'; // Subtitle styling preset
 }
 
 export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = ({
@@ -54,6 +59,10 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
   onPlaybackStateChange,
   onCurrentSubtitleChange,
   hideDebugInfo = false,
+  // **NEW**: Real-time subtitle props with defaults
+  currentSubtitleText = '',
+  showSubtitles = true,
+  subtitlePreset = 'default',
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -299,6 +308,31 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
         preload="auto"
         onClick={handleCharacterClick}
       />
+
+      {/* **NEW**: Real-time Subtitles positioned below the avatar */}
+      {showSubtitles && (
+        <div
+          className="absolute bottom-0 left-0 right-0 flex justify-center"
+          style={{ 
+            zIndex: 15,
+            transform: 'translateY(100%)', // Position below the avatar container
+            paddingTop: '8px'
+          }}
+        >
+          <RealtimeSubtitles
+            text={currentSubtitleText}
+            isVisible={currentState === 'talking' && currentSubtitleText.length > 0}
+            preset={subtitlePreset}
+            wordsPerMinute={200} // Slightly faster than normal speech
+            maxLines={2}
+            showTypingIndicator={true}
+            onComplete={() => {
+              console.log('📝 Subtitle rendering complete');
+            }}
+            debugMode={process.env.NODE_ENV === 'development' && !hideDebugInfo}
+          />
+        </div>
+      )}
 
       {!isLoaded && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

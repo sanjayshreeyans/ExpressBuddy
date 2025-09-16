@@ -144,6 +144,9 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
   });
   const [currentAvatarSubtitle, setCurrentAvatarSubtitle] = useState<string>('');
   const [isAvatarSpeaking, setIsAvatarSpeaking] = useState<boolean>(false); // Avatar state for video
+  // **NEW**: Real-time subtitle state
+  const [currentAITranscript, setCurrentAITranscript] = useState<string>('');
+  const [lastTranscriptUpdate, setLastTranscriptUpdate] = useState<number>(0);
 
 // **NEW**: Safety monitoring and logging functions for school deployment
 const logSafetyEvent = useCallback((eventType: string, details: any) => {
@@ -1001,6 +1004,15 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
               timestamp: Date.now(),
               confidence: outputTranscription.confidence 
             });
+            
+            // **NEW**: Update real-time subtitles with AI transcription
+            setCurrentAITranscript(validatedText);
+            setLastTranscriptUpdate(Date.now());
+            console.log('📝 🎬 Updated real-time subtitles:', { 
+              text: validatedText.substring(0, 50) + '...', 
+              finished,
+              length: validatedText.length 
+            });
           } else {
             console.log('📝 ⚠️ Empty AI transcription, skipping');
           }
@@ -1358,6 +1370,10 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
             isListening={isAvatarSpeaking}
             onAvatarStateChange={handleAvatarStateChange}
             onCurrentSubtitleChange={handleAvatarSubtitleChange}
+            // **NEW**: Real-time subtitle props
+            currentSubtitleText={currentAITranscript}
+            showSubtitles={true}
+            subtitlePreset="default"
           />
 
           <Captions subtitleText={currentAvatarSubtitle} />

@@ -3,7 +3,7 @@
  * Simple demo showcasing the video-based avatar without backend complexity
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { VideoExpressBuddyAvatar } from '../avatar/VideoExpressBuddyAvatar';
 import { AvatarState, PlaybackState } from '../../types/avatar';
 import { useHintSystem, HintSystemCallbacks } from '../../hooks/use-hint-system';
@@ -21,6 +21,17 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
   const [autoToggle, setAutoToggle] = useState(false);
   const [isHintIndicatorVisible, setIsHintIndicatorVisible] = useState(false);
   const [lastHintMessage, setLastHintMessage] = useState<string>('');
+  // **NEW**: Demo subtitle text for testing real-time subtitles
+  const [demoSubtitleText, setDemoSubtitleText] = useState<string>('');
+  
+  // **NEW**: Demo subtitle texts for testing
+  const demoTexts = [
+    "Hello there! I'm Piko, your friendly panda assistant. How are you feeling today?",
+    "That's wonderful to hear! I love chatting with my friends about their day.",
+    "Tell me something exciting that happened to you recently. I'd love to know more about you!",
+    "You seem like such an interesting person. What are some of your favorite things to do?",
+    "Learning about new friends always makes me so happy. What makes you smile the most?"
+  ];
 
   // Initialize hint system for demo
   const hintSystemCallbacks: HintSystemCallbacks = {
@@ -64,6 +75,13 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
     setCurrentSubtitle(subtitle);
   };
 
+  // **NEW**: Demo subtitle testing function
+  const triggerDemoSubtitle = useCallback(() => {
+    const randomText = demoTexts[Math.floor(Math.random() * demoTexts.length)];
+    setDemoSubtitleText(randomText);
+    console.log('🎬 Demo subtitle triggered:', randomText);
+  }, [demoTexts]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-6xl mx-auto">
@@ -91,6 +109,10 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
                 onAvatarStateChange={handleAvatarStateChange}
                 onPlaybackStateChange={handlePlaybackStateChange}
                 onCurrentSubtitleChange={handleCurrentSubtitleChange}
+                // **NEW**: Real-time subtitle props for demo
+                currentSubtitleText={demoSubtitleText}
+                showSubtitles={true}
+                subtitlePreset="default"
               />
             </div>
 
@@ -125,6 +147,14 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
                 >
                   🎯 Manual Hint
                 </button>
+
+                {/* **NEW**: Demo subtitle button */}
+                <button
+                  onClick={triggerDemoSubtitle}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors"
+                >
+                  📝 Test Subtitles
+                </button>
               </div>
 
               <div className="text-sm text-gray-600">
@@ -136,6 +166,7 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
                   <li>Click on the avatar to manually toggle states</li>
                   <li><strong>Hold SPACE BAR</strong> for 500ms to trigger hint system</li>
                   <li>Click "Manual Hint" button to trigger hint directly</li>
+                  <li><strong>🆕 Click "Test Subtitles"</strong> to see word-by-word subtitle rendering below Pico</li>
                 </ul>
               </div>
             </div>
@@ -284,6 +315,7 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
                   <li>✅ Lightweight implementation</li>
                   <li>✅ <strong>Space bar hint system</strong></li>
                   <li>✅ <strong>Manual hint triggering</strong></li>
+                  <li>✅ <strong>🆕 Real-time word-by-word subtitles</strong></li>
                 </ul>
               </div>
 
