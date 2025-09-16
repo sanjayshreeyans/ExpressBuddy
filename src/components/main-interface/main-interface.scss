@@ -73,11 +73,20 @@
 .main-content-area {
   flex-grow: 1; // This is KEY: makes this area fill all available vertical space.
   width: 100%;
-  display: flex;
-  justify-content: center; // Center horizontally
-  align-items: flex-start; // **CHANGED**: Align to top instead of center
+  display: flex; // **CHANGED**: Now a horizontal flex container
+  justify-content: space-between; // **NEW**: Space between panda and chat panel
+  align-items: flex-start; // Align to top
   min-height: 0; // A critical flexbox fix to prevent content overflow issues.
-  padding-top: 0; // **NEW**: Add top padding to move content higher
+  padding: 1rem 2rem; // **NEW**: Add padding for better spacing
+  gap: 2rem; // **NEW**: Gap between panda and chat panel
+
+  // Responsive layout for smaller screens
+  @media (max-width: 1024px) {
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+  }
 }
 
 .panda-stage {
@@ -85,8 +94,14 @@
   flex-direction: column;
   align-items: center;
   gap: 1.5rem;
-  position: relative; // **NEW**: Added for better positioning context
-  margin-top: 0; // **NEW**: Add top margin to move panda higher
+  position: relative; // Added for better positioning context
+  flex: 0 0 auto; // **NEW**: Don't grow or shrink, maintain natural size
+
+  // Responsive sizing
+  @media (max-width: 1024px) {
+    width: 100%;
+    max-width: 400px;
+  }
 }
 
 /*
@@ -100,13 +115,109 @@
   flex-shrink: 0;
 
   // Define a responsive width.
-  width: clamp(350px, 40vw, 450px);
+  width: clamp(300px, 35vw, 400px); // **ADJUSTED**: Smaller for side panel layout
 
   // CRITICAL FIX: Force a 1:1 (square) aspect ratio.
   // This makes the height dynamically equal to the responsive width, giving the
   // Rive canvas a stable, non-zero area to render in. This is the most
   // robust way to solve the "height: 24px" problem.
   aspect-ratio: 1 / 1;
+}
+
+// ============================================================================
+// Subtitle Chat Panel (NEW)
+// Creates a chat-like panel on the right side for subtitles
+// ============================================================================
+.subtitle-chat-panel {
+  flex: 1; // **NEW**: Take up remaining horizontal space
+  max-width: 400px; // **NEW**: Limit maximum width
+  min-width: 300px; // **NEW**: Ensure minimum width
+  height: 100%; // **NEW**: Full height of content area
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
+  overflow: hidden;
+
+  // Responsive layout
+  @media (max-width: 1024px) {
+    width: 100%;
+    max-width: 100%;
+    min-width: auto;
+    height: 300px; // Fixed height on mobile
+  }
+}
+
+.chat-header {
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+  color: white;
+  border-bottom: 1px solid #1967d2;
+  flex-shrink: 0; // Don't shrink header
+  
+  h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    
+    &::before {
+      content: "💬";
+      font-size: 1.2rem;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    padding: 0.75rem 1rem;
+    
+    h3 {
+      font-size: 1rem;
+    }
+  }
+}
+
+.chat-content {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  
+  // Ensure the RealtimeSubtitles component fills the chat area
+  & > * {
+    width: 100%;
+    flex: 1;
+  }
+
+  // Custom scrollbar styling
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+    
+    &:hover {
+      background: #a8a8a8;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    padding: 0.75rem;
+  }
 }
 
 

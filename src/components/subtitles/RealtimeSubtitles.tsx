@@ -11,6 +11,8 @@ interface RealtimeSubtitlesProps {
   text: string;
   /** Whether the AI is currently speaking (controls visibility) */
   isVisible?: boolean;
+  /** If provided, indicates whether the current transcription is finished */
+  isFinished?: boolean;
   /** Maximum number of lines to display */
   maxLines?: number;
   /** Words per minute for rendering speed */
@@ -19,6 +21,8 @@ interface RealtimeSubtitlesProps {
   className?: string;
   /** Style preset for different display modes */
   preset?: 'default' | 'large' | 'compact' | 'cinematic';
+  /** Rendering mode: 'stream' follows incoming text exactly; 'timed' uses a WPM timer */
+  mode?: 'stream' | 'timed';
   /** Whether to show a typing indicator when text is being rendered */
   showTypingIndicator?: boolean;
   /** Callback when subtitle rendering is complete */
@@ -30,11 +34,13 @@ interface RealtimeSubtitlesProps {
 export const RealtimeSubtitles: React.FC<RealtimeSubtitlesProps> = ({
   text,
   isVisible = true,
+  isFinished,
   maxLines = 3,
   wordsPerMinute = 200, // Slightly faster than normal speech for responsiveness
   className = '',
   preset = 'default',
-  showTypingIndicator = true,
+  mode = 'stream',
+  showTypingIndicator = false, // Disabled by default for complete sentence display
   onComplete,
   debugMode = false
 }) => {
@@ -57,19 +63,39 @@ export const RealtimeSubtitles: React.FC<RealtimeSubtitlesProps> = ({
     }
   });
 
-  // Update text when new transcript arrives
+  // Update text when new transcript arrives - show complete sentence immediately
   useEffect(() => {
+    console.log('📝 RealtimeSubtitles received new text:', {
+      text,
+      previousText: previousTextRef.current,
+      textLength: text?.length || 0,
+      isVisible,
+      isFinished,
+      mode
+    });
+    
+    // In stream mode, show the complete text immediately without word-by-word animation
     if (text && text !== previousTextRef.current) {
-      console.log('📝 New subtitle text received:', text);
+      console.log('📝 Displaying complete subtitle text:', text);
       setCurrentText(text);
-      setIsAnimating(true);
+      
+      // Only use timed rendering if explicitly requested
+      if (mode === 'timed') {
+        try {
+          renderControls.setText(text);
+          renderControls.start();
+        } catch (e) {
+          console.warn('📝 Failed to set text in renderer, will rely on initialText sync', e);
+        }
+        setIsAnimating(true);
+      }
       previousTextRef.current = text;
     }
-  }, [text]);
+  }, [text, isVisible, renderControls, mode, isFinished]);
 
   // Clear subtitles when not visible
   useEffect(() => {
-    if (!isVisible) {
+  if (!isVisible) {
       setCurrentText('');
       setIsAnimating(false);
       renderControls.stop();
@@ -90,14 +116,30 @@ export const RealtimeSubtitles: React.FC<RealtimeSubtitlesProps> = ({
       case 'large':
         return {
           ...baseStyles,
-          fontSize: '1.25rem',
-          fontWeight: '600',
-          lineHeight: '1.6',
-          padding: '16px 24px',
-          backgroundColor: 'rgba(0, 0, 0, 0.85)',
-          color: 'white',
-          borderRadius: '12px',
-          maxWidth: '600px'
+          fontSize: '1rem',
+          fontWeight: '500',
+          lineHeight: '1.5',
+          padding: '12px 16px',
+          backgroundColor: '#f0f2f5',
+          color: '#1f2937',
+          borderRadius: '18px 18px 4px 18px', // Chat bubble style
+          maxWidth: '100%',
+          minWidth: '100px',
+          textAlign: 'left' as const,
+          boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+          border: '1px solid #e5e7eb',
+          position: 'relative' as const,
+          // Add chat bubble tail effect
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            bottom: '0',
+            right: '-8px',
+            width: '0',
+            height: '0',
+            borderLeft: '8px solid #f0f2f5',
+            borderTop: '8px solid transparent'
+          }
         };
 
       case 'compact':
@@ -218,8 +260,19 @@ export const RealtimeSubtitles: React.FC<RealtimeSubtitlesProps> = ({
   };
 
   if (!isVisible && !currentText) {
+    console.log('📝 RealtimeSubtitles: Not rendering - not visible and no text');
     return null;
   }
+
+  console.log('📝 RealtimeSubtitles rendering:', {
+    isVisible,
+    currentText: currentText.substring(0, 50) + '...',
+    displayedText: (mode === 'stream' ? text : renderState.displayedText).substring(0, 50) + '...',
+    isFinished,
+    mode,
+    showTypingIndicator,
+    fullText: text
+  });
 
   return (
     <>
@@ -252,9 +305,12 @@ export const RealtimeSubtitles: React.FC<RealtimeSubtitlesProps> = ({
         style={{
           position: 'relative',
           display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          margin: '8px auto',
+          flexDirection: 'column',
+          alignItems: 'flex-start', // Changed for chat-like appearance
+          margin: '0', // Remove auto margins for chat panel
+          padding: '0',
+          height: '100%',
+          width: '100%',
           zIndex: 10,
           ...getAnimationStyles()
         }}
@@ -263,11 +319,14 @@ export const RealtimeSubtitles: React.FC<RealtimeSubtitlesProps> = ({
           className="subtitle-text"
           style={{
             ...getPresetStyles(),
-            position: 'relative'
+            position: 'relative',
+            width: '100%',
+            textAlign: 'left', // Changed for chat-like appearance
+            margin: '0',
+            marginBottom: isVisible ? '12px' : '0' // Add spacing between messages
           }}
         >
-          {renderState.displayedText}
-          {showTypingIndicator && <TypingIndicator />}
+          {mode === 'stream' ? text : (renderState.displayedText || currentText)}
         </div>
 
         <DebugControls />

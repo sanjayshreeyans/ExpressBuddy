@@ -79,6 +79,20 @@ export function useWordByWordRenderer(
     shouldAutoStartRef.current = autoStart;
   }, [autoStart]);
 
+  // Keep internal text in sync with incoming initialText prop
+  // This ensures the hook reacts when the caller passes new text.
+  useEffect(() => {
+    if (initialText !== text) {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      setText(initialText);
+      // If autoStart is enabled, the [text] effect below will start rendering.
+    }
+    // We intentionally exclude `text` setter from deps; comparing value is enough.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialText]);
+
   // Parse text into words when text changes
   useEffect(() => {
     if (!text.trim()) {

@@ -77,6 +77,18 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
   const idleVideoSrc = '/VideoAnims/Pandaalter1_2.mp4';
   const talkingVideoSrc = '/VideoAnims/PandaTalkingAnim.mp4';
 
+  // **DEBUG**: Log subtitle props to check data flow
+  useEffect(() => {
+    console.log('🎬 VideoExpressBuddyAvatar subtitle props:', {
+      currentSubtitleText,
+      showSubtitles,
+      subtitlePreset,
+      hasText: currentSubtitleText.length > 0,
+      currentState,
+      isListening
+    });
+  }, [currentSubtitleText, showSubtitles, subtitlePreset, currentState, isListening]);
+
   // Initialize videos on mount
   useEffect(() => {
     const initializeVideos = async () => {
@@ -315,13 +327,13 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
           className="absolute bottom-0 left-0 right-0 flex justify-center"
           style={{ 
             zIndex: 15,
-            transform: 'translateY(100%)', // Position below the avatar container
-            paddingTop: '8px'
+            transform: 'translateY(calc(100% + 8px))', // Position just below the avatar container
+            pointerEvents: 'none' // Don't interfere with avatar clicks
           }}
         >
           <RealtimeSubtitles
             text={currentSubtitleText}
-            isVisible={currentState === 'talking' && currentSubtitleText.length > 0}
+            isVisible={currentSubtitleText.length > 0} // Show if there's any subtitle text
             preset={subtitlePreset}
             wordsPerMinute={200} // Slightly faster than normal speech
             maxLines={2}

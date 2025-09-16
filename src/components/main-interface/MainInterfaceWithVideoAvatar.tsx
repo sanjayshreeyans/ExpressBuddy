@@ -86,6 +86,8 @@ import { AvatarState } from "../../types/avatar";
 import { NudgeIndicator } from "../nudge-indicator/NudgeIndicator";
 // **NEW**: Import transcript service for saving conversation transcripts
 import TranscriptService from "../../services/transcript-service";
+// **NEW**: Import RealtimeSubtitles component
+import RealtimeSubtitles from "../subtitles/RealtimeSubtitles";
 import "./main-interface.scss";
 import "../../styles/hint-animations.css";
 import {
@@ -147,6 +149,7 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
   // **NEW**: Real-time subtitle state
   const [currentAITranscript, setCurrentAITranscript] = useState<string>('');
   const [lastTranscriptUpdate, setLastTranscriptUpdate] = useState<number>(0);
+  const [isCurrentAIFinal, setIsCurrentAIFinal] = useState<boolean>(false);
 
 // **NEW**: Safety monitoring and logging functions for school deployment
 const logSafetyEvent = useCallback((eventType: string, details: any) => {
@@ -280,6 +283,16 @@ const validateAIResponse = useCallback((response: string): string => {
   }, [onAITurnStart, onAITurnComplete]);
 
   const { buffer, addChunk, markComplete, reset, accumulatedText } = useResponseBuffer();
+
+  // **NEW**: Debug effect to track subtitle state changes
+  useEffect(() => {
+    console.log('📝 🔍 currentAITranscript changed:', {
+      text: currentAITranscript,
+      length: currentAITranscript.length,
+      hasText: currentAITranscript.length > 0,
+      timestamp: new Date().toLocaleTimeString()
+    });
+  }, [currentAITranscript]);
 
   // FIX: Add a useEffect hook to set the system prompt when the component loads.
   useEffect(() => {
@@ -1008,10 +1021,12 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
             // **NEW**: Update real-time subtitles with AI transcription
             setCurrentAITranscript(validatedText);
             setLastTranscriptUpdate(Date.now());
+            setIsCurrentAIFinal(!!finished);
             console.log('📝 🎬 Updated real-time subtitles:', { 
               text: validatedText.substring(0, 50) + '...', 
               finished,
-              length: validatedText.length 
+              length: validatedText.length,
+              fullText: validatedText
             });
           } else {
             console.log('📝 ⚠️ Empty AI transcription, skipping');
@@ -1048,6 +1063,17 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
       };
     }
   }, [client, log, addChunk, markComplete, reset]);
+
+  // Auto-clear subtitles a short moment after the final transcript arrives
+  useEffect(() => {
+    if (isCurrentAIFinal && currentAITranscript) {
+      const timeout = setTimeout(() => {
+        setCurrentAITranscript('');
+        setIsCurrentAIFinal(false);
+      }, 2500); // Keep complete sentence visible longer for readability
+      return () => clearTimeout(timeout);
+    }
+  }, [isCurrentAIFinal, currentAITranscript]);
 
   // **NEW**: Tool call handler for memory functions with ASYNCHRONOUS processing
   useEffect(() => {
@@ -1363,16 +1389,16 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
           }}
         />
 
-
+        {/* Left side: Panda Avatar */}
         <div className="panda-stage">
           <VideoExpressBuddyAvatar
             className="panda-container"
             isListening={isAvatarSpeaking}
             onAvatarStateChange={handleAvatarStateChange}
             onCurrentSubtitleChange={handleAvatarSubtitleChange}
-            // **NEW**: Real-time subtitle props
-            currentSubtitleText={currentAITranscript}
-            showSubtitles={true}
+            // **NEW**: Disable built-in subtitles, we'll show them separately
+            currentSubtitleText=""
+            showSubtitles={false}
             subtitlePreset="default"
           />
 
@@ -1391,6 +1417,29 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
             {avatarState.isBuffering && (
               <div className="status-bubble buffering">● Loading Avatar</div>
             )}
+          </div>
+        </div>
+
+        {/* Right side: Subtitles as a Chat Panel */}
+        <div className="subtitle-chat-panel">
+          <div className="chat-header">
+            <h3>AI Conversation</h3>
+          </div>
+          <div className="chat-content">
+            <RealtimeSubtitles
+              text={currentAITranscript}
+              isVisible={currentAITranscript.length > 0}
+              isFinished={isCurrentAIFinal}
+              preset="large"
+              wordsPerMinute={200}
+              mode="stream"
+              maxLines={10}
+              showTypingIndicator={false}
+              onComplete={() => {
+                console.log('📝 Subtitle rendering complete');
+              }}
+              debugMode={process.env.NODE_ENV === 'development'}
+            />
           </div>
         </div>
       </div>

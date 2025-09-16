@@ -80,6 +80,14 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
     const randomText = demoTexts[Math.floor(Math.random() * demoTexts.length)];
     setDemoSubtitleText(randomText);
     console.log('🎬 Demo subtitle triggered:', randomText);
+    
+    // Also switch to talking state to show the subtitle
+    setIsListening(true);
+    
+    // Switch back to idle after the subtitle finishes (simulate natural timing)
+    setTimeout(() => {
+      setIsListening(false);
+    }, 3000);
   }, [demoTexts]);
 
   return (
