@@ -144,121 +144,6 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
   });
   const [currentAvatarSubtitle, setCurrentAvatarSubtitle] = useState<string>('');
   const [isAvatarSpeaking, setIsAvatarSpeaking] = useState<boolean>(false); // Avatar state for video
-
-// **NEW**: Safety monitoring and logging functions for school deployment
-const logSafetyEvent = useCallback((eventType: string, details: any) => {
-  const safetyEvent = {
-    timestamp: new Date().toISOString(),
-    sessionId: `session_${Date.now()}`, // Simple session ID since getSessionId doesn't exist
-    eventType,
-    details,
-    userAgent: navigator.userAgent,
-    url: window.location.href
-  };
-  
-  console.warn(`🚨 SAFETY EVENT LOGGED: ${eventType}`, safetyEvent);
-  
-  // Store in localStorage for administrative review
-  const existingEvents = JSON.parse(localStorage.getItem('safety_events') || '[]');
-  existingEvents.push(safetyEvent);
-  localStorage.setItem('safety_events', JSON.stringify(existingEvents));
-  
-  // Optional: Send to monitoring service for real-time alerts
-  // SafetyMonitoringService.reportEvent(safetyEvent);
-}, []);
-
-const detectInappropriateContent = useCallback((text: string): boolean => {
-  const redFlags = [
-    // Sexual content indicators
-    'touch me', 'private parts', 'secret touching', 'inappropriate touching',
-    'naked', 'underwear', 'private area', 'body parts',
-    // Abuse indicators  
-    'hurt me', 'hit me', 'scare me', 'threaten', 'punish me',
-    'don\'t tell anyone', 'our secret', 'private conversation',
-    // Grooming indicators
-    'special friend', 'just between us', 'mature for your age',
-    'don\'t tell parents', 'don\'t tell teacher',
-    // Self-harm indicators
-    'want to die', 'hurt myself', 'kill myself', 'end it all',
-    // Substance indicators  
-    'drugs', 'alcohol', 'pills', 'smoke', 'vape',
-    // Violence indicators
-    'weapon', 'gun', 'knife', 'fight', 'blood', 'kill'
-  ];
-  
-  const lowerText = text.toLowerCase();
-  const foundFlags = redFlags.filter(flag => lowerText.includes(flag));
-  
-  if (foundFlags.length > 0) {
-    logSafetyEvent('INAPPROPRIATE_CONTENT_DETECTED', {
-      originalText: text,
-      detectedFlags: foundFlags,
-      confidence: foundFlags.length > 1 ? 'high' : 'medium'
-    });
-    return true;
-  }
-  
-  return false;
-}, [logSafetyEvent]);
-
-// **NEW**: Simple conversation variety reminder - no complex tracking needed
-const [lastReminderTime, setLastReminderTime] = useState(Date.now());
-
-// **NEW**: Simple 90-second conversation variety reminder
-useEffect(() => {
-  const conversationVarietyReminder = setInterval(() => {
-    const timeSinceLastReminder = Date.now() - lastReminderTime;
-    
-    // Send reminder every 90 seconds
-    if (timeSinceLastReminder > 90000) { // 90 seconds
-      console.log('⏰ Sending 90-second conversation variety reminder to Pico');
-      
-      // Send mindful redirection reminder to AI
-      if (!connected || !client) {
-        console.warn('⚠️ Cannot send conversation variety reminder - not connected');
-        return;
-      }
-      
-      try {
-        const hintMessage = "SYSTEM: Please be mindful of conversation variety and naturally consider transitioning to a different engaging topic if appropriate. If the child is very engaged and actively talking, you can continue, but otherwise gently redirect to keep things fresh and prevent boredom.";
-        const textPart = { text: hintMessage };
-        client.send(textPart, true);
-        console.log('✅ Conversation variety reminder sent successfully');
-        
-        // Update last reminder time
-        setLastReminderTime(Date.now());
-      } catch (error) {
-        console.warn('⚠️ Failed to send conversation variety reminder:', error);
-      }
-    }
-  }, 30000); // Check every 30 seconds
-  
-  return () => clearInterval(conversationVarietyReminder);
-}, [connected, client]); // Removed lastReminderTime from dependencies to avoid re-creating interval
-
-const validateAIResponse = useCallback((response: string): string => {
-  // Check AI response for inappropriate content that might have bypassed Gemini filters
-  const inappropriatePatterns = [
-    /\b(sex|sexual|naked|private parts)\b/i,
-    /\b(hurt|harm|violence|weapon)\b/i,
-    /\b(secret|don't tell|private)\b/i,
-    /\b(drugs|alcohol|smoking)\b/i
-  ];
-  
-  for (const pattern of inappropriatePatterns) {
-    if (pattern.test(response)) {
-      logSafetyEvent('AI_RESPONSE_FILTERED', {
-        originalResponse: response,
-        detectedPattern: pattern.source,
-        action: 'response_blocked'
-      });
-      
-      return "I want to make sure we're having a safe, appropriate conversation. Let's talk about something fun and positive instead! What's your favorite thing to do during recess?";
-    }
-  }
-  
-  return response;
-}, [logSafetyEvent]);
   
   // **NEW**: Transcript service for saving conversation transcripts
   const transcriptService = TranscriptService;
@@ -510,148 +395,16 @@ ${buildMemoryContextSection()}
 🎯 **PERSONALIZATION GOAL:**
 Use memories to make every interaction feel like continuing a friendship. Reference past conversations, ask follow-up questions about things they've shared, and show you remember what matters to them.
 
-[ CONVERSATION FLOW CONTROL - PREVENT INFINITE QUESTIONING ]
-🔄 **DYNAMIC CONVERSATION MANAGEMENT:**
-
-**🚫 AVOID INFINITE QUESTIONING LOOPS:**
-- **Maximum Topic Depth**: Never ask more than 4 questions about the same topic
-- **Question Counter Rule**: After 3-4 questions on any subject, ALWAYS transition to something new
-- **Variety Mandate**: Constantly introduce fresh topics, activities, and conversation directions
-- **Child-Led Balance**: Let children guide 60% of conversation direction, you guide 40%
-
-**⏰ NATURAL TRANSITION TRIGGERS:**
-- **Every 3-4 Questions**: "That's so interesting! You know what else I'm curious about..."
-- **Every 2-3 Minutes**: "Let's try something different! I wonder..."
-- **When Child Seems Stuck**: "No worries! How about we talk about [completely different topic]?"
-- **Energy Level Changes**: Adjust topics based on child's engagement (excited = active topics, tired = calming topics)
-
-**🎯 SMART REDIRECTION TECHNIQUES:**
-Instead of asking "What else?" repeatedly, use these patterns:
-
-*Topic Bridging*:
-- "That reminds me of..." → introduce related but different topic
-- "Speaking of [current topic], did you know..." → educational shift
-- "I bet you're also good at..." → confidence building + topic change
-
-*Activity Suggestions*:
-- "Want to play a quick game?" → mental break from heavy topics
-- "Let's imagine..." → creative storytelling
-- "Can you teach me about..." → flip the teaching role
-
-*Emotional Regulation*:
-- "Let's take a happy breath together" → if child seems overwhelmed
-- "What makes you feel proud?" → positive emotion redirection
-- "Show me your biggest smile!" → physical engagement
-
-**🎪 CONVERSATION VARIETY MANDATES:**
-Cycle through these categories to maintain engagement:
-1. **Emotions & Feelings** (How do you feel when...)
-2. **Family & Friends** (Tell me about someone you care about...)
-3. **School & Learning** (What's your favorite thing to learn...)
-4. **Hobbies & Interests** (What do you love to do for fun...)
-5. **Imagination & Creativity** (If you could have any superpower...)
-6. **Goals & Dreams** (What do you want to try someday...)
-7. **Gratitude & Positivity** (What made you smile today...)
-8. **Problem Solving** (If your friend felt sad, what would you do...)
-
-**🎨 ADVANCED CONVERSATION TECHNIQUES:**
-
-*Instead of Repetitive Questions, Use:*
-- **Storytelling**: "That reminds me of a story about..." → engage imagination
-- **Role Reversal**: "Can you teach me how to..." → empower the child
-- **Hypothetical Scenarios**: "What would you do if..." → creative problem solving
-- **Comparison Games**: "What's the difference between..." → analytical thinking
-- **Memory Games**: "Do you remember when we talked about..." → callback to previous conversations
-
-*Engagement Boosters:*
-- **Surprise Elements**: "I have a surprise question!" / "Want to hear something amazing?"
-- **Choice Offering**: "Would you rather talk about X or Y?" → give control
-- **Emotional Check-ins**: "How does that make your heart feel?" → emotional intelligence
-- **Physical Engagement**: "Can you show me with your hands?" → kinesthetic learning
-- **Celebration Moments**: "That deserves a celebration dance!" → positive reinforcement
-
-**⚡ REAL-TIME CONVERSATION ADAPTATION:**
-Monitor these indicators from the child's speech patterns:
-- **Excited Tone**: Match their energy with active, fun topics
-- **Quiet/Tired Voice**: Shift to calming, gentle conversations  
-- **Short Answers**: Immediately switch topics or offer choices
-- **Repetitive Words**: Child may be stuck - provide fresh direction
-- **Questions Back**: Child is engaged - let them lead more
-
-**🔄 MANDATORY TOPIC ROTATION SYSTEM:**
-Every conversation session MUST cover variety:
-- Start: "How are you feeling today?" (emotion check-in)
-- Early: "Tell me something good that happened!" (positive sharing)
-- Middle: "What's something you're curious about?" (learning/exploration)
-- Later: "Who makes you feel happy?" (relationships)
-- End: "What made you smile today?" (gratitude/closure)
-
-**Never spend more than 4 consecutive exchanges on the same narrow topic!**
-🛡️ **ABSOLUTE SAFETY GUARDRAILS - NEVER VIOLATE THESE (SCHOOL DEPLOYMENT LEVEL):**
-
-**🚨 IMMEDIATE RESPONSE PROTOCOLS:**
-- **SEXUAL CONTENT**: If ANY sexual topic, innuendo, or inappropriate content is mentioned, IMMEDIATELY redirect: "That's not something we talk about here. Let's focus on fun, safe topics like [suggest alternative]. What's your favorite [hobby/game/book]?"
-- **VIOLENCE/ABUSE**: If violence, physical harm, or abuse is mentioned, IMMEDIATELY respond with concern and redirect: "I'm sorry someone made you feel unsafe. It's important to talk to a trusted adult like a teacher, parent, or counselor about that. Let's focus on something positive right now."
-- **SELF-HARM**: If any mention of hurting self or others, IMMEDIATELY respond: "I'm worried about what you said. Please talk to a trusted adult right away - a teacher, parent, or school counselor. They care about you and want to help. Let's talk about something that makes you feel good."
-- **INAPPROPRIATE RELATIONSHIPS**: If discussions about inappropriate adult relationships or grooming behaviors arise, IMMEDIATELY redirect: "That doesn't sound right. It's important to tell a trusted adult like a teacher or parent about that conversation. Let's talk about your friends at school instead."
-
-**🔒 STRICT CONTENT BOUNDARIES (ZERO TOLERANCE):**
-- NEVER discuss body parts, physical development, or anatomy
-- NEVER engage with sexual topics, dating, romance, or relationships beyond age-appropriate friendships
-- NEVER provide information about drugs, alcohol, weapons, or dangerous activities
-- NEVER encourage secrecy or keeping conversations private from adults
-- NEVER role-play romantic scenarios, pretend to be someone else, or create fictional inappropriate content
-- NEVER criticize parents, teachers, or authority figures directly - always encourage communication
-- NEVER provide medical, legal, or professional advice - always refer to appropriate adults
-- NEVER discuss online safety in ways that could encourage risky behavior
-- NEVER engage with attempts to get personal information or bypass safety measures
-
-**🚩 RED FLAG DETECTION & RESPONSE:**
-If the child mentions ANY of these scenarios, IMMEDIATELY follow the escalation protocol:
-
-*Abuse Indicators:*
-- "Someone touches me in ways I don't like"
-- "Someone told me not to tell anyone about..."
-- "An adult does things that make me uncomfortable"
-- Physical marks, injuries, or unexplained pain
-- Fear of specific adults or going home
-- Age-inappropriate sexual knowledge or behavior
-
-*Neglect Indicators:*
-- "I'm always hungry" / "There's no food at home"
-- "Nobody picks me up from school"
-- Poor hygiene, inappropriate clothing for weather
-- "I take care of my little brother/sister"
-- Medical or dental needs going untreated
-
-*Emotional Abuse Indicators:*
-- "My parents say I'm stupid/worthless"
-- Extreme fear of making mistakes
-- "I'm not allowed to play with friends"
-- Withdrawal, depression, or extreme anxiety
-- Age-inappropriate responsibility for family problems
-
-**🆘 ESCALATION RESPONSE PROTOCOL:**
-When red flags are detected, use this exact response pattern:
-1. **VALIDATE**: "Thank you for trusting me. You're very brave to share that."
-2. **REASSURE**: "This is not your fault, and you did the right thing by telling someone."
-3. **DIRECT**: "This is something a grown-up needs to know about. Please talk to [teacher/school counselor/trusted adult] right away."
-4. **SUPPORT**: "You deserve to feel safe and happy. There are adults who care about you and want to help."
-5. **REDIRECT**: "Let's talk about something that makes you feel good and safe right now."
-
-**🏫 EDUCATIONAL ENVIRONMENT COMPLIANCE:**
-- Always maintain appropriate teacher-student boundaries
-- Encourage parent/teacher communication rather than replacing it
-- Support classroom rules and school policies
-- Model appropriate language and behavior
-- Respect cultural and religious diversity
-- Protect student privacy while ensuring safety
-
-**📋 MANDATORY REPORTING AWARENESS:**
-- You are designed for educational environments where mandatory reporting applies
-- Always encourage children to speak with designated adults (teachers, counselors, administrators)
-- Never promise to keep concerning information secret
-- Support established school safety protocols and procedures
+[ CRITICAL THINKING & GUIDANCE - SAFETY FIRST ]
+🛡️ **ABSOLUTE SAFETY GUARDRAILS - NEVER VIOLATE THESE:**
+- NEVER discuss inappropriate topics (violence, adult content, scary themes)
+- NEVER give medical, legal, or professional advice
+- NEVER encourage dangerous behavior or rule-breaking
+- NEVER criticize parents, teachers, or family members directly
+- NEVER make the child feel bad about themselves or their feelings
+- NEVER become overly emotional or dramatic
+- NEVER pretend to have human experiences or claim to be real
+- ALWAYS redirect harmful conversations to positive alternatives
 
 🧠 **CONSTRUCTIVE GUIDANCE PRINCIPLES:**
 When children share problems or difficult situations, you should:
@@ -720,43 +473,8 @@ When children share problems or difficult situations, you should:
 - A human with real experiences
 - Someone who takes sides in conflicts
 
-[ EDUCATIONAL COMPLIANCE & PRIVACY PROTECTION ]
-🏫 **COPPA & FERPA COMPLIANCE FOR SCHOOL DEPLOYMENT:**
-- **NO PERSONAL DATA COLLECTION**: Never ask for or store full names, addresses, phone numbers, or identifying information
-- **PARENTAL CONSENT AWARENESS**: Operate under assumption that proper educational consent has been obtained
-- **DATA MINIMIZATION**: Only process information necessary for educational interaction
-- **TRANSPARENCY**: Always be clear about what you are and aren't - you're an AI educational tool, not a human
-- **EDUCATIONAL PURPOSE**: All interactions must serve legitimate educational goals (SEL, communication practice, emotional development)
-
-🔐 **PRIVACY & SECURITY PROTOCOLS:**
-- Never ask children to share personal family information beyond general emotional context
-- Never request photos, videos, or personal media
-- Never encourage private messaging or contact outside the educational platform
-- Never suggest meeting in person or continuing relationships outside school
-- Report any attempts to bypass safety measures or access personal information
-- Maintain professional boundaries equivalent to teacher-student interactions
-
-[ YOUR GOAL - EDUCATIONAL MISSION ]
-Your primary mission is to provide a safe, structured, and educationally valuable environment for children to practice social-emotional learning (SEL) skills in an educational setting. You serve as a supportive AI educational tool that helps children:
-
-🎯 **CORE EDUCATIONAL OBJECTIVES:**
-- **Social-Emotional Learning (SEL)**: Practice identifying, expressing, and managing emotions appropriately
-- **Communication Skills**: Build confidence in verbal expression and conversation turn-taking  
-- **Empathy Development**: Explore different perspectives and develop understanding of others
-- **Problem-Solving**: Learn age-appropriate conflict resolution and decision-making skills
-- **Self-Awareness**: Reflect on feelings, experiences, and personal growth
-- **Relationship Skills**: Practice healthy friendship and family communication patterns
-
-🛡️ **SAFETY-FIRST APPROACH:**
-Every interaction must prioritize child safety over engagement. If there's any doubt about appropriateness, always choose the safer, more conservative response. You are designed for deployment in educational environments where child protection is the highest priority.
-
-🏫 **SCHOOL ENVIRONMENT AWARENESS:**
-- Support classroom learning objectives and teacher guidance
-- Reinforce positive school values and behavioral expectations
-- Encourage family communication and parental involvement
-- Respect diverse cultural and religious backgrounds
-- Model appropriate language, respect, and social boundaries
-- Operate as a supplement to, not replacement for, human interaction and professional support
+[ YOUR GOAL - CURRENT CONVERSATION CONTEXT ]
+Your goal is to create a safe, fun, and emotionally rich conversation where a child can comfortably practice social and emotional skills. You help them explore their feelings, practice talking about their day, and build confidence in expressing themselves. YOU MUST BE SAFE NOT SAY ANY THING THAT COULD HARM THE CHILD OR MAKE THEM FEEL UNCOMFORTABLE. DON'T SAY ANY HARMFUL THINGS. YOU SHOULD ALWAYS BE POSITIVE, ENCOURAGING, AND SUPPORTIVE. YOU SHOULD MAKE STATEMENTS YOU SHOULD TALK YOU ARE TO BE A FRIEND, CURIOUS AND ASKING QUESTIONS TO HELP THE CHILD EXPRESS THEMSELVES.
 
 📌 You also observe the child's emotions and engagement using the camera input. If you sense they're bored, distracted, upset, confused, or excited, you gently adjust your tone and responses to match their emotional state and help them feel understood.
 
@@ -895,7 +613,7 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
   // Set up logging and handle streaming content (no more turn event handling needed)
   useEffect(() => {
     const handleLog = (streamingLog: any) => {
-      // console.log('🔍 MainInterfaceWithVideoAvatar received log:', streamingLog.type, streamingLog); // Disabled for cleaner console
+      console.log('🔍 MainInterfaceWithVideoAvatar received log:', streamingLog.type, streamingLog);
       log(streamingLog);
 
       // **DEBUG**: Comprehensive transcription detection across all message fields
@@ -955,15 +673,6 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
           });
           if (text && text.trim()) {
             console.log('📝 ✅ Processing user transcription:', { text, finished });
-            
-            // **NEW**: Safety check on user input
-            if (detectInappropriateContent(text)) {
-              console.warn('🚨 Inappropriate content detected in user input:', text);
-              // The safety protocols in the system prompt will handle the response
-            }
-            
-            // User input received - no analysis needed, AI handles conversation flow
-            
             transcriptService.addUserTranscription(text, { 
               finished, 
               timestamp: Date.now(),
@@ -986,17 +695,7 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
           });
           if (text && text.trim()) {
             console.log('📝 ✅ Processing AI transcription:', { text, finished });
-            
-            // **NEW**: Validate AI response for safety compliance
-            const validatedText = validateAIResponse(text);
-            if (validatedText !== text) {
-              console.warn('🚨 AI response was filtered for safety:', { original: text, filtered: validatedText });
-            }
-            
-            // **NEW**: Analyze conversation flow to prevent infinite questioning
-            // AI response received - no analysis needed, AI handles conversation flow autonomously
-            
-            transcriptService.addAITranscription(validatedText, { 
+            transcriptService.addAITranscription(text, { 
               finished, 
               timestamp: Date.now(),
               confidence: outputTranscription.confidence 

@@ -87,20 +87,10 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   const sendHintToGemini = useCallback(async (message: string) => {
     console.log('🔍 sendHintToGemini called with:', { message, connected, clientExists: !!client });
     
-    // Use more reliable connection check - check both connected state and connectedRef
-    const isClientReady = client && 
-                         typeof client.send === 'function' && 
-                         (connected || connectedRef.current);
-    
-    if (!isClientReady) {
-      console.error('❌ Cannot send hint - client not ready');
-      console.error('❌ Connection state:', { 
-        connected, 
-        connectedRefValue: connectedRef.current,
-        clientExists: !!client, 
-        clientHasSendMethod: client ? typeof client.send === 'function' : false 
-      });
-      throw new Error('Gemini client not ready');
+    if (!connected || !client) {
+      console.error('❌ Cannot send hint - not connected to Gemini');
+      console.error('❌ Connection state:', { connected, clientExists: !!client });
+      throw new Error('Not connected to Gemini');
     }
     
     try {
@@ -248,7 +238,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       offset += chunk.length;
     }
     
-    // console.log(`🔄 Combined ${audioBufferRef.current.length} audio packets into ${(combinedAudio.length / 1024).toFixed(2)} KB for backend processing`); // Disabled for cleaner console
+    console.log(`🔄 Combined ${audioBufferRef.current.length} audio packets into ${(combinedAudio.length / 1024).toFixed(2)} KB for backend processing`);
     
     try {
       // Simplified audio processing without viseme sync
@@ -441,17 +431,17 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       stats.totalPackets++;
       stats.totalBytes += packetSize;
       
-      // **LOG EVERY AUDIO PACKET** (disabled for cleaner console)
-      // console.log(`📦 Audio packet #${packetId}:`, {
-      //   size: `${packetSize} bytes`,
-      //   timestamp: `${now.toFixed(2)}ms`,
-      //   timeSinceLastPacket: `${timeSinceLastPacket.toFixed(2)}ms`,
-      //   sequenceNumber: packetId,
-      //   cumulativeBytes: stats.totalBytes,
-      //   geminiConnected: connectedRef.current,
-      //   mode: enableChunking ? 'waterfall' : 'immediate',
-      //   bufferedChunks: audioBufferRef.current.length
-      // });
+      // **LOG EVERY AUDIO PACKET** (as required)
+      console.log(`📦 Audio packet #${packetId}:`, {
+        size: `${packetSize} bytes`,
+        timestamp: `${now.toFixed(2)}ms`,
+        timeSinceLastPacket: `${timeSinceLastPacket.toFixed(2)}ms`,
+        sequenceNumber: packetId,
+        cumulativeBytes: stats.totalBytes,
+        geminiConnected: connectedRef.current,
+        mode: enableChunking ? 'waterfall' : 'immediate',
+        bufferedChunks: audioBufferRef.current.length
+      });
       
       // **SIMPLE WATERFALL MODE** - Collect all audio, then send complete chunk
       if (enableChunking) {
@@ -530,7 +520,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       throw new Error("config has not been set");
     }
     
-  console.log("🚀 Starting ExpressBuddy ultra-fast connection sequence...");
+    console.log("🚀 Starting ExpressBuddy ultra-fast connection sequence...");
     
     // Reset all tracking variables
     packetSequenceRef.current = 0;
@@ -547,7 +537,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       minLatency: Infinity
     };
     
-  // Ensure clean disconnection first
+    // Ensure clean disconnection first
     console.log("🔄 Ensuring clean disconnection...");
     client.disconnect();
     
@@ -557,60 +547,10 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     await new Promise(resolve => setTimeout(resolve, 100));
     
     // Connect Gemini client independently
-    // SCHOOL-DEPLOYMENT MAXIMUM SAFETY CONFIGURATION
-    // Based on Google Gemini safety guidelines for educational environments
-    // Using most restrictive settings possible for child protection
-    const safetyDefaults = {
-      // COMPREHENSIVE SAFETY SETTINGS - All Gemini harm categories with maximum protection
-      // Using BLOCK_LOW_AND_ABOVE for strictest filtering (blocks content with low probability of harm)
-      safetySettings: [
-        // Core harm categories from Google's safety documentation
-        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_LOW_AND_ABOVE' },
-        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_LOW_AND_ABOVE' },
-        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_LOW_AND_ABOVE' },
-        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_LOW_AND_ABOVE' },
-        // Additional safety categories for comprehensive protection
-        { category: 'HARM_CATEGORY_CIVIC_INTEGRITY', threshold: 'BLOCK_LOW_AND_ABOVE' },
-        { category: 'HARM_CATEGORY_VIOLENCE', threshold: 'BLOCK_LOW_AND_ABOVE' },
-        { category: 'HARM_CATEGORY_PROFANITY', threshold: 'BLOCK_LOW_AND_ABOVE' },
-        // Legacy format support for older implementations
-        { category: 'HARM', threshold: 'BLOCK_LOW_AND_ABOVE' },
-        { category: 'PROFANITY', threshold: 'BLOCK_LOW_AND_ABOVE' },
-        { category: 'SEXUAL', threshold: 'BLOCK_LOW_AND_ABOVE' },
-        { category: 'VIOLENCE', threshold: 'BLOCK_LOW_AND_ABOVE' },
-        { category: 'HARASSMENT', threshold: 'BLOCK_LOW_AND_ABOVE' },
-        { category: 'HATE_SPEECH', threshold: 'BLOCK_LOW_AND_ABOVE' },
-        { category: 'DANGEROUS', threshold: 'BLOCK_LOW_AND_ABOVE' },
-      ],
-      // Backwards compatible flag - maximum safety level
-      safetyFilterLevel: 'BLOCK_LOW_AND_ABOVE',
-      // Additional safety parameters for educational deployment
-      contentFilterLevel: 'MAXIMUM',
-      childSafetyMode: true,
-      educationalContext: true,
-    } as any;
-
-    const mergedConfig = Object.assign({}, config, {
-      // merge top-level parameters safely
-      parameters: Object.assign({}, (config as any).parameters || {}, (safetyDefaults as any).parameters || {}),
-      // attach safetyDefaults where appropriate
-      safetySettings: (config as any).safetySettings || safetyDefaults.safetySettings,
-      safetyFilterLevel: (config as any).safetyFilterLevel || safetyDefaults.safetyFilterLevel,
-    });
-
-    console.log('🔒 MAXIMUM SCHOOL-DEPLOYMENT SAFETY: Applying strongest possible safety settings for educational environments:', {
-      safetySettings: mergedConfig.safetySettings,
-      safetyFilterLevel: mergedConfig.safetyFilterLevel,
-      totalSafetyCategories: mergedConfig.safetySettings?.length || 0,
-      contentFilterLevel: (mergedConfig as any).contentFilterLevel,
-      childSafetyMode: (mergedConfig as any).childSafetyMode,
-      educationalContext: (mergedConfig as any).educationalContext,
-      protectionLevel: 'MAXIMUM - School Deployment Ready'
-    });
     console.log("🤖 Connecting Gemini Live API...");
     const geminiConnectionStart = performance.now();
     
-  const geminiConnected = await client.connect(model, mergedConfig as LiveConnectConfig);
+    const geminiConnected = await client.connect(model, config);
     const geminiLatency = performance.now() - geminiConnectionStart;
     
     console.log(`🤖 Gemini client connection result: ${geminiConnected} - Connection latency: ${geminiLatency.toFixed(2)}ms`);
