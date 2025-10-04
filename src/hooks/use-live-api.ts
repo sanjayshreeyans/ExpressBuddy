@@ -65,7 +65,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   const client = useMemo(() => new GenAILiveClient(options), [options]);
   const audioStreamerRef = useRef<AudioStreamer | null>(null);
 
-  const [model, setModel] = useState<string>("models/gemini-live-2.5-flash-preview");
+  const [model, setModel] = useState<string>("models/gemini-live-2.5-flash-preview");  // "models/gemini-live-2.5-flash-preview" "models/gemini-2.5-flash-native-audio-preview-09-2025"
   const [config, setConfig] = useState<LiveConnectConfig>({});
   const [connected, setConnected] = useState(false);
   // Ref to track up-to-date connection status inside callbacks
