@@ -33,6 +33,8 @@
 // These are fixed-height sections at the top and bottom.
 // ============================================================================
 .header-section {
+  position: relative; // For z-index stacking
+  z-index: 100; // Above video layers
   flex-shrink: 0; // Prevents this section from shrinking
   padding: 1.5rem 2rem; // **INCREASED**: More padding for better visibility
   display: flex;
@@ -58,9 +60,11 @@
 }
 
 .controls-section {
+  position: relative; // For z-index stacking
+  z-index: 100; // Above video layers
   flex-shrink: 0; // Prevents this section from shrinking
   padding: 0.5rem;
-  background-color: rgba(255, 255, 255, 0.85);
+  background-color: rgba(255, 255, 255, 0.95); // Slightly more opaque
   backdrop-filter: blur(8px);
   border-top: 1px solid #e0e0e0;
 }
@@ -71,42 +75,36 @@
 // This section defines the flexible content area and the avatar's size.
 // ============================================================================
 .main-content-area {
-  flex-grow: 1; // This is KEY: makes this area fill all available vertical space.
+  flex-grow: 1; // Fill available space
   width: 100%;
+  height: 100%;
   display: flex;
-  justify-content: center; // Center horizontally
-  align-items: flex-start; // **CHANGED**: Align to top instead of center
-  min-height: 0; // A critical flexbox fix to prevent content overflow issues.
-  padding-top: 0; // **NEW**: Add top padding to move content higher
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  position: relative;
+  z-index: 1; // Behind header and controls
 }
 
 .panda-stage {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
-  position: relative; // **NEW**: Added for better positioning context
-  margin-top: 0; // **NEW**: Add top margin to move panda higher
+  gap: 0;
+  position: relative;
+  width: 100%;
+  height: 100%;
 }
 
 /*
- * PRIMARY FIX FOR THE "TINY AVATAR"
- * This rule gives the avatar a large, explicitly square container.
+ * Make avatar container fill the entire available space
 */
 .panda-container {
-  // Establishes a positioning context for the Rive canvas inside.
   position: relative;
-  // Prevents this container from shrinking inside its parent flex container.
   flex-shrink: 0;
-
-  // Define a responsive width.
-  width: clamp(350px, 40vw, 450px);
-
-  // CRITICAL FIX: Force a 1:1 (square) aspect ratio.
-  // This makes the height dynamically equal to the responsive width, giving the
-  // Rive canvas a stable, non-zero area to render in. This is the most
-  // robust way to solve the "height: 24px" problem.
-  aspect-ratio: 1 / 1;
+  width: 100%;
+  height: 100%;
+  max-width: 100vw;
 }
 
 

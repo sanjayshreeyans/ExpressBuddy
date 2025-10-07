@@ -25,7 +25,7 @@ import { AudioRecorder } from "../../lib/audio-recorder";
 import AudioPulse from "../audio-pulse/AudioPulse";
 import { SimpleHintButton } from "../simple-hint-button/SimpleHintButton";
 import "./control-tray.scss";
-import SettingsDialog from "../settings-dialog/SettingsDialog";
+import SimplifiedSettingsDialog from "../settings-dialog/SimplifiedSettingsDialog";
 
 export type ControlTrayProps = {
   videoRef: RefObject<HTMLVideoElement>;
@@ -34,6 +34,8 @@ export type ControlTrayProps = {
   onVideoStreamChange?: (stream: MediaStream | null) => void;
   enableEditingSettings?: boolean;
   disableChunkingToggle?: boolean; // Disable chunking controls for video avatar
+  currentBackground?: string; // Current background video path
+  onBackgroundChange?: (background: string) => void; // Background change handler
 };
 
 type MediaStreamButtonProps = {
@@ -67,6 +69,8 @@ function ControlTray({
   supportsVideo,
   enableEditingSettings,
   disableChunkingToggle = false, // Default to false for backward compatibility
+  currentBackground = '/Backgrounds/AnimatedVideoBackgroundLooping1.mp4',
+  onBackgroundChange = () => {},
 }: ControlTrayProps) {
   const videoStreams = [useWebcam(), useScreenCapture()];
   const [activeVideoStream, setActiveVideoStream] =
@@ -303,7 +307,12 @@ function ControlTray({
         </div>
         <span className="text-indicator">Streaming</span>
       </div>
-      {enableEditingSettings ? <SettingsDialog /> : ""}
+      {enableEditingSettings ? (
+        <SimplifiedSettingsDialog
+          currentBackground={currentBackground}
+          onBackgroundChange={onBackgroundChange}
+        />
+      ) : ""}
     </section>
   );
 }

@@ -144,6 +144,7 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
   });
   const [currentAvatarSubtitle, setCurrentAvatarSubtitle] = useState<string>('');
   const [isAvatarSpeaking, setIsAvatarSpeaking] = useState<boolean>(false); // Avatar state for video
+  const [backgroundVideo, setBackgroundVideo] = useState<string>('/Backgrounds/AnimatedVideoBackgroundLooping1.mp4');
   
   // **NEW**: Transcript service for saving conversation transcripts
   const transcriptService = TranscriptService;
@@ -1279,6 +1280,7 @@ Children feel more understood when you notice what they're showing you - not jus
             isListening={isAvatarSpeaking}
             onAvatarStateChange={handleAvatarStateChange}
             onCurrentSubtitleChange={handleAvatarSubtitleChange}
+            backgroundSrc={backgroundVideo}
           />
 
           <Captions subtitleText={currentAvatarSubtitle} />
@@ -1307,6 +1309,8 @@ Children feel more understood when you notice what they're showing you - not jus
           onVideoStreamChange={setVideoStream}
           enableEditingSettings={true}
           disableChunkingToggle={true} // Disable viseme/chunking controls for video avatar
+          currentBackground={backgroundVideo}
+          onBackgroundChange={setBackgroundVideo}
         />
       </div>
       
