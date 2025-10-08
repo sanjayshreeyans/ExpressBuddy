@@ -373,7 +373,7 @@ export class EmotionDetectionService {
     sourceElement: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement,
     detection: any
   ): void {
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
     // Clear previous drawings

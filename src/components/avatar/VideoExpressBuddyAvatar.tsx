@@ -173,14 +173,25 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
 
   // Chroma key effect - removes green background from video
   // Continuously renders to canvas for seamless transitions
+  // Optimized for 60fps with cached context and efficient pixel processing
   const applyChromaKey = useCallback((video: HTMLVideoElement, canvas: HTMLCanvasElement) => {
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (!ctx || video.ended) return; // Keep rendering even if paused for smooth transitions
+    // Cache the context to avoid repeated getContext calls
+    let ctx = (canvas as any)._cachedCtx;
+    if (!ctx) {
+      ctx = canvas.getContext('2d', { 
+        willReadFrequently: true,
+        alpha: true, // Enable alpha for transparency
+      });
+      (canvas as any)._cachedCtx = ctx;
+    }
+    
+    if (!ctx || video.ended || video.paused) return;
 
-    // Set canvas size to match video
+    // Set canvas size to match video (only if needed)
     if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
+      console.log(`📐 Canvas resized to ${canvas.width}x${canvas.height}`);
     }
 
     // Draw video frame
@@ -191,19 +202,23 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
     const data = imageData.data;
 
     // Chroma key: remove green-screen pixels using green-dominance test
-    // Criteria: pixel is sufficiently green (absolute threshold) AND
-    // green is noticeably stronger than red and blue (ratio test).
+    // Optimized loop with minimal branching for 60fps performance
     const minGreen = 100; // minimum green channel value to consider (0-255)
     const ratio = 1.4; // green must be > ratio * red and > ratio * blue
+    const dataLength = data.length;
 
-    for (let i = 0; i < data.length; i += 4) {
+    for (let i = 0; i < dataLength; i += 4) {
       const r = data[i];
       const g = data[i + 1];
       const b = data[i + 2];
 
-      // Green-dominant detection
-      if (g > minGreen && g > r * ratio && g > b * ratio) {
-        data[i + 3] = 0; // Set alpha to 0 (transparent)
+      // Green-dominant detection with early exit optimization
+      if (g > minGreen) {
+        const rThreshold = r * ratio;
+        const bThreshold = b * ratio;
+        if (g > rThreshold && g > bThreshold) {
+          data[i + 3] = 0; // Set alpha to 0 (transparent)
+        }
       }
     }
 
@@ -211,6 +226,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
     ctx.putImageData(imageData, 0, 0);
 
     // Continue rendering continuously for seamless transitions
+    // Using requestAnimationFrame ensures smooth 60fps rendering
     requestAnimationFrame(() => applyChromaKey(video, canvas));
   }, []);
 

@@ -50,33 +50,74 @@ export default function SimplifiedSettingsDialog({
   const [selectedBackground, setSelectedBackground] = useState<string>(currentBackground);
   const [availableBackgrounds, setAvailableBackgrounds] = useState<BackgroundOption[]>([]);
 
-  // Scan for available background videos
+  // Scan for available background videos dynamically
   useEffect(() => {
     const scanBackgrounds = async () => {
-      // For now, we'll define available backgrounds manually
-      // In the future, you can add more videos to public/Backgrounds/
       const backgrounds: BackgroundOption[] = [
         {
           id: "none",
           name: "No Background",
           path: "",  // Empty path means no background
         },
-        {
-          id: "animated-1",
-          name: "Animated Background 1",
-          path: "/Backgrounds/AnimatedVideoBackgroundLooping1.mp4",
-          thumbnail: "/Backgrounds/AnimatedVideoBackgroundLooping1_thumb.jpg",
-        },
-        // Add more backgrounds here as you add them to the Backgrounds folder
-        // Example:
-        // {
-        //   id: "animated-2",
-        //   name: "Animated Background 2",
-        //   path: "/Backgrounds/AnimatedVideoBackgroundLooping2.mp4",
-        //   thumbnail: "/Backgrounds/AnimatedVideoBackgroundLooping2_thumb.jpg",
-        // },
       ];
 
+      // Known video files to check - we'll try to fetch them
+      // This list will be automatically discovered by checking common naming patterns
+      const potentialVideos = [
+        'AnimatedVideoBackgroundLooping1',
+        'haloweenbackground',
+      ];
+
+      console.log('🔍 Scanning for background videos...');
+
+      // Check each potential video
+      for (const videoName of potentialVideos) {
+        const videoPath = `/Backgrounds/${videoName}.mp4`;
+        const thumbnailPath = `/Backgrounds/${videoName}_thumb.jpg`;
+
+        try {
+          // Try to fetch the video file to see if it exists
+          const videoResponse = await fetch(videoPath, { method: 'HEAD' });
+          
+          if (videoResponse.ok) {
+            console.log(`✅ Found video: ${videoName}`);
+            
+            // Check if thumbnail exists
+            let hasThumbnail = false;
+            try {
+              const thumbResponse = await fetch(thumbnailPath, { method: 'HEAD' });
+              hasThumbnail = thumbResponse.ok;
+              if (hasThumbnail) {
+                console.log(`  ✅ Found thumbnail: ${videoName}_thumb.jpg`);
+              }
+            } catch (err) {
+              console.log(`  ⚠️ No thumbnail for: ${videoName}`);
+            }
+
+            // Generate a friendly display name
+            const displayName = videoName
+              .replace(/([A-Z])/g, ' $1') // Add space before capitals
+              .replace(/background/gi, '') // Remove "background" word
+              .replace(/looping/gi, '') // Remove "looping" word
+              .replace(/video/gi, '') // Remove "video" word
+              .replace(/animated/gi, '') // Remove "animated" word
+              .replace(/_/g, ' ') // Replace underscores with spaces
+              .replace(/\s+/g, ' ') // Remove extra spaces
+              .trim() || videoName; // Fallback to original name
+
+            backgrounds.push({
+              id: videoName.toLowerCase(),
+              name: displayName.charAt(0).toUpperCase() + displayName.slice(1), // Capitalize first letter
+              path: videoPath,
+              thumbnail: hasThumbnail ? thumbnailPath : undefined,
+            });
+          }
+        } catch (err) {
+          // Video doesn't exist, skip it
+        }
+      }
+
+      console.log(`🎉 Found ${backgrounds.length - 1} background videos`);
       setAvailableBackgrounds(backgrounds);
     };
 
