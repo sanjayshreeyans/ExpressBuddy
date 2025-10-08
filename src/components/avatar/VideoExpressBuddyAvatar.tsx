@@ -171,16 +171,20 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
 
-    // Chroma key: remove white background (high threshold for pure white)
-    const threshold = 200; // Adjust this value (0-255) - higher = more selective
-    
+    // Chroma key: remove green-screen pixels using green-dominance test
+    // Criteria: pixel is sufficiently green (absolute threshold) AND
+    // green is noticeably stronger than red and blue (ratio test).
+    // Adjustable parameters below.
+    const minGreen = 100; // minimum green channel value to consider (0-255)
+    const ratio = 1.4; // green must be > ratio * red and > ratio * blue
+
     for (let i = 0; i < data.length; i += 4) {
       const r = data[i];
       const g = data[i + 1];
       const b = data[i + 2];
-      
-      // If pixel is close to white, make it transparent
-      if (r > threshold && g > threshold && b > threshold) {
+
+      // Green-dominant detection
+      if (g > minGreen && g > r * ratio && g > b * ratio) {
         data[i + 3] = 0; // Set alpha to 0 (transparent)
       }
     }
