@@ -386,13 +386,20 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
           src={backgroundSrc}
           className="fixed"
           style={{
+            position: 'fixed',
             top: 0,
+            right: 0,
+            bottom: 0,
             left: 0,
             width: '100vw',
             height: '100vh',
+            minWidth: '100vw',
+            minHeight: '100vh',
             zIndex: -10, // **FIXED**: Behind everything including header
             pointerEvents: 'none',
-            objectFit: 'cover'
+            objectFit: 'cover',
+            margin: 0,
+            padding: 0
           }}
           loop
           muted

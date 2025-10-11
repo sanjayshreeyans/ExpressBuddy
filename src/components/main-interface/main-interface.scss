@@ -113,6 +113,14 @@
   border-top: 1px solid #e0e0e0;
 }
 
+// **LIQUID GLASS MODE**: Make controls section transparent too in video mode
+.video-bg-mode .controls-section {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(12px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+}
+
 
 // ============================================================================
 // Main Content & Avatar Sizing (THE CRITICAL PART)
