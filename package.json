@@ -49,23 +49,24 @@
     "zustand": "^5.0.1"
   },
   "scripts": {
-    "start-https": "HTTPS=true craco start",
-    "start": "craco start",
-    "build": "craco build",
+    "start-https": "vite --https",
+    "start": "vite",
+    "build": "vite build",
     "test": "craco test",
     "eject": "react-scripts eject",
-    "dev": "npm start",
-    "dev:network": "HOST=0.0.0.0 npm start",
+    "dev": "vite",
+    "dev:network": "vite --host 0.0.0.0",
     "analyze": "npm run build && npx source-map-explorer 'build/static/js/*.js'",
     "test:coverage": "npm test -- --coverage --watchAll=false",
     "test:debug": "npm test -- --no-cache --detectOpenHandles",
     "type-check": "tsc --noEmit",
     "build:analyze": "npm run build && npx source-map-explorer 'build/static/js/*.js'",
-    "preview": "npx serve -s build",
+    "preview": "vite preview",
     "clean": "rm -rf build",
-    "clean:cache": "npm start -- --reset-cache",
+    "clean:cache": "vite --force",
     "clean:full": "rm -rf build node_modules package-lock.json && npm install",
-    "backup:env": "cp .env .env.backup"
+    "backup:env": "cp .env .env.backup",
+    "build:legacy": "craco build"
   },
   "eslintConfig": {
     "extends": [
@@ -99,6 +100,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "@vitejs/plugin-react": "^5.0.4",
     "assert": "^2.1.0",
     "autoprefixer": "^10.4.21",
     "browserify-zlib": "^0.2.0",
@@ -118,6 +120,9 @@
     "typescript": "^5.6.3",
     "url": "^0.11.4",
     "util": "^0.12.5",
+    "vite": "^7.1.9",
+    "vite-plugin-env-compatible": "^2.0.1",
+    "vite-tsconfig-paths": "^5.1.4",
     "vm-browserify": "^1.1.2"
   },
   "overrides": {
