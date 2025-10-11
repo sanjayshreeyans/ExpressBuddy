@@ -373,15 +373,46 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       connectedRef.current = true; // track via ref
     };
 
-    const onClose = () => {
+    const onClose = (event?: CloseEvent) => {
       setConnected(false);
       connectedRef.current = false;
       // Reset AI playing state when connection closes
       isAIPlayingRef.current = false;
+      
+      if (event) {
+        console.log(`🔌 WebSocket closed: Code=${event.code}, Reason="${event.reason || 'No reason provided'}", Clean=${event.wasClean}`);
+        
+        // Log common WebSocket close codes
+        const closeCodeMeanings: Record<number, string> = {
+          1000: 'Normal closure',
+          1001: 'Going away (browser navigating away)',
+          1002: 'Protocol error',
+          1003: 'Unsupported data',
+          1006: 'Abnormal closure (no close frame)',
+          1007: 'Invalid frame payload data',
+          1008: 'Policy violation',
+          1009: 'Message too big',
+          1010: 'Mandatory extension missing',
+          1011: 'Internal server error',
+          1015: 'TLS handshake failure'
+        };
+        
+        const meaning = closeCodeMeanings[event.code] || 'Unknown close code';
+        console.log(`🔍 Close code meaning: ${meaning}`);
+      }
     };
 
     const onError = (error: ErrorEvent) => {
-      console.error("error", error);
+      console.error("❌ WebSocket error occurred:", error);
+      console.error("❌ Error details:", {
+        message: error.message,
+        type: error.type,
+        target: error.target
+      });
+      
+      // If error occurs, connection is likely failing
+      setConnected(false);
+      connectedRef.current = false;
     };
 
     const stopAudioStreamer = () => {
@@ -546,17 +577,43 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     // Small delay to ensure client is fully disconnected before reconnecting
     await new Promise(resolve => setTimeout(resolve, 100));
     
-    // Connect Gemini client independently
+    // Connect Gemini client with retry logic for reliability
     console.log("🤖 Connecting Gemini Live API...");
     const geminiConnectionStart = performance.now();
     
-    const geminiConnected = await client.connect(model, config);
+    let geminiConnected = false;
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (!geminiConnected && retryCount < maxRetries) {
+      try {
+        if (retryCount > 0) {
+          console.log(`🔄 Retry attempt ${retryCount}/${maxRetries} for Gemini connection...`);
+          // Exponential backoff: 500ms, 1000ms, 1500ms
+          await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
+        }
+        
+        geminiConnected = await client.connect(model, config);
+        
+        if (!geminiConnected) {
+          console.warn(`⚠️ Gemini connection returned false on attempt ${retryCount + 1}`);
+          retryCount++;
+        }
+      } catch (error) {
+        console.error(`❌ Gemini connection error on attempt ${retryCount + 1}:`, error);
+        retryCount++;
+        if (retryCount >= maxRetries) {
+          throw error;
+        }
+      }
+    }
+    
     const geminiLatency = performance.now() - geminiConnectionStart;
     
-    console.log(`🤖 Gemini client connection result: ${geminiConnected} - Connection latency: ${geminiLatency.toFixed(2)}ms`);
+    console.log(`🤖 Gemini client connection result: ${geminiConnected} - Connection latency: ${geminiLatency.toFixed(2)}ms - Attempts: ${retryCount + 1}`);
     
     if (!geminiConnected) {
-      throw new Error("Failed to connect to Gemini Live API");
+      throw new Error(`Failed to connect to Gemini Live API after ${maxRetries} attempts. This may be due to:\n- Network connectivity issues\n- API key problems\n- Google API service issues\n- Rate limiting\n\nPlease check your internet connection and API key, then try again.`);
     }
     
     console.log("🎉 ExpressBuddy ultra-fast connection sequence completed!");

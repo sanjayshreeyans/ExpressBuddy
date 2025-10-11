@@ -23,7 +23,7 @@
   flex-direction: column;
   height: 100vh;
   width: 100vw;
-  background: #ffffff; // Changed from #f4f7f9 to white to match video background
+  background: transparent; // **FIXED**: Transparent to allow video background to show through
   color: #202124;
   overflow: hidden;
 }
@@ -40,15 +40,28 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #e0e0e0;
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); // **NEW**: Subtle gradient background
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  
+  // **NEW**: Liquid glass effect - default state (transparent)
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  
+  // **NEW**: Hover state (becomes opaque white)
+  &:hover {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+  }
 
   .app-title h1 {
     margin: 0;
     font-size: 1.8rem; // **INCREASED**: Larger title
     color: #1a73e8;
     font-weight: 700; // **NEW**: Bolder font weight
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); // **NEW**: Subtle text shadow
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); // **ENHANCED**: Better readability on transparent background
+    transition: all 0.3s ease;
   }
 
   .app-title p {
@@ -56,6 +69,8 @@
     font-size: 1rem; // **INCREASED**: Larger subtitle
     color: #5f6368;
     font-weight: 500; // **NEW**: Medium font weight
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); // **NEW**: Better readability on transparent background
+    transition: all 0.3s ease;
   }
 }
 
@@ -83,7 +98,7 @@
   align-items: center;
   padding: 0;
   position: relative;
-  z-index: 1; // Behind header and controls
+  z-index: 10; // Above background but below header
 }
 
 .panda-stage {

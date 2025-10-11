@@ -84,7 +84,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
             console.log(`📹 Video loaded: ${isIdleVideo ? 'idle' : 'talking'}`);
             setIsLoaded(true);
           });
-          
+
           video.addEventListener('error', (e) => {
             console.error(`📹 Video error: ${isIdleVideo ? 'idle' : 'talking'}`, e);
             setError(`Failed to load ${isIdleVideo ? 'idle' : 'talking'} animation.`);
@@ -122,7 +122,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
 
         // Start with idle animation
         setCurrentState('idle');
-        
+
         // Initialize canvas opacity states
         if (idleCanvasRef.current) {
           idleCanvasRef.current.style.opacity = '1';
@@ -132,7 +132,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
           talkingCanvasRef.current.style.opacity = '0';
           talkingCanvasRef.current.style.pointerEvents = 'none';
         }
-        
+
         // Start both videos playing immediately for seamless transitions
         if (idleVideoRef.current) {
           idleVideoRef.current.currentTime = 0;
@@ -141,7 +141,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
             applyChromaKey(idleVideoRef.current, idleCanvasRef.current);
           }
         }
-        
+
         if (talkingVideoRef.current) {
           talkingVideoRef.current.currentTime = 0;
           await talkingVideoRef.current.play();
@@ -150,9 +150,9 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
             applyChromaKey(talkingVideoRef.current, talkingCanvasRef.current);
           }
         }
-        
+
         console.log('📹 Both videos initialized and playing continuously');
-        
+
       } catch (err) {
         console.error('📹 Error initializing videos:', err);
         setError('Failed to initialize avatar animations.');
@@ -178,13 +178,13 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
     // Cache the context to avoid repeated getContext calls
     let ctx = (canvas as any)._cachedCtx;
     if (!ctx) {
-      ctx = canvas.getContext('2d', { 
+      ctx = canvas.getContext('2d', {
         willReadFrequently: true,
         alpha: true, // Enable alpha for transparency
       });
       (canvas as any)._cachedCtx = ctx;
     }
-    
+
     if (!ctx || video.ended || video.paused) return;
 
     // Set canvas size to match video (only if needed)
@@ -233,7 +233,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
   // Helper function to play idle animation
   const playIdleAnimation = async () => {
     if (!idleVideoRef.current || !talkingVideoRef.current) return;
-    
+
     try {
       // Keep both videos playing continuously - never pause
       // Just ensure both are playing (in case user interaction was needed)
@@ -243,7 +243,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
       if (talkingVideoRef.current.paused) {
         await talkingVideoRef.current.play();
       }
-      
+
       // Smooth opacity transition - hide talking, show idle
       if (talkingCanvasRef.current) {
         talkingCanvasRef.current.style.opacity = '0';
@@ -253,7 +253,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
         idleCanvasRef.current.style.opacity = '1';
         idleCanvasRef.current.style.pointerEvents = 'auto';
       }
-      
+
       console.log('📹 Transitioned to idle animation (seamless)');
     } catch (err) {
       console.error('📹 Error transitioning to idle animation:', err);
@@ -263,7 +263,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
   // Helper function to play talking animation
   const playTalkingAnimation = async () => {
     if (!talkingVideoRef.current || !idleVideoRef.current) return;
-    
+
     try {
       // Keep both videos playing continuously - never pause
       // Just ensure both are playing (in case user interaction was needed)
@@ -273,7 +273,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
       if (idleVideoRef.current.paused) {
         await idleVideoRef.current.play();
       }
-      
+
       // Smooth opacity transition - hide idle, show talking
       if (idleCanvasRef.current) {
         idleCanvasRef.current.style.opacity = '0';
@@ -283,7 +283,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
         talkingCanvasRef.current.style.opacity = '1';
         talkingCanvasRef.current.style.pointerEvents = 'auto';
       }
-      
+
       console.log('📹 Transitioned to talking animation (seamless)');
     } catch (err) {
       console.error('📹 Error transitioning to talking animation:', err);
@@ -293,11 +293,11 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
   // Handle state changes based on isListening prop
   useEffect(() => {
     const targetState = isListening ? 'talking' : 'idle';
-    
+
     if (targetState !== currentState && isLoaded) {
       console.log(`� State transition: ${currentState} -> ${targetState}`);
       setCurrentState(targetState);
-      
+
       if (targetState === 'talking') {
         playTalkingAnimation();
       } else {
@@ -355,7 +355,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
     // Toggle between idle and talking for demo purposes
     const newState = currentState === 'idle' ? 'talking' : 'idle';
     setCurrentState(newState);
-    
+
     if (newState === 'talking') {
       playTalkingAnimation();
     } else {
@@ -379,18 +379,20 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
         </div>
       )}
 
-      {/* Background Video Layer - plays behind Pico (only if backgroundSrc is provided) */}
+      {/* Background Video Layer - plays behind EVERYTHING (fixed to viewport) */}
       {backgroundSrc && (
         <video
           ref={backgroundVideoRef}
           src={backgroundSrc}
-          className="absolute inset-0 w-full h-full"
+          className="fixed"
           style={{
-            zIndex: 1,
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            zIndex: -10, // **FIXED**: Behind everything including header
             pointerEvents: 'none',
-            objectFit: 'cover',
-            width: '100%',
-            height: '100%'
+            objectFit: 'cover'
           }}
           loop
           muted
@@ -426,7 +428,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
       <canvas
         ref={idleCanvasRef}
         className="absolute inset-0 w-full h-full"
-        style={{ 
+        style={{
           zIndex: currentState === 'idle' ? 11 : 10,
           opacity: 1, // Always fully opaque
           pointerEvents: currentState === 'idle' ? 'auto' : 'none',
@@ -443,7 +445,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
       <canvas
         ref={talkingCanvasRef}
         className="absolute inset-0 w-full h-full"
-        style={{ 
+        style={{
           zIndex: currentState === 'talking' ? 11 : 10,
           opacity: 1, // Always fully opaque
           pointerEvents: currentState === 'talking' ? 'auto' : 'none',
