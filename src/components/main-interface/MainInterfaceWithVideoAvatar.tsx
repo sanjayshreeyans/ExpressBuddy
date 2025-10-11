@@ -1182,7 +1182,10 @@ Children feel more understood when you notice what they're showing you - not jus
   }, []);
 
   return (
-    <div className={cn("avatar-interface", { connected })}>
+    <div className={cn("avatar-interface", { 
+      connected,
+      "video-bg-mode": backgroundVideo && backgroundVideo !== '' // Only apply liquid glass when background video is selected
+    })}>
       <div className="header-section">
         <div className="app-title">
           <h1>ExpressBuddy</h1>

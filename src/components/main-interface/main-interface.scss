@@ -23,9 +23,14 @@
   flex-direction: column;
   height: 100vh;
   width: 100vw;
-  background: transparent; // **FIXED**: Transparent to allow video background to show through
+  background: #ffffff; // **DEFAULT**: Solid white background for standard interface
   color: #202124;
   overflow: hidden;
+  
+  // **CONDITIONAL**: Only transparent when video background mode is active
+  &.video-bg-mode {
+    background: transparent;
+  }
 }
 
 // ============================================================================
@@ -40,49 +45,60 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
   
-  // **ENHANCED**: More transparent liquid glass effect with adaptive shadow
-  background: rgba(255, 255, 255, 0.05) !important; // Even more transparent (5% instead of 10%)
-  backdrop-filter: blur(12px) saturate(180%) !important; // Stronger blur + saturation for better effect
-  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important; // Subtle depth
-  
-  // **NEW**: Hover state (becomes opaque white)
-  &:hover {
-    background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: blur(20px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-    border-bottom-color: rgba(255, 255, 255, 0.5);
-  }
+  // **DEFAULT**: Solid white background for standard interface (no video background)
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
 
   .app-title h1 {
     margin: 0;
-    font-size: 1.8rem; // **INCREASED**: Larger title
-    // **ADAPTIVE**: Dark text with strong white shadow for contrast on any background
+    font-size: 1.8rem;
+    color: #1a73e8;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+
+  .app-title p {
+    margin: 0.25rem 0 0 0;
+    font-size: 1rem;
+    color: #5f6368;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+}
+
+// **LIQUID GLASS MODE**: Only apply to video background mode
+.video-bg-mode .header-section {
+  // **PERMANENT TRANSPARENT**: Always liquid glass (no hover change)
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(12px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+  .app-title h1 {
+    // **ADAPTIVE**: White text with multi-layer shadows for contrast
     color: #ffffff;
-    font-weight: 800; // **BOLDER**: Extra bold for better visibility
+    font-weight: 800;
     text-shadow: 
       0 0 20px rgba(0, 0, 0, 0.8),
       0 0 40px rgba(0, 0, 0, 0.6),
       0 2px 10px rgba(0, 0, 0, 0.9),
-      0 0 3px rgba(255, 255, 255, 0.3); // Multi-layer shadow for maximum contrast
-    transition: all 0.3s ease;
+      0 0 3px rgba(255, 255, 255, 0.3);
     letter-spacing: -0.5px;
   }
 
   .app-title p {
-    margin: 0.25rem 0 0 0; // **ADJUSTED**: Small top margin
-    font-size: 1rem; // **INCREASED**: Larger subtitle
-    // **ADAPTIVE**: Light text with dark shadow for visibility
+    // **ADAPTIVE**: Light text with dark shadows
     color: #f0f0f0;
-    font-weight: 600; // **INCREASED**: Semibold for better visibility
+    font-weight: 600;
     text-shadow: 
       0 0 15px rgba(0, 0, 0, 0.7),
       0 2px 8px rgba(0, 0, 0, 0.8),
-      0 0 2px rgba(255, 255, 255, 0.2); // Multi-layer shadow
-    transition: all 0.3s ease;
+      0 0 2px rgba(255, 255, 255, 0.2);
     letter-spacing: 0.5px;
   }
 }
