@@ -652,11 +652,11 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
 
     keepAliveIntervalRef.current = window.setInterval(() => {
       const timeSinceActivity = Date.now() - lastActivityTimeRef.current;
-      
+
       // Only send keep-alive if connection is idle
       if (timeSinceActivity > KEEP_ALIVE_INTERVAL && connected && client) {
         console.log(`💓 Keep-alive ping (idle for ${(timeSinceActivity / 1000).toFixed(1)}s)`);
-        
+
         try {
           // Send a minimal text message as keep-alive
           // This keeps the WebSocket connection active without disrupting conversation

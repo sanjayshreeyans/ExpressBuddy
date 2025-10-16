@@ -1182,7 +1182,7 @@ Children feel more understood when you notice what they're showing you - not jus
   }, []);
 
   return (
-    <div className={cn("avatar-interface", { 
+    <div className={cn("avatar-interface", {
       connected,
       "video-bg-mode": backgroundVideo && backgroundVideo !== '' // Only apply liquid glass when background video is selected
     })}>
@@ -1208,7 +1208,7 @@ Children feel more understood when you notice what they're showing you - not jus
                 onClick={onGoToLanding}
                 className="back-to-landing-btn"
                 style={{
-                  background: 'var(--primary)',
+                  background: '#16a34a',
                   color: 'white',
                   border: 'none',
                   padding: '8px 16px',
@@ -1218,8 +1218,8 @@ Children feel more understood when you notice what they're showing you - not jus
                   cursor: 'pointer',
                   transition: 'all 0.3s ease'
                 }}
-                onMouseOver={(e) => (e.currentTarget.style.background = 'var(--primary-hover)')}
-                onMouseOut={(e) => (e.currentTarget.style.background = 'var(--primary)')}
+                onMouseOver={(e) => (e.currentTarget.style.background =  '#16a34a')}
+                onMouseOut={(e) => (e.currentTarget.style.background =  '#58cc02')}
               >
                 ← Back to Home
               </button>

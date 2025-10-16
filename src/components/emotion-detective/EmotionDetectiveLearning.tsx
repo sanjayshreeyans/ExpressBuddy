@@ -977,6 +977,7 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
                             className="w-full h-full"
                             isListening={false} // Keep in idle animation
                             hideDebugInfo={true} // Hide debug overlays for clean display
+                            backgroundSrc=""
                             onAvatarStateChange={(state) => {
                               console.log('🎯 Avatar state changed:', state);
                             }}
