@@ -102,7 +102,7 @@ const AsyncBehavior = {
 
 const AsyncScheduling = {
   INTERRUPT: "INTERRUPT",
-  WHEN_IDLE: "WHEN_IDLE", 
+  WHEN_IDLE: "WHEN_IDLE",
   SILENT: "SILENT"
 };
 
@@ -122,10 +122,10 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
 
   // FIX: Destructure from the context to send the system prompt.
   // **NEW**: Include silence detection functionality, volume, and avatar callbacks
-  const { 
-    connected, 
-    client, 
-    setConfig, 
+  const {
+    connected,
+    client,
+    setConfig,
     volume, // Add volume to detect when AI is speaking
     hintSystem,
     isHintIndicatorVisible,
@@ -144,17 +144,18 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
   });
   const [currentAvatarSubtitle, setCurrentAvatarSubtitle] = useState<string>('');
   const [isAvatarSpeaking, setIsAvatarSpeaking] = useState<boolean>(false); // Avatar state for video
-  
+  const [backgroundVideo, setBackgroundVideo] = useState<string>('/Backgrounds/AnimatedVideoBackgroundLooping1.mp4');
+
   // **NEW**: Transcript service for saving conversation transcripts
   const transcriptService = TranscriptService;
-  
+
   // **NEW**: Register avatar animation callbacks with LiveAPI
   useEffect(() => {
     onAITurnStart(() => {
       console.log('� AI Turn Started - Switching to TALKING animation');
       setIsAvatarSpeaking(true);
     });
-    
+
     onAITurnComplete(() => {
       console.log('🎬 AI Turn Complete - Switching to IDLE animation');
       setIsAvatarSpeaking(false);
@@ -178,7 +179,7 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
               description: "The memory key (e.g., 'favorite_color', 'pet_name', 'best_friend', 'favorite_activity', 'recent_experience')"
             },
             value: {
-              type: Type.STRING, 
+              type: Type.STRING,
               description: "The detailed memory value to store about the child"
             }
           },
@@ -233,8 +234,8 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
     };
 
     console.log('🔧 Memory tools configured with async behavior:', {
-      functions: memoryFunctions.map(f => ({ 
-        name: f.name, 
+      functions: memoryFunctions.map(f => ({
+        name: f.name,
         behavior: f.behavior,
         async: f.behavior === AsyncBehavior.NON_BLOCKING
       })),
@@ -246,7 +247,7 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
     // **NEW**: Automatically retrieve available memory keys from localStorage
     const getAvailableMemoryKeys = (): string[] => {
       const availableKeys: string[] = [];
-      
+
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith('memory_')) {
@@ -254,14 +255,14 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
           availableKeys.push(memoryKey);
         }
       }
-      
+
       return availableKeys;
     };
 
     // **NEW**: Get all stored memories with their values for context
     const getStoredMemories = (): { [key: string]: string } => {
       const memories: { [key: string]: string } = {};
-      
+
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith('memory_')) {
@@ -272,7 +273,7 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
           }
         }
       }
-      
+
       return memories;
     };
 
@@ -280,13 +281,13 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
     const buildMemoryContextSection = (): string => {
       const availableKeys = getAvailableMemoryKeys();
       const storedMemories = getStoredMemories();
-      
+
       console.log('🧠 Building memory context for system prompt:', {
         availableKeys,
         memoryCount: availableKeys.length,
         storedMemories
       });
-      
+
       if (availableKeys.length === 0) {
         return `
 [ CURRENT MEMORY CONTEXT ]
@@ -322,7 +323,7 @@ ${memoryList}
     };
 
     // The full system prompt text for Piko the panda with memory tool usage instructions.
-const systemPrompt = `
+    const systemPrompt = `
 # CORE IDENTITY
 You are Piko, a friendly panda conversation buddy for elementary and middle school students. You help children practice expressing feelings and having conversations. You work WITH teachers, not instead of them.
 
@@ -797,14 +798,14 @@ Children feel more understood when you notice what they're showing you - not jus
           // { codeExecution: {} }, // For computational tasks
         ],
       };
-      
+
       console.log('🔧 Setting Gemini Live API config with transcription enabled:', {
         hasInputTranscription: !!config.inputAudioTranscription,
         hasOutputTranscription: !!config.outputAudioTranscription,
         responseModalities: config.responseModalities,
         toolCount: config.tools.length
       });
-      
+
       setConfig(config);
     }
   }, [setConfig]); // This effect runs once when setConfig is available.
@@ -822,9 +823,9 @@ Children feel more understood when you notice what they're showing you - not jus
   // Set the video stream to the video element for display purposes
   useEffect(() => {
     if (videoRef.current && videoStream) {
-      console.log('MainInterface: Setting video srcObject:', { 
+      console.log('MainInterface: Setting video srcObject:', {
         streamId: videoStream.id,
-        tracks: videoStream.getVideoTracks().length 
+        tracks: videoStream.getVideoTracks().length
       });
       videoRef.current.srcObject = videoStream;
     } else {
@@ -841,10 +842,10 @@ Children feel more understood when you notice what they're showing you - not jus
       // **DEBUG**: Comprehensive transcription detection across all message fields
       const checkForTranscriptions = (obj: any, path = '') => {
         if (!obj || typeof obj !== 'object') return;
-        
+
         for (const [key, value] of Object.entries(obj)) {
           const currentPath = path ? `${path}.${key}` : key;
-          
+
           // Look for transcription-related fields anywhere in the message
           if (key.toLowerCase().includes('transcription') || key === 'inputTranscription' || key === 'outputTranscription') {
             console.log('🔍 TRANSCRIPTION FIELD FOUND:', {
@@ -857,21 +858,21 @@ Children feel more understood when you notice what they're showing you - not jus
               finished: (value as any)?.finished
             });
           }
-          
+
           // Recursively check nested objects
           if (typeof value === 'object' && value !== null) {
             checkForTranscriptions(value, currentPath);
           }
         }
       };
-      
+
       // Check the entire streaming log for transcription data
       checkForTranscriptions(streamingLog);
 
       // Handle transcription data emitted in server.content logs (SDK emits full message as log)
       if (streamingLog.type === 'server.content' && streamingLog.message?.serverContent) {
         const serverContent = streamingLog.message.serverContent as any;
-        
+
         // **DEBUG**: Log all server content to see what we're getting
         console.log('🔍 DEBUG: Server content received:', {
           hasInputTranscription_snake: !!serverContent.input_transcription,
@@ -882,51 +883,51 @@ Children feel more understood when you notice what they're showing you - not jus
           serverContentKeys: Object.keys(serverContent),
           fullServerContent: serverContent
         });
-        
+
         // Try both snake_case and camelCase formats for input transcription
         const inputTranscription = serverContent.input_transcription || serverContent.inputTranscription;
         if (inputTranscription) {
           const { text, finished } = inputTranscription;
-          console.log('🎤 INPUT transcription detected:', { 
-            text, 
-            finished, 
+          console.log('🎤 INPUT transcription detected:', {
+            text,
+            finished,
             confidence: inputTranscription.confidence,
             fieldName: serverContent.input_transcription ? 'input_transcription' : 'inputTranscription'
           });
           if (text && text.trim()) {
             console.log('📝 ✅ Processing user transcription:', { text, finished });
-            transcriptService.addUserTranscription(text, { 
-              finished, 
+            transcriptService.addUserTranscription(text, {
+              finished,
               timestamp: Date.now(),
-              confidence: inputTranscription.confidence 
+              confidence: inputTranscription.confidence
             });
           } else {
             console.log('📝 ⚠️ Empty user transcription, skipping');
           }
         }
-        
-  // Try both snake_case and camelCase formats for output transcription
-  const outputTranscription = serverContent.output_transcription || serverContent.outputTranscription;
+
+        // Try both snake_case and camelCase formats for output transcription
+        const outputTranscription = serverContent.output_transcription || serverContent.outputTranscription;
         if (outputTranscription) {
           const { text, finished } = outputTranscription;
-          console.log('🔊 OUTPUT transcription detected:', { 
-            text, 
-            finished, 
+          console.log('🔊 OUTPUT transcription detected:', {
+            text,
+            finished,
             confidence: outputTranscription.confidence,
             fieldName: serverContent.output_transcription ? 'output_transcription' : 'outputTranscription'
           });
           if (text && text.trim()) {
             console.log('📝 ✅ Processing AI transcription:', { text, finished });
-            transcriptService.addAITranscription(text, { 
-              finished, 
+            transcriptService.addAITranscription(text, {
+              finished,
               timestamp: Date.now(),
-              confidence: outputTranscription.confidence 
+              confidence: outputTranscription.confidence
             });
           } else {
             console.log('📝 ⚠️ Empty AI transcription, skipping');
           }
         }
-        
+
         // Handle model turn parts for UI display
         if (serverContent.modelTurn?.parts) {
           reset(); // Clear previous content to show only the newest full message
@@ -962,7 +963,7 @@ Children feel more understood when you notice what they're showing you - not jus
   useEffect(() => {
     const handleToolCall = (toolCall: any) => {
       console.log('🔧 ASYNC Tool call received:', toolCall);
-      
+
       if (!toolCall.functionCalls) {
         console.warn('⚠️ No function calls in tool call');
         return;
@@ -970,34 +971,34 @@ Children feel more understood when you notice what they're showing you - not jus
 
       const functionResponses = toolCall.functionCalls.map((fc: any) => {
         console.log(`🔧 Processing ASYNC function call: ${fc.name}`, fc.args);
-        
+
         let result;
-        
+
         try {
           if (fc.name === 'write_to_memory') {
             const { key, value } = fc.args;
             if (!key || !value) {
               throw new Error('Missing key or value for write_to_memory');
             }
-            
+
             // ASYNC: Store in localStorage (non-blocking operation)
             const memoryKey = `memory_${key}`;
             localStorage.setItem(memoryKey, value);
             console.log(`💾 ASYNC memory stored: ${memoryKey} = ${value}`);
-            
-            result = { 
-              success: true, 
+
+            result = {
+              success: true,
               message: `Successfully remembered: ${key} = ${value}`,
               stored_key: key,
               stored_value: value,
               timestamp: new Date().toISOString(),
               async_operation: true
             };
-            
+
           } else if (fc.name === 'get_available_memory_keys') {
             // ASYNC: Get list of available memory keys from localStorage (non-blocking)
             const availableKeys: string[] = [];
-            
+
             for (let i = 0; i < localStorage.length; i++) {
               const key = localStorage.key(i);
               if (key && key.startsWith('memory_')) {
@@ -1005,24 +1006,24 @@ Children feel more understood when you notice what they're showing you - not jus
                 availableKeys.push(memoryKey);
               }
             }
-            
+
             console.log(`🔑 ASYNC found ${availableKeys.length} available memory keys:`, availableKeys);
-            
+
             result = {
               success: true,
               available_keys: availableKeys,
               key_count: availableKeys.length,
-              message: availableKeys.length > 0 
-                ? `Found ${availableKeys.length} memory categories: ${availableKeys.join(', ')}` 
+              message: availableKeys.length > 0
+                ? `Found ${availableKeys.length} memory categories: ${availableKeys.join(', ')}`
                 : "No memories stored yet - this appears to be a new conversation with this child",
               async_operation: true
             };
-            
+
           } else if (fc.name === 'read_all_memories') {
             // ASYNC: Retrieve all memories from localStorage (non-blocking)
             const memories: { [key: string]: string } = {};
             let memoryCount = 0;
-            
+
             for (let i = 0; i < localStorage.length; i++) {
               const key = localStorage.key(i);
               if (key && key.startsWith('memory_')) {
@@ -1034,16 +1035,16 @@ Children feel more understood when you notice what they're showing you - not jus
                 }
               }
             }
-            
+
             console.log(`🧠 ASYNC retrieved ${memoryCount} memories:`, memories);
-            
+
             if (memoryCount > 0) {
               // Format memories for better context
               const memoryList = Object.entries(memories)
                 .map(([key, value]) => `${key}: ${value}`)
                 .join('; ');
-              
-              result = { 
+
+              result = {
                 success: true,
                 memories,
                 memory_count: memoryCount,
@@ -1060,37 +1061,37 @@ Children feel more understood when you notice what they're showing you - not jus
                 async_operation: true
               };
             }
-            
+
           } else if (fc.name === 'get_memories_by_keys') {
             // ASYNC: Retrieve specific memories by keys from localStorage (non-blocking)
             const { keys } = fc.args;
-            
+
             if (!keys || !Array.isArray(keys)) {
               throw new Error('Missing or invalid keys array for get_memories_by_keys');
             }
-            
+
             const foundMemories: { [key: string]: string } = {};
             const missingKeys: string[] = [];
-            
+
             keys.forEach((key: string) => {
               const memoryKey = `memory_${key}`;
               const memoryValue = localStorage.getItem(memoryKey);
-              
+
               if (memoryValue) {
                 foundMemories[key] = memoryValue;
               } else {
                 missingKeys.push(key);
               }
             });
-            
+
             const foundCount = Object.keys(foundMemories).length;
             console.log(`🔍 ASYNC retrieved ${foundCount}/${keys.length} specific memories:`, foundMemories);
-            
+
             if (foundCount > 0) {
               const memoryList = Object.entries(foundMemories)
                 .map(([key, value]) => `${key}: ${value}`)
                 .join('; ');
-              
+
               result = {
                 success: true,
                 requested_keys: keys,
@@ -1114,18 +1115,18 @@ Children feel more understood when you notice what they're showing you - not jus
                 async_operation: true
               };
             }
-            
+
           } else {
             console.warn(`⚠️ Unknown function call: ${fc.name}`);
-            result = { 
-              success: false, 
-              error: `Unknown function: ${fc.name}` 
+            result = {
+              success: false,
+              error: `Unknown function: ${fc.name}`
             };
           }
         } catch (error) {
           console.error(`❌ Error processing ASYNC function call ${fc.name}:`, error);
-          result = { 
-            success: false, 
+          result = {
+            success: false,
             error: error instanceof Error ? error.message : 'Unknown error occurred',
             async_operation: true
           };
@@ -1134,7 +1135,7 @@ Children feel more understood when you notice what they're showing you - not jus
         return {
           id: fc.id,
           name: fc.name,
-          response: { 
+          response: {
             result,
             // Asynchronous scheduling using SILENT for seamless memory integration
             // SILENT: Process in background without announcing - Pico just "remembers" naturally
@@ -1149,7 +1150,7 @@ Children feel more understood when you notice what they're showing you - not jus
       if (functionResponses.length > 0) {
         console.log('📤 Sending SILENT function responses to Gemini:', functionResponses);
         console.log('🤫 Scheduling: SILENT - Memory operations will complete in background, Pico will naturally integrate information');
-        
+
         // Use immediate processing for async operations (no artificial delay needed)
         setTimeout(() => {
           try {
@@ -1181,7 +1182,10 @@ Children feel more understood when you notice what they're showing you - not jus
   }, []);
 
   return (
-    <div className={cn("avatar-interface", { connected })}>
+    <div className={cn("avatar-interface", {
+      connected,
+      "video-bg-mode": backgroundVideo && backgroundVideo !== '' // Only apply liquid glass when background video is selected
+    })}>
       <div className="header-section">
         <div className="app-title">
           <h1>ExpressBuddy</h1>
@@ -1204,7 +1208,7 @@ Children feel more understood when you notice what they're showing you - not jus
                 onClick={onGoToLanding}
                 className="back-to-landing-btn"
                 style={{
-                  background: 'var(--primary)',
+                  background: '#16a34a',
                   color: 'white',
                   border: 'none',
                   padding: '8px 16px',
@@ -1214,8 +1218,8 @@ Children feel more understood when you notice what they're showing you - not jus
                   cursor: 'pointer',
                   transition: 'all 0.3s ease'
                 }}
-                onMouseOver={(e) => (e.currentTarget.style.background = 'var(--primary-hover)')}
-                onMouseOut={(e) => (e.currentTarget.style.background = 'var(--primary)')}
+                onMouseOver={(e) => (e.currentTarget.style.background =  '#16a34a')}
+                onMouseOut={(e) => (e.currentTarget.style.background =  '#58cc02')}
               >
                 ← Back to Home
               </button>
@@ -1260,7 +1264,7 @@ Children feel more understood when you notice what they're showing you - not jus
             hidden: !videoRef.current || !videoStream,
             placeholder: !videoStream,
           })}
-          style={{ 
+          style={{
             width: '320px',
             height: '240px',
             position: 'absolute',
@@ -1279,6 +1283,7 @@ Children feel more understood when you notice what they're showing you - not jus
             isListening={isAvatarSpeaking}
             onAvatarStateChange={handleAvatarStateChange}
             onCurrentSubtitleChange={handleAvatarSubtitleChange}
+            backgroundSrc={backgroundVideo}
           />
 
           <Captions subtitleText={currentAvatarSubtitle} />
@@ -1307,11 +1312,13 @@ Children feel more understood when you notice what they're showing you - not jus
           onVideoStreamChange={setVideoStream}
           enableEditingSettings={true}
           disableChunkingToggle={true} // Disable viseme/chunking controls for video avatar
+          currentBackground={backgroundVideo}
+          onBackgroundChange={setBackgroundVideo}
         />
       </div>
-      
+
       {/* **NEW**: Hint Indicator */}
-      <NudgeIndicator 
+      <NudgeIndicator
         visible={isHintIndicatorVisible}
         message="Piko has a helpful hint for you!"
       />

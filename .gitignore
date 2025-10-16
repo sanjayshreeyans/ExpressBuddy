@@ -30,3 +30,5 @@ config/secrets.js
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+# Local VS Code MCP server configs (should not be committed)
+.vscode/mcp.json

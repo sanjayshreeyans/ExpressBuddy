@@ -23,9 +23,14 @@
   flex-direction: column;
   height: 100vh;
   width: 100vw;
-  background: #ffffff; // Changed from #f4f7f9 to white to match video background
+  background: #ffffff; // **DEFAULT**: Solid white background for standard interface
   color: #202124;
   overflow: hidden;
+  
+  // **CONDITIONAL**: Only transparent when video background mode is active
+  &.video-bg-mode {
+    background: transparent;
+  }
 }
 
 // ============================================================================
@@ -33,36 +38,87 @@
 // These are fixed-height sections at the top and bottom.
 // ============================================================================
 .header-section {
+  position: relative; // For z-index stacking
+  z-index: 100; // Above video layers
   flex-shrink: 0; // Prevents this section from shrinking
   padding: 1.5rem 2rem; // **INCREASED**: More padding for better visibility
   display: flex;
   justify-content: space-between;
   align-items: center;
+  
+  // **DEFAULT**: Solid white background for standard interface (no video background)
+  background: #ffffff;
   border-bottom: 1px solid #e0e0e0;
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); // **NEW**: Subtle gradient background
 
   .app-title h1 {
     margin: 0;
-    font-size: 1.8rem; // **INCREASED**: Larger title
+    font-size: 1.8rem;
     color: #1a73e8;
-    font-weight: 700; // **NEW**: Bolder font weight
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); // **NEW**: Subtle text shadow
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
   }
 
   .app-title p {
-    margin: 0.25rem 0 0 0; // **ADJUSTED**: Small top margin
-    font-size: 1rem; // **INCREASED**: Larger subtitle
+    margin: 0.25rem 0 0 0;
+    font-size: 1rem;
     color: #5f6368;
-    font-weight: 500; // **NEW**: Medium font weight
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+}
+
+// **LIQUID GLASS MODE**: Only apply to video background mode
+.video-bg-mode .header-section {
+  // **ULTRA TRANSPARENT**: Almost completely see-through (1% opacity instead of 5%)
+  background: rgba(255, 255, 255, 0.01) !important;
+  backdrop-filter: blur(12px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+  .app-title h1 {
+    // **ADAPTIVE**: White text with multi-layer shadows for contrast
+    color: #ffffff;
+    font-weight: 800;
+    text-shadow: 
+      0 0 20px rgba(0, 0, 0, 0.8),
+      0 0 40px rgba(0, 0, 0, 0.6),
+      0 2px 10px rgba(0, 0, 0, 0.9),
+      0 0 3px rgba(255, 255, 255, 0.3);
+    letter-spacing: -0.5px;
+  }
+
+  .app-title p {
+    // **ADAPTIVE**: Light text with dark shadows
+    color: #f0f0f0;
+    font-weight: 600;
+    text-shadow: 
+      0 0 15px rgba(0, 0, 0, 0.7),
+      0 2px 8px rgba(0, 0, 0, 0.8),
+      0 0 2px rgba(255, 255, 255, 0.2);
+    letter-spacing: 0.5px;
   }
 }
 
 .controls-section {
+  position: relative; // For z-index stacking
+  z-index: 100; // Above video layers
   flex-shrink: 0; // Prevents this section from shrinking
   padding: 0.5rem;
-  background-color: rgba(255, 255, 255, 0.85);
+  background-color: rgba(255, 255, 255, 0.95); // Slightly more opaque
   backdrop-filter: blur(8px);
   border-top: 1px solid #e0e0e0;
+}
+
+// **LIQUID GLASS MODE**: Make controls section ultra transparent in video mode
+.video-bg-mode .controls-section {
+  background-color: rgba(255, 255, 255, 0.01) !important;
+  backdrop-filter: blur(12px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 
@@ -71,42 +127,36 @@
 // This section defines the flexible content area and the avatar's size.
 // ============================================================================
 .main-content-area {
-  flex-grow: 1; // This is KEY: makes this area fill all available vertical space.
+  flex-grow: 1; // Fill available space
   width: 100%;
+  height: 100%;
   display: flex;
-  justify-content: center; // Center horizontally
-  align-items: flex-start; // **CHANGED**: Align to top instead of center
-  min-height: 0; // A critical flexbox fix to prevent content overflow issues.
-  padding-top: 0; // **NEW**: Add top padding to move content higher
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  position: relative;
+  z-index: 10; // Above background but below header
 }
 
 .panda-stage {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
-  position: relative; // **NEW**: Added for better positioning context
-  margin-top: 0; // **NEW**: Add top margin to move panda higher
+  gap: 0;
+  position: relative;
+  width: 100%;
+  height: 100%;
 }
 
 /*
- * PRIMARY FIX FOR THE "TINY AVATAR"
- * This rule gives the avatar a large, explicitly square container.
+ * Make avatar container fill the entire available space
 */
 .panda-container {
-  // Establishes a positioning context for the Rive canvas inside.
   position: relative;
-  // Prevents this container from shrinking inside its parent flex container.
   flex-shrink: 0;
-
-  // Define a responsive width.
-  width: clamp(350px, 40vw, 450px);
-
-  // CRITICAL FIX: Force a 1:1 (square) aspect ratio.
-  // This makes the height dynamically equal to the responsive width, giving the
-  // Rive canvas a stable, non-zero area to render in. This is the most
-  // robust way to solve the "height: 24px" problem.
-  aspect-ratio: 1 / 1;
+  width: 100%;
+  height: 100%;
+  max-width: 100vw;
 }
 
 
