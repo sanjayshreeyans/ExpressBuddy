@@ -112,6 +112,7 @@
     "postcss": "^8.5.6",
     "process": "^0.11.10",
     "querystring-es3": "^0.2.1",
+    "shadcn": "^3.4.2",
     "source-map-explorer": "^2.5.3",
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
