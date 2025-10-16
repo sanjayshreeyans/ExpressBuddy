@@ -41,6 +41,13 @@ export class EmotionDetectionService {
     scoreThreshold: 0.5
   };
 
+  // Model cache for quick re-initialization
+  private modelCache = {
+    tinyFaceDetector: false,
+    faceLandmark68Net: false,
+    faceExpressionNet: false
+  };
+
   private constructor() {}
 
   public static getInstance(): EmotionDetectionService {
@@ -60,6 +67,7 @@ export class EmotionDetectionService {
     onProgress?: (progress: ModelLoadingProgress) => void
   ): Promise<void> {
     if (this.isInitialized) {
+      console.log('✅ EmotionDetectionService already initialized, skipping re-initialization');
       return;
     }
 
@@ -68,29 +76,65 @@ export class EmotionDetectionService {
     }
 
     try {
-      // Use retry mechanism for model loading
+      // Use retry mechanism for model loading with aggressive parallelization
       await retryWithBackoff(async () => {
-        this.updateProgress('Loading face detection model...', 0);
-        
+        // Parallel loading of all models for faster initialization
+        const modelLoadPromises: Promise<void>[] = [];
+
         // Load face detection model
-        await faceapi.nets.tinyFaceDetector.loadFromUri(modelsPath);
-        this.updateProgress('Face detection model loaded', 1);
+        this.updateProgress('Loading face detection model...', 0);
+        const loadFaceDetector = (async () => {
+          try {
+            await faceapi.nets.tinyFaceDetector.loadFromUri(modelsPath);
+            this.modelCache.tinyFaceDetector = true;
+            this.updateProgress('Face detection model loaded', 1);
+            console.log('✅ Face detection model loaded');
+          } catch (err) {
+            console.error('❌ Failed to load face detector:', err);
+            throw err;
+          }
+        })();
+        modelLoadPromises.push(loadFaceDetector);
 
         // Load face landmark model
         this.updateProgress('Loading face landmark model...', 1);
-        await faceapi.nets.faceLandmark68Net.loadFromUri(modelsPath);
-        this.updateProgress('Face landmark model loaded', 2);
+        const loadLandmarks = (async () => {
+          try {
+            await faceapi.nets.faceLandmark68Net.loadFromUri(modelsPath);
+            this.modelCache.faceLandmark68Net = true;
+            this.updateProgress('Face landmark model loaded', 2);
+            console.log('✅ Face landmark model loaded');
+          } catch (err) {
+            console.error('❌ Failed to load landmarks:', err);
+            throw err;
+          }
+        })();
+        modelLoadPromises.push(loadLandmarks);
 
         // Load face expression recognition model
         this.updateProgress('Loading expression recognition model...', 2);
-        await faceapi.nets.faceExpressionNet.loadFromUri(modelsPath);
-        this.updateProgress('All models loaded successfully', 3);
+        const loadExpressions = (async () => {
+          try {
+            await faceapi.nets.faceExpressionNet.loadFromUri(modelsPath);
+            this.modelCache.faceExpressionNet = true;
+            this.updateProgress('All models loaded successfully', 3);
+            console.log('✅ Expression recognition model loaded');
+          } catch (err) {
+            console.error('❌ Failed to load expressions:', err);
+            throw err;
+          }
+        })();
+        modelLoadPromises.push(loadExpressions);
+
+        // Wait for all models to load in parallel
+        await Promise.all(modelLoadPromises);
 
         this.modelsLoaded = true;
         this.isInitialized = true;
         this.loadingProgress.isComplete = true;
         
         this.notifyProgressCallbacks();
+        console.log('✅ All emotion detection models initialized successfully');
       }, 3, 2000, 10000);
       
     } catch (error) {
@@ -174,25 +218,27 @@ export class EmotionDetectionService {
         }
       }
 
-      // Detect faces with expressions using graceful degradation
+      // Detect faces with expressions using optimized settings and graceful degradation
       const detections = await withGracefulDegradation(
         async () => {
+          // Fast detection with smaller input size for real-time performance
           return await faceapi
             .detectAllFaces(imageElement, new faceapi.TinyFaceDetectorOptions({
-              inputSize: this.config.inputSize,
-              scoreThreshold: this.config.scoreThreshold
+              inputSize: 320, // Reduced from 416 for faster inference
+              scoreThreshold: 0.4 // Slightly lower for better real-time detection
             }))
             .withFaceLandmarks()
             .withFaceExpressions();
         },
         async () => {
-          // Fallback: try with different settings
+          // Fallback: try with even smaller input size and skip landmarks
+          console.warn('⚠️ Fallback detection with reduced resolution');
           return await faceapi
             .detectAllFaces(imageElement, new faceapi.TinyFaceDetectorOptions({
-              inputSize: 320, // Smaller input size for better performance
-              scoreThreshold: 0.3 // Lower threshold for better detection
+              inputSize: 224, // Very small for fastest detection
+              scoreThreshold: 0.3
             }))
-            .withFaceExpressions(); // Skip landmarks if they fail
+            .withFaceExpressions(); // Skip landmarks for speed
         }
       );
 

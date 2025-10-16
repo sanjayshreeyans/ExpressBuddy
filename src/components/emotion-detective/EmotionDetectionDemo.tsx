@@ -7,7 +7,10 @@ import { Progress } from '../ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription } from '../ui/alert';
-import { Separator } from '../ui/separator';
+import { 
+  Zap, Play, Square, Camera, Smile, Pause,
+  CheckCircle, BarChart3, AlertTriangle, Volume2, Settings
+} from 'lucide-react';
 
 interface EmotionDetectionDemoProps { }
 
@@ -23,19 +26,6 @@ export const EmotionDetectionDemo: React.FC<EmotionDetectionDemoProps> = () => {
   });
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
-
-  // Debug logging for state changes
-  useEffect(() => {
-    console.log('🔄 [STATE] videoStream changed:', !!videoStream, videoStream?.id);
-  }, [videoStream]);
-
-  useEffect(() => {
-    console.log('🔄 [STATE] cameraActive changed:', cameraActive);
-  }, [cameraActive]);
-
-  useEffect(() => {
-    console.log('🔄 [STATE] isInitialized changed:', isInitialized);
-  }, [isInitialized]);
   const [detectionResult, setDetectionResult] = useState<FaceApiResult | null>(null);
   const [guidance, setGuidance] = useState<string>('');
   const [targetEmotion, setTargetEmotion] = useState<string>('happy');
@@ -250,241 +240,166 @@ export const EmotionDetectionDemo: React.FC<EmotionDetectionDemoProps> = () => {
   }, []);
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold tracking-tight">Emotion Detection Demo</h1>
-        <p className="text-muted-foreground mt-2">Real-time facial emotion recognition using AI</p>
+    <div className="w-full h-full flex flex-col overflow-hidden bg-gradient-to-br from-purple-50 to-blue-50">
+      {/* Compact Modern Header */}
+      <div className="flex-shrink-0 bg-white border-b shadow-sm">
+        <div className="py-2 px-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg">
+              <Zap className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">Emotion Detection</h1>
+              <p className="text-xs text-gray-600">AI-powered recognition</p>
+            </div>
+          </div>
+          <Badge className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs">Beta</Badge>
+        </div>
       </div>
 
-      {/* Model Loading Progress */}
-      {!isInitialized && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Loading Face-API.js Models</CardTitle>
-            <CardDescription>
-              {loadingProgress.currentModel} ({loadingProgress.modelsLoaded}/{loadingProgress.totalModels})
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Progress
-              value={(loadingProgress.modelsLoaded / loadingProgress.totalModels) * 100}
-              className="mb-2"
-            />
-            {loadingProgress.error && (
-              <Alert variant="destructive">
-                <AlertDescription>Error: {loadingProgress.error}</AlertDescription>
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {/* Main Content - Optimized Vertical Layout */}
+      <div className="flex-1 flex flex-col overflow-hidden p-4 gap-3 min-h-0">
+        
+        {/* Loading State - Compact */}
+        {!isInitialized && (
+          <Card className="border-l-4 border-l-purple-500 flex-shrink-0">
+            <CardContent className="p-3 flex items-center gap-3">
+              <Settings className="w-5 h-5 text-purple-600" />
+              <div className="flex-1">
+                <Progress value={(loadingProgress.modelsLoaded / loadingProgress.totalModels) * 100} className="h-1.5 mb-1" />
+                <div className="text-xs text-gray-600">
+                  {Math.round((loadingProgress.modelsLoaded / loadingProgress.totalModels) * 100)}% - {loadingProgress.currentModel || 'Preparing...'}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-      {/* Camera Controls */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Camera Controls</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4 justify-center">
+        {/* Camera Controls - Horizontal Compact */}
+        <Card className="flex-shrink-0">
+          <CardContent className="p-3 flex gap-2">
             <Button
               onClick={startCamera}
               disabled={cameraActive || !isInitialized}
-              variant="default"
-              size="lg"
+              className="flex-1 bg-green-600 hover:bg-green-700 h-9"
+              size="sm"
             >
+              <Play className="w-3 h-3 mr-1" />
               Start Camera
             </Button>
             <Button
               onClick={stopCamera}
               disabled={!cameraActive}
-              variant="destructive"
-              size="lg"
+              className="flex-1 bg-red-600 hover:bg-red-700 h-9"
+              size="sm"
             >
-              Stop Camera
+              <Square className="w-3 h-3 mr-1" />
+              Stop
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+            {cameraActive && (
+              <>
+                <Button
+                  onClick={startRealTimeDetection}
+                  disabled={isRealTimeActive || !isInitialized}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 h-9"
+                  size="sm"
+                >
+                  <Zap className="w-3 h-3 mr-1" />
+                  Detect
+                </Button>
+                <Button
+                  onClick={captureAndAnalyze}
+                  disabled={!isInitialized}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 h-9"
+                  size="sm"
+                >
+                  <Camera className="w-3 h-3 mr-1" />
+                  Capture
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Video and Canvas Container */}
-      {cameraActive && videoStream && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Camera Feed</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex justify-center">
-              <div className="relative border-2 border-border rounded-lg overflow-hidden">
+        {/* Video Feed - Takes remaining space */}
+        {cameraActive && videoStream && (
+          <Card className="flex-1 min-h-0 flex flex-col">
+            <CardContent className="p-3 flex-1 min-h-0 flex flex-col">
+              <div className="relative bg-black rounded-lg overflow-hidden flex-1 min-h-0">
                 <video
                   ref={videoRef}
-                  width="640"
-                  height="480"
-                  className="block w-full h-auto bg-black"
+                  className="w-full h-full object-contain"
                   muted
                   autoPlay
                   playsInline
-                  style={{ minHeight: '480px' }}
                 />
                 <canvas
                   ref={canvasRef}
-                  width="640"
-                  height="480"
-                  className="absolute top-0 left-0 pointer-events-none"
+                  className="absolute inset-0 pointer-events-none"
                 />
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Detection Controls */}
-      {cameraActive && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Detection Controls</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-4 justify-center">
-              <Button
-                onClick={startRealTimeDetection}
-                disabled={isRealTimeActive || !isInitialized}
-                variant="secondary"
-              >
-                {isRealTimeActive ? 'Detection Active' : 'Start Real-time Detection'}
-              </Button>
-              <Button
-                onClick={stopRealTimeDetection}
-                disabled={!isRealTimeActive}
-                variant="outline"
-              >
-                Stop Detection
-              </Button>
-            </div>
-
-            <Separator />
-
-            {/* Target Emotion Selection */}
-            <div className="flex items-center justify-center gap-4 flex-wrap">
-              <span className="font-medium">Target Emotion:</span>
-              <Select value={targetEmotion} onValueChange={setTargetEmotion}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {emotions.map(emotion => (
-                    <SelectItem key={emotion} value={emotion}>
-                      {emotion.charAt(0).toUpperCase() + emotion.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                onClick={captureAndAnalyze}
-                disabled={!isInitialized}
-                variant="default"
-              >
-                Capture & Analyze
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Detection Results */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Real-time Detection Results */}
-        {detectionResult && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-green-600">Real-time Detection</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Badge variant="secondary">
-                  Detection Confidence: {(detectionResult.detectionConfidence * 100).toFixed(1)}%
-                </Badge>
-              </div>
-
-              <div>
-                <h4 className="font-medium mb-2">Emotion Scores:</h4>
-                <div className="space-y-2">
-                  {Object.entries(detectionResult.expressions)
-                    .sort(([, a], [, b]) => b - a)
-                    .map(([emotion, confidence]) => (
-                      <div key={emotion} className="flex justify-between items-center">
-                        <span className="capitalize">{emotion}</span>
-                        <div className="flex items-center gap-2">
-                          <Progress value={confidence * 100} className="w-20 h-2" />
-                          <span className="text-sm font-mono w-12 text-right">
-                            {(confidence * 100).toFixed(1)}%
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-
-              {guidance && (
-                <Alert>
-                  <AlertDescription>{guidance}</AlertDescription>
-                </Alert>
-              )}
             </CardContent>
           </Card>
         )}
 
-        {/* Capture Analysis Results */}
-        {captureResult && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-purple-600">Capture Analysis</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between">
-                <span>Success:</span>
-                <Badge variant={captureResult.success ? "default" : "destructive"}>
-                  {captureResult.success ? 'Yes' : 'No'}
-                </Badge>
-              </div>
-              <div className="flex justify-between">
-                <span>Target Emotion:</span>
-                <Badge variant="outline" className="capitalize">{targetEmotion}</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span>Detected Emotion:</span>
-                <Badge variant="secondary" className="capitalize">{captureResult.detectedEmotion}</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span>Confidence:</span>
-                <span>{(captureResult.confidence * 100).toFixed(1)}%</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Match:</span>
-                <Badge variant={captureResult.isMatch ? "default" : "destructive"}>
-                  {captureResult.isMatch ? '✓ Yes' : '✗ No'}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Results - Horizontal Cards at Bottom */}
+        {(detectionResult || captureResult) && (
+          <div className="flex-shrink-0 flex gap-3">
+            {detectionResult && (
+              <Card className="flex-1 border-l-4 border-l-green-500">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                      <span className="text-sm font-bold text-gray-700">Live Detection</span>
+                    </div>
+                    <Badge className="bg-green-600 text-white text-xs">
+                      {(detectionResult.detectionConfidence * 100).toFixed(0)}%
+                    </Badge>
+                  </div>
+                  <div className="space-y-1">
+                    {Object.entries(detectionResult.expressions)
+                      .sort(([, a], [, b]) => b - a)
+                      .slice(0, 3)
+                      .map(([emotion, confidence]) => (
+                        <div key={emotion} className="flex justify-between items-center text-xs">
+                          <span className="capitalize font-medium">{emotion}</span>
+                          <span className="font-bold">{(confidence * 100).toFixed(0)}%</span>
+                        </div>
+                      ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {captureResult && (
+              <Card className={`flex-1 border-l-4 ${captureResult.success ? 'border-l-green-500' : 'border-l-orange-500'}`}>
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4 text-gray-700" />
+                      <span className="text-sm font-bold text-gray-700">Capture</span>
+                    </div>
+                    <Badge className={captureResult.success ? 'bg-green-600' : 'bg-red-600'} variant="outline">
+                      {captureResult.success ? '✓' : '✗'}
+                    </Badge>
+                  </div>
+                  <div className="text-xs space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Detected:</span>
+                      <span className="font-bold capitalize">{captureResult.detectedEmotion}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Confidence:</span>
+                      <span className="font-bold">{(captureResult.confidence * 100).toFixed(0)}%</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
       </div>
-
-      {/* Instructions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Instructions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ol className="list-decimal list-inside space-y-2 text-sm">
-            <li>Wait for the face-api.js models to load completely</li>
-            <li>Click "Start Camera" to activate your webcam</li>
-            <li>Click "Start Real-time Detection" to see live emotion detection with face overlay</li>
-            <li>Select a target emotion and click "Capture & Analyze" to test emotion matching</li>
-            <li>Try expressing different emotions to see how well the system detects them</li>
-            <li>The green box shows face detection, red dots show facial landmarks</li>
-          </ol>
-        </CardContent>
-      </Card>
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Progress } from '../ui/progress';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
+import { Trophy, BarChart3, Star, Target } from 'lucide-react';
 import { useSupabase } from '../../contexts/SupabaseContext';
 // import { useTTSPlayback } from '../../hooks/useTTSPlayback'; // Disabled for demo
 import { supabaseService } from '../../services/supabaseService';
@@ -860,7 +861,7 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
 
   return (
     <div
-      className={`h-screen max-h-screen overflow-hidden bg-white ${isReducedMotion ? 'reduce-motion' : ''
+      className={`w-screen h-screen max-h-screen overflow-hidden bg-white flex flex-col ${isReducedMotion ? 'reduce-motion' : ''
         } ${isHighContrast ? 'high-contrast' : ''} ${isKeyboardNavigation ? 'keyboard-navigation' : ''
         }`}
       role="main"
@@ -881,25 +882,29 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
 
       {/* Progress Header */}
       <header
-        className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b flex-shrink-0"
+        className="sticky top-0 z-10 bg-gradient-to-r from-purple-100 to-blue-100 border-b-3 border-purple-300 flex-shrink-0 shadow-lg"
         role="banner"
         aria-label="Lesson Progress"
       >
-        <div className="container mx-auto px-2 py-1">
-          <div className="flex items-center justify-between">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center space-x-4">
               <Badge
-                variant="secondary"
-                className="text-sm"
+                variant="default"
+                className="text-base font-bold bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 flex items-center gap-2"
                 aria-label={`Current level: ${session.level}`}
               >
+                <Target className="w-4 h-4" />
                 Level {session.level}
               </Badge>
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium" id="progress-label">Progress:</span>
+                <span className="text-base font-bold text-purple-900 flex items-center gap-2" id="progress-label">
+                  <BarChart3 className="w-4 h-4" />
+                  Progress:
+                </span>
                 <Progress
                   value={(completedQuestions / session.questions.length) * 100}
-                  className="w-32"
+                  className="w-40 h-3"
                   aria-labelledby="progress-label"
                   aria-valuenow={completedQuestions}
                   aria-valuemin={0}
@@ -907,7 +912,7 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
                   aria-valuetext={`${completedQuestions} of ${session.questions.length} questions completed`}
                 />
                 <span
-                  className="text-sm text-muted-foreground"
+                  className="text-base font-bold text-purple-900"
                   aria-label={`${completedQuestions} of ${session.questions.length} questions completed`}
                 >
                   {completedQuestions}/{session.questions.length}
@@ -917,16 +922,18 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
             <div className="flex items-center space-x-4">
               <Badge
                 variant="default"
-                className="text-sm"
+                className="text-base font-bold bg-gradient-to-r from-green-500 to-emerald-500 px-4 py-2 flex items-center gap-2"
                 aria-label={`Session XP earned: ${sessionXP} points`}
               >
+                <Star className="w-4 h-4" />
                 +{sessionXP} XP
               </Badge>
               <Badge
-                variant="outline"
-                className="text-sm"
+                variant="secondary"
+                className="text-base font-bold border-2 border-purple-300 px-4 py-2 flex items-center gap-2"
                 aria-label={`Total XP: ${progress.totalXP + sessionXP} points`}
               >
+                <Trophy className="w-4 h-4" />
                 Total: {progress.totalXP + sessionXP} XP
               </Badge>
             </div>
@@ -937,7 +944,7 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
       {/* Main Content */}
       <main
         id="main-content"
-        className="container mx-auto px-2 py-2 h-full flex flex-col"
+        className="flex-1 overflow-hidden w-full bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50"
         role="main"
         aria-label="Lesson Content"
       >
@@ -964,77 +971,41 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
-              className="grid grid-cols-1 lg:grid-cols-4 gap-2 flex-1"
+              className="w-full h-full overflow-hidden"
             >
-              {/* Pico Avatar Area (Left 20%) - Properly centered with better height */}
-              <div className="lg:col-span-1">
-                <Card className="h-full max-h-[500px] sticky top-24">
-                  <CardContent className="p-3 h-full flex flex-col">
-                    <div className="flex-1 flex items-center justify-center overflow-hidden rounded-lg bg-white">
-                      <div className="w-full h-full flex items-center justify-center relative">
-                        <div className="w-full max-w-[450px] h-full max-h-[450px] flex items-center justify-center" style={{ aspectRatio: '1/1' }}>
-                          <VideoExpressBuddyAvatar
-                            className="w-full h-full"
-                            isListening={false} // Keep in idle animation
-                            hideDebugInfo={true} // Hide debug overlays for clean display
-                            backgroundSrc=""
-                            onAvatarStateChange={(state) => {
-                              console.log('🎯 Avatar state changed:', state);
-                            }}
-                            onCurrentSubtitleChange={(subtitle) => {
-                              console.log('🎯 Current subtitle changed:', subtitle);
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    {currentSubtitle && (
-                      <div className="mt-1 p-1 bg-blue-100 rounded text-xs text-center text-blue-800 font-medium">
-                        {currentSubtitle}
-                      </div>
-                    )}
-                    <div className="text-center text-xs text-muted-foreground mt-1">
-                      {ttsState.isPlaying ? '🎵 Speaking...' : '👋 Ready to help!'}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Question Content Area (Right 80%) */}
-              <div className="lg:col-span-3">
-                {session.questions[currentQuestionIndex] && (
-                  <>
-                    {session.questions[currentQuestionIndex].type === 1 && (
-                      <QuestionType1
-                        question={session.questions[currentQuestionIndex]}
-                        onAnswer={handleQuestionAnswer}
-                        onTTSRequest={handleTTSRequest}
-                      />
-                    )}
-                    {session.questions[currentQuestionIndex].type === 2 && (
-                      <QuestionType2
-                        question={session.questions[currentQuestionIndex]}
-                        onAnswer={handleQuestionAnswer}
-                        onTTSRequest={handleTTSRequest}
-                      />
-                    )}
-                    {session.questions[currentQuestionIndex].type === 3 && (
-                      <QuestionType3
-                        question={session.questions[currentQuestionIndex]}
-                        onAnswer={handleQuestionAnswer}
-                        onTTSRequest={handleTTSRequest}
-                      />
-                    )}
-                    {session.questions[currentQuestionIndex].type === 4 && (
-                      <QuestionType4
-                        question={session.questions[currentQuestionIndex]}
-                        onAnswer={handleQuestionAnswer}
-                        onTTSRequest={handleTTSRequest}
-                      />
-                    )}
-                  </>
-                )}
-              </div>
+              {/* Question Content - Full Width */}
+              {session.questions[currentQuestionIndex] && (
+                <div className="h-full overflow-hidden">
+                  {session.questions[currentQuestionIndex].type === 1 && (
+                    <QuestionType1
+                      question={session.questions[currentQuestionIndex]}
+                      onAnswer={handleQuestionAnswer}
+                      onTTSRequest={handleTTSRequest}
+                    />
+                  )}
+                  {session.questions[currentQuestionIndex].type === 2 && (
+                    <QuestionType2
+                      question={session.questions[currentQuestionIndex]}
+                      onAnswer={handleQuestionAnswer}
+                      onTTSRequest={handleTTSRequest}
+                    />
+                  )}
+                  {session.questions[currentQuestionIndex].type === 3 && (
+                    <QuestionType3
+                      question={session.questions[currentQuestionIndex]}
+                      onAnswer={handleQuestionAnswer}
+                      onTTSRequest={handleTTSRequest}
+                    />
+                  )}
+                  {session.questions[currentQuestionIndex].type === 4 && (
+                    <QuestionType4
+                      question={session.questions[currentQuestionIndex]}
+                      onAnswer={handleQuestionAnswer}
+                      onTTSRequest={handleTTSRequest}
+                    />
+                  )}
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -1069,21 +1040,21 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.3 }}
             >
-              <Card className="max-w-2xl mx-auto text-center">
-                <CardHeader>
-                  <CardTitle className="text-2xl text-primary">
-                    🎉 Lesson Complete!
+              <Card className="max-w-3xl mx-auto text-center border-3 border-green-300 shadow-2xl bg-gradient-to-br from-green-50 to-emerald-50">
+                <CardHeader className="bg-gradient-to-r from-green-100 to-emerald-100 py-6">
+                  <CardTitle className="text-4xl font-black text-green-900">
+                    🎉 Lesson Complete! 🎉
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-6 p-8">
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-muted rounded-lg">
-                      <div className="text-2xl font-bold text-primary">{sessionXP}</div>
-                      <div className="text-sm text-muted-foreground">XP Earned</div>
+                    <div className="p-6 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-xl border-2 border-yellow-300">
+                      <div className="text-4xl font-black text-orange-600">{sessionXP}</div>
+                      <div className="text-lg font-bold text-orange-700 mt-2">⭐ XP Earned</div>
                     </div>
-                    <div className="p-4 bg-muted rounded-lg">
-                      <div className="text-2xl font-bold text-primary">{completedQuestions}</div>
-                      <div className="text-sm text-muted-foreground">Questions Completed</div>
+                    <div className="p-6 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-xl border-2 border-blue-300">
+                      <div className="text-4xl font-black text-blue-600">{completedQuestions}</div>
+                      <div className="text-lg font-bold text-blue-700 mt-2">📚 Questions Done</div>
                     </div>
                   </div>
 
@@ -1097,10 +1068,10 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
 
                   <Button
                     onClick={handleLessonComplete}
-                    className="px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-lg font-medium"
+                    className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl hover:shadow-xl transition-all text-xl font-bold border-2 border-purple-700"
                     size="lg"
                   >
-                    Continue Learning
+                    ➡️ Continue Learning
                   </Button>
                 </CardContent>
               </Card>

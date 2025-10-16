@@ -5,7 +5,7 @@ import { Badge } from '../ui/badge';
 import { AspectRatio } from '../ui/aspect-ratio';
 import { SpeakerIcon } from './SpeakerIcon';
 import { QuestionComponentProps } from '../../types/emotion-detective';
-
+import { HelpCircle, Volume2, Zap, Users } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 /**
@@ -167,101 +167,125 @@ export const QuestionType1: React.FC<QuestionComponentProps> = ({
   }
 
   return (
-    <div className="w-full h-[10vh] max-h-[200px] flex flex-col p-1">
-      {/* Question Header - Compact */}
-      <Card className="mb-2 flex-shrink-0">
-        <CardHeader className="py-2 px-3">
-          <CardTitle className="text-base font-semibold text-center flex items-center justify-center gap-2">
-            {question.questionText}
-            <SpeakerIcon
-              text={question.questionText}
-              className="ml-2"
-              aria-label="Repeat question"
-            />
-          </CardTitle>
-        </CardHeader>
-      </Card>
-
-      {/* Main Content Layout - Flexible height */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 flex-1 min-h-0">
-        {/* Face Image Section - Compact */}
-        <Card className="h-[80vh] max-h-[500px]">
-          <CardContent className="p-2 h-full flex flex-col max-h-[300px]">
-            <AspectRatio ratio={3 / 4} className="bg-muted rounded-lg overflow-hidden flex-1 max-h-[490px]">
-              <img
-                src={question.faceImage.path}
-                alt={`Person showing an emotion`}
-                className="w-full h-full object-contain"
-                onError={(e) => {
-                  console.error('❌ Failed to load face image:', question.faceImage?.path);
-                  e.currentTarget.src = '/placeholder-face.jpg'; // Fallback image
-                }}
-              />
-            </AspectRatio>
-
-            {/* Image metadata for debugging - Removed male age and variant */}
-
-          </CardContent>
-        </Card>
-
-        {/* Answer Options Section - Scrollable if needed */}
-        <Card className="h-full flex flex-col">
-          <CardHeader className="py-2 px-3 flex-shrink-0">
-            <CardTitle className="text-sm flex items-center justify-between">
-              Choose the emotion:
+    <div className="w-full h-full flex flex-col overflow-hidden bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+      {/* Kai - AI Detective Character Header */}
+      <div className="flex-shrink-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 shadow-lg">
+        <div className="py-4 px-6">
+          <div className="max-w-4xl mx-auto flex items-center gap-4">
+            {/* Kai Character Avatar */}
+            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-xl flex-shrink-0 border-4 border-white">
+              <span className="text-4xl">🕵️</span>
+            </div>
+            
+            {/* Kai's Speech Bubble */}
+            <div className="flex-1 bg-white rounded-2xl px-6 py-3 shadow-lg relative">
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 w-0 h-0 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-white"></div>
+              <div className="flex items-center gap-3">
+                <p className="text-lg font-bold text-gray-800 flex-1">
+                  🔍 What emotion is this person showing?
+                </p>
+                <SpeakerIcon
+                  text={question.questionText}
+                  className="flex-shrink-0"
+                  aria-label="Repeat question"
+                />
+              </div>
               {attempts > 0 && attempts < MAX_ATTEMPTS && !hasAnswered && (
-                <Badge variant="outline" className="text-sm">
+                <Badge className="bg-orange-500 text-white text-xs px-2 py-1 mt-2">
                   Attempt {attempts + 1} of {MAX_ATTEMPTS}
                 </Badge>
               )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto px-3 pb-2">
-            <div className="space-y-1.5">
-              {question.options.map((option, index) => (
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content - Face Image at Top */}
+      <div className="flex-1 flex flex-col p-6 overflow-y-auto">
+        <div className="max-w-5xl mx-auto w-full space-y-6">
+          {/* Large Face Image */}
+          <Card className="shadow-2xl border-4 border-purple-200 overflow-hidden">
+            <CardContent className="p-6 bg-gradient-to-br from-white to-purple-50">
+              <div className="flex items-center justify-center" style={{ minHeight: '250px' }}>
+                <img
+                  src={question.faceImage.path}
+                  alt={`Person showing an emotion`}
+                  className="max-w-full max-h-[300px] w-auto h-auto object-contain rounded-xl shadow-lg"
+                  onError={(e) => {
+                    console.error('❌ Failed to load face image:', question.faceImage?.path);
+                    e.currentTarget.src = '/placeholder-face.jpg';
+                  }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Big 2x2 Grid of Emotion Choices */}
+          <div className="grid grid-cols-2 gap-6">
+            {question.options.map((option, index) => {
+              const emotionEmojis: Record<string, string> = {
+                happy: '😄',
+                sad: '😢',
+                angry: '😠',
+                surprised: '😲',
+                fearful: '😨',
+                disgusted: '🤢',
+                neutral: '😐'
+              };
+
+              return (
                 <Button
                   key={`${option}-${index}`}
                   variant={getButtonVariant(option)}
                   className={cn(
-                    'w-full justify-between text-left h-auto py-2 px-3',
+                    'h-32 flex flex-col items-center justify-center gap-3 text-center rounded-2xl font-bold text-2xl transition-all duration-300 border-4 shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95',
                     getButtonClassName(option)
                   )}
                   onClick={() => handleAnswerSelect(option)}
                   disabled={hasAnswered}
                 >
-                  <span className="flex-1 text-xs font-medium capitalize">
-                    {option}
-                  </span>
+                  <span className="text-6xl">{emotionEmojis[option.toLowerCase()] || '😐'}</span>
+                  <span className="capitalize text-xl">
+                        <span className="text-2xl">{emotionEmojis[option] || '😊'}</span>
+                        <span>{option}</span>
+                      </span>
 
-                  {/* Speaker icon for text options */}
-                  <SpeakerIcon
-                    text={`The emotion is ${option}`}
-                    className="ml-2 flex-shrink-0"
-                    size="sm"
-                    aria-label={`Read aloud: ${option}`}
-                  />
-                </Button>
-              ))}
+                      <SpeakerIcon
+                        text={`The emotion is ${option}`}
+                        className="ml-2 flex-shrink-0"
+                        size="sm"
+                        aria-label={`Read aloud: ${option}`}
+                      />
+                    </Button>
+                  );
+                })}
 
-              {/* Feedback Section - Moved underneath options */}
-              {hasAnswered && (
-                <div className="mt-2 p-2 rounded-lg border-2 border-dashed">
-                  <div className="text-center">
-                    {selectedAnswer === question.correctAnswer ? (
-                      <div className="text-green-600 font-semibold text-xs">
-                        🎉 Correct! This person is showing {question.correctAnswer}.
+                {/* Feedback Section - Compact */}
+                {hasAnswered && (
+                  <Card className="mt-2 shadow-sm">
+                    <CardContent className="p-3">
+                      <div className="text-center">
+                        {selectedAnswer === question.correctAnswer ? (
+                          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-3 rounded-lg border border-green-400">
+                            <div className="text-green-700 font-bold text-base">
+                              ✓ Correct! They're <span className="capitalize">{question.correctAnswer}</span>! 🌟
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="bg-gradient-to-r from-orange-50 to-red-50 p-3 rounded-lg border border-orange-400">
+                            <div className="text-orange-700 font-bold text-base">
+                              The answer is <span className="capitalize">{question.correctAnswer}</span>.
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="text-red-600 font-semibold text-xs">
-                        Not quite right. This person is showing {question.correctAnswer}, not {selectedAnswer}.
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

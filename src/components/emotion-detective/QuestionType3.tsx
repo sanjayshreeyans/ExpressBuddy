@@ -4,6 +4,7 @@ import { Badge } from '../ui/badge';
 import { AspectRatio } from '../ui/aspect-ratio';
 import { SpeakerIcon } from './SpeakerIcon';
 import { QuestionComponentProps } from '../../types/emotion-detective';
+import { BookOpen, Users, Grid3X3, CheckCircle, XCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 /**
@@ -152,107 +153,100 @@ export const QuestionType3: React.FC<QuestionComponentProps> = ({
   }
 
   return (
-    <div className="w-full h-[90vh] max-h-[800px] flex flex-col p-2">
-      {/* Question Header with Scenario - More prominent */}
-      <Card className="mb-3 flex-shrink-0">
-        <CardHeader className="py-3 px-4">
-          <CardTitle className="text-lg font-semibold text-center flex items-center justify-center gap-2 mb-2">
-            How would someone feel in this situation?
-            <SpeakerIcon
-              text={`${question.questionText} ${question.scenario}`}
-              className="ml-2"
-              aria-label="Read scenario aloud"
-            />
-          </CardTitle>
+    <div className="w-full h-full flex flex-col overflow-hidden bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
+      {/* Compact Header with Scenario */}
+      <div className="flex-shrink-0 bg-white shadow-sm border-b">
+        <div className="py-3 px-6">
+          <h1 className="text-xl font-bold text-gray-900 text-center mb-2">
+            How Would They Feel?
+          </h1>
 
-          {/* Scenario prominently displayed */}
-          <div className="text-center p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border-2 border-blue-200">
-            <p className="text-base leading-relaxed text-gray-800 font-medium">
-              "{question.scenario}"
+          {/* Compact Scenario Display */}
+          <div className="max-w-3xl mx-auto bg-gradient-to-r from-teal-50 to-emerald-50 rounded-lg p-3 border-2 border-teal-400">
+            <p className="text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">
+              Situation:
             </p>
+            <div className="text-lg font-bold text-teal-900 leading-snug">
+              "{question.scenario}"
+            </div>
           </div>
-
-
 
           {attempts > 0 && attempts < MAX_ATTEMPTS && !hasAnswered && (
             <div className="text-center mt-2">
-              <Badge variant="outline" className="text-xs">
+              <Badge className="bg-orange-500 text-white px-3 py-0.5 text-xs">
                 Attempt {attempts + 1} of {MAX_ATTEMPTS}
               </Badge>
             </div>
           )}
-        </CardHeader>
-      </Card>
+        </div>
+      </div>
 
-      {/* Face Options Grid - Full width, single focus */}
-      <Card className="flex-1 flex flex-col">
-        <CardHeader className="py-2 px-3 flex-shrink-0">
-          <CardTitle className="text-base text-center">Choose the matching emotion:</CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 p-3">
-          <div className="grid grid-cols-2 gap-3 h-full max-h-[400px]">
-            {question.faceOptions.map((face, index) => (
-              <Card
-                key={`${face.id}-${index}`}
-                className={cn(
-                  'transition-all duration-200 flex flex-col cursor-pointer hover:shadow-lg',
-                  getFaceCardClassName(face.id)
-                )}
-                onClick={() => handleFaceSelect(face.id)}
-              >
-                <CardContent className="p-3 flex-1 flex flex-col">
-                  {/* Fixed aspect ratio container */}
-                  <div className="flex-1 relative bg-muted rounded-lg overflow-hidden">
-                    <img
-                      src={face.path}
-                      alt={`Person ${index + 1}`}
-                      className="absolute inset-0 w-full h-full object-cover"
-                      onError={(e) => {
-                        console.error('❌ Failed to load face image:', face.path);
-                        e.currentTarget.src = '/placeholder-face.jpg';
-                      }}
-                    />
+      {/* Face Options - Horizontal Layout at Bottom */}
+      <div className="flex-1 flex flex-col justify-end overflow-hidden p-6">
+        <div className="flex gap-4 justify-center items-end mx-auto w-full">
+          {question.faceOptions.map((face, index) => (
+            <Card
+              key={`${face.id}-${index}`}
+              className={cn(
+                'transition-all duration-300 flex flex-col cursor-pointer border-2 shadow-lg hover:shadow-xl active:scale-95 overflow-hidden flex-1',
+                getFaceCardClassName(face.id)
+              )}
+              onClick={() => handleFaceSelect(face.id)}
+            >
+              <CardContent className="p-4">
+                {/* Face image container */}
+                <div className="relative bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg overflow-hidden flex items-center justify-center aspect-square w-full border border-gray-200">
+                  <img
+                    src={face.path}
+                    alt={`Person ${index + 1}`}
+                    className="w-full h-full object-contain p-2"
+                    onError={(e) => {
+                      console.error('❌ Failed to load face image:', face.path);
+                      e.currentTarget.src = '/placeholder-face.jpg';
+                    }}
+                  />
+                </div>
+
+                {/* Selection indicator */}
+                {(selectedAnswer === face.id || (hasAnswered && face.id === question.correctAnswer)) && (
+                  <div className="mt-2 text-center">
+                    {face.id === question.correctAnswer && (
+                      <Badge className="bg-green-600 text-white text-sm font-bold px-3 py-1 w-full">
+                        ✓ Correct!
+                      </Badge>
+                    )}
+                    {face.id === selectedAnswer && face.id !== question.correctAnswer && (
+                      <Badge className="bg-red-600 text-white text-sm font-bold px-3 py-1 w-full">
+                        ✗ Try Again
+                      </Badge>
+                    )}
                   </div>
-
-                  {/* Selection indicator */}
-                  {(selectedAnswer === face.id || (hasAnswered && face.id === question.correctAnswer)) && (
-                    <div className="mt-2 text-center">
-                      {face.id === question.correctAnswer && (
-                        <Badge className="bg-green-600 text-white text-sm">
-                          ✓ Correct
-                        </Badge>
-                      )}
-                      {face.id === selectedAnswer && face.id !== question.correctAnswer && (
-                        <Badge variant="destructive" className="text-sm">
-                          ✗ Try Again
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
 
       {/* Feedback Section - Compact */}
       {hasAnswered && (
-        <Card className="mt-2 flex-shrink-0">
-          <CardContent className="p-3">
-            <div className="text-center">
-              {selectedAnswer === question.correctAnswer ? (
-                <div className="text-green-600 font-semibold text-base">
-                  🎉 Great job! In that situation, someone would likely feel {question.emotion}.
+        <div className="flex-shrink-0 border-t border-emerald-200 bg-white shadow-sm p-3">
+          <div className="max-w-4xl mx-auto">
+            {selectedAnswer === question.correctAnswer ? (
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-3 rounded-lg border border-green-400 text-center">
+                <div className="text-green-700 font-bold text-lg">
+                  ✓ Perfect! They would feel <span className="capitalize">{question.emotion}</span>! 🌟
                 </div>
-              ) : (
-                <div className="text-red-600 font-semibold text-base">
-                  In that situation, someone would likely feel {question.emotion}. Great effort!
+              </div>
+            ) : (
+              <div className="bg-gradient-to-r from-orange-50 to-red-50 p-3 rounded-lg border border-orange-400 text-center">
+                <div className="text-orange-700 font-bold text-lg">
+                  In that situation, they'd feel <span className="capitalize">{question.emotion}</span>.
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

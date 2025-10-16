@@ -5,6 +5,10 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Baloo 2', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        baloo: ['Baloo 2', 'sans-serif'],
+      },
       colors: {
         primary: {
           DEFAULT: 'var(--primary)',
