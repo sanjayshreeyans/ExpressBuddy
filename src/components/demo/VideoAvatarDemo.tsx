@@ -291,9 +291,10 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
               <div className="bg-green-50 rounded-lg p-4">
                 <h3 className="font-semibold text-green-800 mb-2">Animation Files</h3>
                 <div className="text-sm text-green-700 space-y-1">
-                  <div>🎬 Idle: <code>Pandaalter1_2.mp4</code></div>
-                  <div>🗣️ Talking: <code>PandaTalkingAnim.mp4</code></div>
+                  <div>🎬 Idle: <code>Pandaalter1_2.webm</code></div>
+                  <div>🗣️ Talking: <code>PandaTalkingAnim.webm</code></div>
                   <div>📁 Location: <code>/public/VideoAnims/</code></div>
+                  <div>🎨 Format: <code>WebM VP9 with alpha channel</code></div>
                 </div>
               </div>
             </div>

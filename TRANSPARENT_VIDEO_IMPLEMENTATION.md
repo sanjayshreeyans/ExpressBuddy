@@ -53,8 +53,12 @@ If the multiply blend mode doesn't work perfectly with your videos, you can try:
 
 ### Current Setup
 - Background Video: `AnimatedVideoBackgroundLooping1.mp4` in `/Backgrounds/` folder
-- Pico Idle: `Pandaalter1_2.mp4` in `/public/VideoAnims/` folder
-- Pico Talking: `PandaTalkingAnim.mp4` in `/public/VideoAnims/` folder
+## Current Assets
+
+- Pico Idle: `Pandaalter1_2.webm` in `/public/VideoAnims/` folder
+- Pico Talking: `PandaTalkingAnim.webm` in `/public/VideoAnims/` folder
+- Format: WebM VP9 with alpha channel (GPU-accelerated transparency)
+- Chroma-key processing: Pre-rendered during conversion (no runtime CPU overhead)
 
 ### Best Practices for Videos
 1. **Pico Videos**: Should have a pure white (#FFFFFF) background for best transparency effect
