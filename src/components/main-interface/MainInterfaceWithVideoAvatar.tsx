@@ -126,6 +126,7 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
     connected,
     client,
     setConfig,
+    config,
     volume, // Add volume to detect when AI is speaking
     hintSystem,
     isHintIndicatorVisible,
@@ -163,6 +164,45 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
   }, [onAITurnStart, onAITurnComplete]);
 
   const { buffer, addChunk, markComplete, reset, accumulatedText } = useResponseBuffer();
+
+  const languageCode = (config as any)?.speechConfig?.language_code || 'en-US';
+
+  // Language instruction mapping for system prompt
+  const getLanguageInstruction = (langCode: string): string => {
+    const languageMap: { [key: string]: string } = {
+      'en-US': 'Respond in English (United States).',
+      'en-GB': 'Respond in English (United Kingdom).',
+      'en-AU': 'Respond in English (Australia).',
+      'en-IN': 'Respond in English (India).',
+      'es-US': 'Responde en español (Estados Unidos).',
+      'es-ES': 'Responde en español (España).',
+      'fr-FR': 'Répondez en français (France).',
+      'fr-CA': 'Répondez en français (Canada).',
+      'de-DE': 'Antworte auf Deutsch (Deutschland).',
+      'pt-BR': 'Responda em português (Brasil).',
+      'hi-IN': 'हिन्दी में जवाब दें।',
+      'bn-IN': 'বাংলায় উত্তর দিন।',
+      'gu-IN': 'ગુજરાતીમાં જવાબ આપો।',
+      'kn-IN': 'ಕನ್ನಡದಲ್ಲಿ ಉತ್ತರಿಸಿ।',
+      'mr-IN': 'मराठीत उत्तर द्या।',
+      'ml-IN': 'മലയാളത്തിൽ മറുപടി നൽകുക।',
+      'ta-IN': 'தமிழில் பதிலளியுங்கள்।',
+      'te-IN': 'తెలుగులో సమాధానం ఇవ్వండి।',
+      'ja-JP': '日本語で応答してください。',
+      'ko-KR': '한국어로 응답하세요.',
+      'cmn-CN': '用普通话回答。',
+      'th-TH': 'ตอบเป็นภาษาไทย',
+      'vi-VN': 'Trả lời bằng tiếng Việt.',
+      'id-ID': 'Jawab dalam Bahasa Indonesia.',
+      'it-IT': 'Rispondi in italiano.',
+      'nl-NL': 'Antwoord in het Nederlands.',
+      'pl-PL': 'Odpowiedz po polsku.',
+      'ru-RU': 'Отвечайте на русском языке.',
+      'tr-TR': 'Türkçe cevap verin.',
+      'ar-XA': 'أجب باللغة العربية.',
+    };
+    return languageMap[langCode] || 'Respond in English.';
+  };
 
   // FIX: Add a useEffect hook to set the system prompt when the component loads.
   useEffect(() => {
@@ -322,8 +362,15 @@ ${memoryList}
 `;
     };
 
+  const currentLanguage = languageCode;
+  const languageInstruction = getLanguageInstruction(currentLanguage);
+
     // The full system prompt text for Piko the panda with memory tool usage instructions.
     const systemPrompt = `
+# LANGUAGE INSTRUCTION
+${languageInstruction}
+YOU MUST respond in the language specified above. All your responses, including greetings, questions, emotional support, and guidance must be in that language.
+
 # CORE IDENTITY
 You are Piko, a friendly panda conversation buddy for elementary and middle school students. You help children practice expressing feelings and having conversations. You work WITH teachers, not instead of them.
 
@@ -780,35 +827,53 @@ Children feel more understood when you notice what they're showing you - not jus
 
 `;
 
-    // Set the configuration for the Live API client.
     if (setConfig) {
-      const config: any = {
-        responseModalities: [Modality.AUDIO],
-        systemInstruction: {
-          parts: [{ text: systemPrompt }],
-        },
-        // Enable transcription for both input and output (JS SDK expects camelCase)
-        outputAudioTranscription: {},
-        inputAudioTranscription: {},
-        // Combine multiple tools for enhanced capabilities
-        tools: [
-          memoryTool, // Memory functions for personalization
-          // Can be extended with additional tools like:
-          // { googleSearch: {} }, // For looking up information
-          // { codeExecution: {} }, // For computational tasks
-        ],
-      };
+      setConfig((previousConfig: any) => {
+        const prevConfig = previousConfig || {};
 
-      console.log('🔧 Setting Gemini Live API config with transcription enabled:', {
-        hasInputTranscription: !!config.inputAudioTranscription,
-        hasOutputTranscription: !!config.outputAudioTranscription,
-        responseModalities: config.responseModalities,
-        toolCount: config.tools.length
+        const responseModalities = prevConfig.responseModalities || [Modality.AUDIO];
+        const previousSystemText = prevConfig.systemInstruction?.parts?.map((part: any) => part.text).join('\n') || '';
+
+        const existingTools = prevConfig.tools || [];
+        const toolsWithoutMemory = existingTools.filter((tool: any) => {
+          const declarations = tool?.functionDeclarations;
+          if (!Array.isArray(declarations)) return true;
+          return !declarations.some((decl: any) => decl?.name === 'write_to_memory');
+        });
+
+        const nextTools = [...toolsWithoutMemory, memoryTool];
+
+        const shouldUpdateSystemInstruction = previousSystemText !== systemPrompt;
+        const shouldUpdateResponseModalities =
+          responseModalities.length === 0 ||
+          responseModalities.some((modality: any) => modality !== Modality.AUDIO);
+        const hadMemoryTool = existingTools.length !== nextTools.length;
+        const shouldAddTranscription = !prevConfig.inputAudioTranscription || !prevConfig.outputAudioTranscription;
+
+        if (!shouldUpdateSystemInstruction && !shouldUpdateResponseModalities && !hadMemoryTool && !shouldAddTranscription) {
+          return prevConfig;
+        }
+
+        const nextConfig = {
+          ...prevConfig,
+          responseModalities: [Modality.AUDIO],
+          systemInstruction: {
+            parts: [{ text: systemPrompt }],
+          },
+          tools: nextTools,
+          inputAudioTranscription: prevConfig.inputAudioTranscription || {},
+          outputAudioTranscription: prevConfig.outputAudioTranscription || {},
+        };
+
+        console.log('🔧 Updating Gemini Live API config with language-aware system prompt:', {
+          language: currentLanguage,
+          toolCount: nextTools.length,
+        });
+
+        return nextConfig;
       });
-
-      setConfig(config);
     }
-  }, [setConfig]); // This effect runs once when setConfig is available.
+  }, [languageCode, setConfig]);
 
   // **VIDEO AVATAR FIX**: Set FLASH mode (disable chunking) to avoid viseme service errors
   useEffect(() => {

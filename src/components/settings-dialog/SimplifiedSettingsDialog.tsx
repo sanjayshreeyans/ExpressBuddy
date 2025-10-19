@@ -28,6 +28,39 @@ const VOICE_OPTIONS = [
   { id: "Aoede", name: "Aoede" },
 ];
 
+const LANGUAGE_OPTIONS = [
+  { code: "en-US", name: "English (United States)" },
+  { code: "en-GB", name: "English (United Kingdom)" },
+  { code: "en-AU", name: "English (Australia)" },
+  { code: "en-IN", name: "English (India)" },
+  { code: "es-US", name: "Español (Estados Unidos)" },
+  { code: "es-ES", name: "Español (España)" },
+  { code: "fr-FR", name: "Français (France)" },
+  { code: "fr-CA", name: "Français (Canada)" },
+  { code: "de-DE", name: "Deutsch (Deutschland)" },
+  { code: "pt-BR", name: "Português (Brasil)" },
+  { code: "hi-IN", name: "हिन्दी - Hindi" },
+  { code: "bn-IN", name: "বাংলা - Bengali" },
+  { code: "gu-IN", name: "ગુજરાતી - Gujarati" },
+  { code: "kn-IN", name: "ಕನ್ನಡ - Kannada" },
+  { code: "mr-IN", name: "मराठी - Marathi" },
+  { code: "ml-IN", name: "മലയാളം - Malayalam" },
+  { code: "ta-IN", name: "தமிழ் - Tamil" },
+  { code: "te-IN", name: "తెలుగు - Telugu" },
+  { code: "ja-JP", name: "日本語 - Japanese" },
+  { code: "ko-KR", name: "한국어 - Korean" },
+  { code: "cmn-CN", name: "普通话 - Mandarin" },
+  { code: "th-TH", name: "ไทย - Thai" },
+  { code: "vi-VN", name: "Tiếng Việt - Vietnamese" },
+  { code: "id-ID", name: "Bahasa Indonesia" },
+  { code: "it-IT", name: "Italiano - Italian" },
+  { code: "nl-NL", name: "Nederlands - Dutch" },
+  { code: "pl-PL", name: "Polski - Polish" },
+  { code: "ru-RU", name: "Русский - Russian" },
+  { code: "tr-TR", name: "Türkçe - Turkish" },
+  { code: "ar-XA", name: "العربية - Arabic" },
+];
+
 interface BackgroundOption {
   id: string;
   name: string;
@@ -47,8 +80,10 @@ export default function SimplifiedSettingsDialog({
   const [open, setOpen] = useState(false);
   const { config, setConfig, connected } = useLiveAPIContext();
   const [selectedVoice, setSelectedVoice] = useState<string>("Puck");
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("en-US");
   const [selectedBackground, setSelectedBackground] = useState<string>(currentBackground);
   const [availableBackgrounds, setAvailableBackgrounds] = useState<BackgroundOption[]>([]);
+  const [isUserChangingSettings, setIsUserChangingSettings] = useState(false);
 
   // Scan for available background videos dynamically
   useEffect(() => {
@@ -124,20 +159,37 @@ export default function SimplifiedSettingsDialog({
     scanBackgrounds();
   }, []);
 
-  // Get current voice from config
+  // Get current voice and language from config (only when not actively changing)
   useEffect(() => {
+    if (isUserChangingSettings) {
+      console.log('⏭️ Skipping config sync - user is actively changing settings');
+      return;
+    }
+    
     const voice = config.speechConfig?.voiceConfig?.prebuiltVoiceConfig?.voiceName || "Puck";
+    const lang = (config as any)?.speechConfig?.language_code || "en-US";
+    
+    console.log('🔄 Syncing UI from config:', { voice, lang });
     setSelectedVoice(voice);
-  }, [config]);
+    setSelectedLanguage(lang);
+  }, [config, isUserChangingSettings]);
+  
+  // Reset user changing flag when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setIsUserChangingSettings(false);
+    }
+  }, [open]);
 
   // Update voice in config
   const handleVoiceChange = (voiceId: string) => {
+    setIsUserChangingSettings(true);
     setSelectedVoice(voiceId);
     
     const newConfig = {
       ...config,
       speechConfig: {
-        ...config.speechConfig, // Preserve other speech settings
+        ...config.speechConfig,
         voiceConfig: {
           prebuiltVoiceConfig: {
             voiceName: voiceId,
@@ -147,7 +199,33 @@ export default function SimplifiedSettingsDialog({
     };
     
     console.log('🎙️ Changing voice to:', voiceId);
-    console.log('📝 New config:', newConfig);
+    setConfig(newConfig);
+  };
+
+  const handleLanguageChange = (langCode: string) => {
+    console.log('🌐 User selected language:', langCode);
+    setIsUserChangingSettings(true);
+    setSelectedLanguage(langCode);
+
+    const newConfig: any = {
+      ...config,
+      speechConfig: {
+        ...config.speechConfig,
+        language_code: langCode,
+      },
+      inputAudioTranscription: {
+        ...(config as any).inputAudioTranscription,
+        language: langCode,
+        languageCode: langCode,
+      },
+      outputAudioTranscription: {
+        ...(config as any).outputAudioTranscription,
+        language: langCode,
+        languageCode: langCode,
+      },
+    };
+
+    console.log("✅ Language config updated to:", langCode);
     setConfig(newConfig);
   };
 
@@ -188,6 +266,33 @@ export default function SimplifiedSettingsDialog({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          <div className="space-y-3">
+            <Label htmlFor="language-select" className="text-base font-semibold">
+              Language
+            </Label>
+            <Select
+              value={selectedLanguage}
+              onValueChange={handleLanguageChange}
+              disabled={connected}
+            >
+              <SelectTrigger id="language-select" className="w-full bg-white" style={{ backgroundColor: 'white' }}>
+                <SelectValue placeholder="Select a language" />
+              </SelectTrigger>
+              <SelectContent className="bg-white max-h-[300px] overflow-y-auto" style={{ backgroundColor: 'white' }}>
+                {LANGUAGE_OPTIONS.map((lang) => (
+                  <SelectItem key={lang.code} value={lang.code} className="bg-white hover:bg-gray-100" style={{ backgroundColor: 'white' }}>
+                    {lang.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {connected && (
+              <p className="text-sm text-muted-foreground">
+                Disconnect to change language
+              </p>
+            )}
+          </div>
+
           {/* Voice Selection */}
           <div className="space-y-3">
             <Label htmlFor="voice-select" className="text-base font-semibold">
@@ -211,7 +316,7 @@ export default function SimplifiedSettingsDialog({
             </Select>
             {connected && (
               <p className="text-sm text-muted-foreground">
-                ⚠️ Disconnect to change voice settings
+                Disconnect to change voice
               </p>
             )}
           </div>
@@ -281,9 +386,6 @@ export default function SimplifiedSettingsDialog({
                 </Card>
               ))}
             </RadioGroup>
-            <p className="text-sm text-muted-foreground">
-              💡 Add more videos to <code className="text-xs bg-muted px-1 py-0.5 rounded">/public/Backgrounds/</code> to see them here
-            </p>
           </div>
         </div>
 
