@@ -85,6 +85,30 @@ export default function SimplifiedSettingsDialog({
   const [availableBackgrounds, setAvailableBackgrounds] = useState<BackgroundOption[]>([]);
   const [isUserChangingSettings, setIsUserChangingSettings] = useState(false);
 
+  // Storage keys for preferences
+  const STORAGE_VOICE_KEY = "expresbuddy_preferred_voice";
+  const STORAGE_LANGUAGE_KEY = "expresbuddy_preferred_language";
+
+  // Load preferences from local storage on mount
+  useEffect(() => {
+    try {
+      const storedVoice = localStorage.getItem(STORAGE_VOICE_KEY);
+      const storedLanguage = localStorage.getItem(STORAGE_LANGUAGE_KEY);
+
+      if (storedVoice) {
+        console.log('📦 Loaded voice from storage:', storedVoice);
+        setSelectedVoice(storedVoice);
+      }
+
+      if (storedLanguage) {
+        console.log('📦 Loaded language from storage:', storedLanguage);
+        setSelectedLanguage(storedLanguage);
+      }
+    } catch (err) {
+      console.error('❌ Error loading preferences from storage:', err);
+    }
+  }, []);
+
   // Scan for available background videos dynamically
   useEffect(() => {
     const scanBackgrounds = async () => {
@@ -113,10 +137,10 @@ export default function SimplifiedSettingsDialog({
         try {
           // Try to fetch the video file to see if it exists
           const videoResponse = await fetch(videoPath, { method: 'HEAD' });
-          
+
           if (videoResponse.ok) {
             console.log(`✅ Found video: ${videoName}`);
-            
+
             // Check if thumbnail exists
             let hasThumbnail = false;
             try {
@@ -165,15 +189,15 @@ export default function SimplifiedSettingsDialog({
       console.log('⏭️ Skipping config sync - user is actively changing settings');
       return;
     }
-    
+
     const voice = config.speechConfig?.voiceConfig?.prebuiltVoiceConfig?.voiceName || "Puck";
     const lang = (config as any)?.speechConfig?.language_code || "en-US";
-    
+
     console.log('🔄 Syncing UI from config:', { voice, lang });
     setSelectedVoice(voice);
     setSelectedLanguage(lang);
   }, [config, isUserChangingSettings]);
-  
+
   // Reset user changing flag when dialog closes
   useEffect(() => {
     if (!open) {
@@ -185,7 +209,15 @@ export default function SimplifiedSettingsDialog({
   const handleVoiceChange = (voiceId: string) => {
     setIsUserChangingSettings(true);
     setSelectedVoice(voiceId);
-    
+
+    // Save to local storage
+    try {
+      localStorage.setItem(STORAGE_VOICE_KEY, voiceId);
+      console.log('💾 Saved voice preference to storage:', voiceId);
+    } catch (err) {
+      console.error('❌ Error saving voice to storage:', err);
+    }
+
     const newConfig = {
       ...config,
       speechConfig: {
@@ -197,7 +229,7 @@ export default function SimplifiedSettingsDialog({
         },
       },
     };
-    
+
     console.log('🎙️ Changing voice to:', voiceId);
     setConfig(newConfig);
   };
@@ -206,6 +238,14 @@ export default function SimplifiedSettingsDialog({
     console.log('🌐 User selected language:', langCode);
     setIsUserChangingSettings(true);
     setSelectedLanguage(langCode);
+
+    // Save to local storage
+    try {
+      localStorage.setItem(STORAGE_LANGUAGE_KEY, langCode);
+      console.log('💾 Saved language preference to storage:', langCode);
+    } catch (err) {
+      console.error('❌ Error saving language to storage:', err);
+    }
 
     const newConfig: any = {
       ...config,
@@ -249,13 +289,14 @@ export default function SimplifiedSettingsDialog({
           <span className="material-symbols-outlined">settings</span>
         </Button>
       </DialogTrigger>
-      <DialogContent 
-        className="sm:max-w-[600px] bg-white max-h-[85vh] overflow-y-auto" 
-        style={{ 
-          backgroundColor: 'white', 
+      <DialogContent
+        className="sm:max-w-[600px] bg-white max-h-[85vh] overflow-y-auto"
+        style={{
+          backgroundColor: 'white',
           maxHeight: '85vh',
           top: '50%',
-          transform: 'translate(-50%, -50%)'
+          transform: 'translate(-50%, -50%)',
+          zIndex: 9999
         }}
       >
         <DialogHeader>
@@ -278,7 +319,10 @@ export default function SimplifiedSettingsDialog({
               <SelectTrigger id="language-select" className="w-full bg-white" style={{ backgroundColor: 'white' }}>
                 <SelectValue placeholder="Select a language" />
               </SelectTrigger>
-              <SelectContent className="bg-white max-h-[300px] overflow-y-auto" style={{ backgroundColor: 'white' }}>
+              <SelectContent
+                className="bg-white max-h-[300px] overflow-y-auto"
+                style={{ backgroundColor: 'white', zIndex: 10001 }}
+              >
                 {LANGUAGE_OPTIONS.map((lang) => (
                   <SelectItem key={lang.code} value={lang.code} className="bg-white hover:bg-gray-100" style={{ backgroundColor: 'white' }}>
                     {lang.name}
@@ -306,7 +350,10 @@ export default function SimplifiedSettingsDialog({
               <SelectTrigger id="voice-select" className="w-full bg-white" style={{ backgroundColor: 'white' }}>
                 <SelectValue placeholder="Select a voice" />
               </SelectTrigger>
-              <SelectContent className="bg-white" style={{ backgroundColor: 'white' }}>
+              <SelectContent
+                className="bg-white"
+                style={{ backgroundColor: 'white', zIndex: 10001 }}
+              >
                 {VOICE_OPTIONS.map((voice) => (
                   <SelectItem key={voice.id} value={voice.id} className="bg-white hover:bg-gray-100" style={{ backgroundColor: 'white' }}>
                     {voice.name}
@@ -339,9 +386,8 @@ export default function SimplifiedSettingsDialog({
               {availableBackgrounds.map((background) => (
                 <Card
                   key={background.id}
-                  className={`cursor-pointer transition-all hover:border-primary bg-white ${
-                    selectedBackground === background.path ? 'border-primary border-2' : ''
-                  }`}
+                  className={`cursor-pointer transition-all hover:border-primary bg-white ${selectedBackground === background.path ? 'border-primary border-2' : ''
+                    }`}
                   style={{ backgroundColor: 'white' }}
                   onClick={() => handleBackgroundChange(background.id)}
                 >

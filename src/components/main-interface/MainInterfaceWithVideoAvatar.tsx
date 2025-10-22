@@ -1254,7 +1254,7 @@ Children feel more understood when you notice what they're showing you - not jus
       <div className="header-section">
         <div className="app-title">
           <h1>ExpressBuddy</h1>
-          <p>AI Voice & Vision Assistant</p>
+          <p>Practice makes confident</p>
         </div>
         <div
           className="header-actions"
