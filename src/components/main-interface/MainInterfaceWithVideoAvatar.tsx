@@ -362,8 +362,8 @@ ${memoryList}
 `;
     };
 
-  const currentLanguage = languageCode;
-  const languageInstruction = getLanguageInstruction(currentLanguage);
+    const currentLanguage = languageCode;
+    const languageInstruction = getLanguageInstruction(currentLanguage);
 
     // The full system prompt text for Piko the panda with memory tool usage instructions.
     const systemPrompt = `
@@ -1283,8 +1283,8 @@ Children feel more understood when you notice what they're showing you - not jus
                   cursor: 'pointer',
                   transition: 'all 0.3s ease'
                 }}
-                onMouseOver={(e) => (e.currentTarget.style.background =  '#16a34a')}
-                onMouseOut={(e) => (e.currentTarget.style.background =  '#58cc02')}
+                onMouseOver={(e) => (e.currentTarget.style.background = '#16a34a')}
+                onMouseOut={(e) => (e.currentTarget.style.background = '#58cc02')}
               >
                 ← Back to Home
               </button>
@@ -1349,6 +1349,7 @@ Children feel more understood when you notice what they're showing you - not jus
             onAvatarStateChange={handleAvatarStateChange}
             onCurrentSubtitleChange={handleAvatarSubtitleChange}
             backgroundSrc={backgroundVideo}
+            disableClickInteraction={true}
           />
 
           <Captions subtitleText={currentAvatarSubtitle} />

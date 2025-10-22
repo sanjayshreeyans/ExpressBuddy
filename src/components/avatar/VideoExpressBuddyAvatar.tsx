@@ -46,6 +46,7 @@ interface VideoExpressBuddyAvatarProps {
   onCurrentSubtitleChange?: (subtitle: string) => void;
   hideDebugInfo?: boolean; // Hide debug overlay for cleaner display
   backgroundSrc?: string; // Background video source path
+  disableClickInteraction?: boolean; // Disable click handling to prevent accidental restarts during AI conversations
 }
 
 export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = ({
@@ -56,6 +57,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
   onCurrentSubtitleChange,
   hideDebugInfo = false,
   backgroundSrc = '/Backgrounds/AnimatedVideoBackgroundLooping1.mp4',
+  disableClickInteraction = true, // Default to disabled to prevent accidental clicks during conversations
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -121,7 +123,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
         if (backgroundVideoRef.current) {
           console.log('🎬 Setting up background video:', backgroundSrc);
           const bgVideo = backgroundVideoRef.current;
-          
+
           const onBgLoadedData = () => console.log('✅ Background video loaded successfully');
           const onBgError = (e: Event) => {
             console.error('❌ Background video error:', e);
@@ -130,7 +132,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
 
           bgVideo.addEventListener('loadeddata', onBgLoadedData);
           bgVideo.addEventListener('error', onBgError);
-          
+
           bgVideo.play()
             .then(() => console.log('▶️ Background video playing'))
             .catch(err => console.error('❌ Background video play error:', err));
@@ -191,7 +193,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
     intersectionObserverRef.current = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         const videos = [idleVideoRef.current, talkingVideoRef.current, backgroundVideoRef.current].filter(Boolean);
-        
+
         if (!entry.isIntersecting) {
           // Pause videos when off-screen to save memory/battery
           console.log('📹 Avatar off-screen, pausing videos for performance');
@@ -318,6 +320,12 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
   }, [currentState, currentTime, onPlaybackStateChange]);
 
   const handleCharacterClick = useCallback(() => {
+    // Prevent click interaction if disabled (during active conversations)
+    if (disableClickInteraction) {
+      console.log('🚫 Click interaction disabled - preventing accidental playback restart');
+      return;
+    }
+
     if (error) {
       setError(null);
       return;
@@ -332,7 +340,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
     } else {
       playIdleAnimation();
     }
-  }, [currentState, error]);
+  }, [currentState, error, disableClickInteraction]);
 
   return (
     <div ref={containerRef} className={`relative h-full w-full ${className}`}>
@@ -391,7 +399,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
           zIndex: 10,
           opacity: currentState === 'talking' ? 1 : 0,
           pointerEvents: currentState === 'talking' ? 'auto' : 'none',
-          cursor: 'pointer',
+          cursor: disableClickInteraction ? 'default' : 'pointer',
           objectFit: 'contain',
           width: '100%',
           height: '100%',
@@ -414,7 +422,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
           zIndex: 11,
           opacity: currentState === 'idle' ? 1 : 0,
           pointerEvents: currentState === 'idle' ? 'auto' : 'none',
-          cursor: 'pointer',
+          cursor: disableClickInteraction ? 'default' : 'pointer',
           objectFit: 'contain',
           width: '100%',
           height: '100%',
