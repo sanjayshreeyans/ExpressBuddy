@@ -560,104 +560,108 @@ Remember: You're Piko the confused panda, NOT Piko the teacher. The child is tea
         />
       )}
 
-      {/* Challenge Checklist (visible after challenge starts) */}
-      {challengeStarted && !showIntroCard && (
-        <ChallengeChecklist todos={todos} />
-      )}
+      {!showIntroCard && (
+        <>
+          {/* Challenge Checklist (visible after challenge starts) */}
+          {challengeStarted && (
+            <ChallengeChecklist todos={todos} />
+          )}
 
-      <div 
-        className="header-section"
-        style={{ position: 'relative', zIndex: 101 }}
-      >
-        <div className="app-title">
-          <h1>Challenge: Restaurant Ordering</h1>
-          <p>Level 1: Help Piko Order</p>
-        </div>
-        <div className="header-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <button
-            onClick={() => navigate('/')}
-            className="back-to-landing-btn"
-            style={{
-              background: '#16a34a',
-              color: 'white',
-              border: 'none',
-              padding: '8px 16px',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              cursor: 'pointer'
-            }}
+          <div 
+            className="header-section"
+            style={{ position: 'relative', zIndex: 101 }}
           >
-            ← Back to Home
-          </button>
-          <div className="connection-status">
-            <div className={cn('status-bubble', { connected })}>
-              {connected ? '● Connected' : '○ Disconnected'}
+            <div className="app-title">
+              <h1>Challenge: Restaurant Ordering</h1>
+              <p>Level 1: Help Piko Order</p>
+            </div>
+            <div className="header-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button
+                onClick={() => navigate('/')}
+                className="back-to-landing-btn"
+                style={{
+                  background: '#16a34a',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                ← Back to Home
+              </button>
+              <div className="connection-status">
+                <div className={cn('status-bubble', { connected })}>
+                  {connected ? '● Connected' : '○ Disconnected'}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div 
-        className="main-content-area"
-        style={{
-          position: 'relative',
-          zIndex: 10
-        }}
-      >
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="video-feed"
-          style={{
-            width: '320px',
-            height: '240px',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            opacity: 0
-          }}
-        />
+          <div 
+            className="main-content-area"
+            style={{
+              position: 'relative',
+              zIndex: 10
+            }}
+          >
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="video-feed"
+              style={{
+                width: '320px',
+                height: '240px',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                opacity: 0
+              }}
+            />
 
-        <div className="panda-stage">
-          <VideoExpressBuddyAvatar
-            className="panda-container"
-            isListening={isAvatarSpeaking}
-            onAvatarStateChange={handleAvatarStateChange}
-            onCurrentSubtitleChange={handleAvatarSubtitleChange}
-            backgroundSrc="" 
-            disableClickInteraction={true}
-          />
+            <div className="panda-stage">
+              <VideoExpressBuddyAvatar
+                className="panda-container"
+                isListening={isAvatarSpeaking}
+                onAvatarStateChange={handleAvatarStateChange}
+                onCurrentSubtitleChange={handleAvatarSubtitleChange}
+                backgroundSrc="" 
+                disableClickInteraction={true}
+              />
 
-          <Captions subtitleText={currentAvatarSubtitle} />
+              <Captions subtitleText={currentAvatarSubtitle} />
 
-          <div className="panda-status">
-            {avatarState.status === 'listening' && (
-              <div className="status-bubble listening">● Listening</div>
-            )}
-            {avatarState.status === 'processing' && (
-              <div className="status-bubble thinking">● Processing</div>
-            )}
-            {(avatarState.status === 'speaking' || isAvatarSpeaking) && (
-              <div className="status-bubble speaking">● Speaking</div>
-            )}
+              <div className="panda-status">
+                {avatarState.status === 'listening' && (
+                  <div className="status-bubble listening">● Listening</div>
+                )}
+                {avatarState.status === 'processing' && (
+                  <div className="status-bubble thinking">● Processing</div>
+                )}
+                {(avatarState.status === 'speaking' || isAvatarSpeaking) && (
+                  <div className="status-bubble speaking">● Speaking</div>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <div className="controls-section">
-        <ControlTray
-          videoRef={videoRef}
-          supportsVideo={true}
-          onVideoStreamChange={setVideoStream}
-          enableEditingSettings={true}
-          disableChunkingToggle={true}
-          currentBackground={backgroundVideo}
-          onBackgroundChange={() => {}}
-        />
-      </div>
+          <div className="controls-section">
+            <ControlTray
+              videoRef={videoRef}
+              supportsVideo={true}
+              onVideoStreamChange={setVideoStream}
+              enableEditingSettings={true}
+              disableChunkingToggle={true}
+              currentBackground={backgroundVideo}
+              onBackgroundChange={() => {}}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }
