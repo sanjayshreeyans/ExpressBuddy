@@ -126,6 +126,7 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
     connected,
     client,
     setConfig,
+    config,
     volume, // Add volume to detect when AI is speaking
     hintSystem,
     isHintIndicatorVisible,
@@ -163,6 +164,45 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
   }, [onAITurnStart, onAITurnComplete]);
 
   const { buffer, addChunk, markComplete, reset, accumulatedText } = useResponseBuffer();
+
+  const languageCode = (config as any)?.speechConfig?.language_code || 'en-US';
+
+  // Language instruction mapping for system prompt
+  const getLanguageInstruction = (langCode: string): string => {
+    const languageMap: { [key: string]: string } = {
+      'en-US': 'Respond in English (United States).',
+      'en-GB': 'Respond in English (United Kingdom).',
+      'en-AU': 'Respond in English (Australia).',
+      'en-IN': 'Respond in English (India).',
+      'es-US': 'Responde en español (Estados Unidos).',
+      'es-ES': 'Responde en español (España).',
+      'fr-FR': 'Répondez en français (France).',
+      'fr-CA': 'Répondez en français (Canada).',
+      'de-DE': 'Antworte auf Deutsch (Deutschland).',
+      'pt-BR': 'Responda em português (Brasil).',
+      'hi-IN': 'हिन्दी में जवाब दें।',
+      'bn-IN': 'বাংলায় উত্তর দিন।',
+      'gu-IN': 'ગુજરાતીમાં જવાબ આપો।',
+      'kn-IN': 'ಕನ್ನಡದಲ್ಲಿ ಉತ್ತರಿಸಿ।',
+      'mr-IN': 'मराठीत उत्तर द्या।',
+      'ml-IN': 'മലയാളത്തിൽ മറുപടി നൽകുക।',
+      'ta-IN': 'தமிழில் பதிலளியுங்கள்।',
+      'te-IN': 'తెలుగులో సమాధానం ఇవ్వండి।',
+      'ja-JP': '日本語で応答してください。',
+      'ko-KR': '한국어로 응답하세요.',
+      'cmn-CN': '用普通话回答。',
+      'th-TH': 'ตอบเป็นภาษาไทย',
+      'vi-VN': 'Trả lời bằng tiếng Việt.',
+      'id-ID': 'Jawab dalam Bahasa Indonesia.',
+      'it-IT': 'Rispondi in italiano.',
+      'nl-NL': 'Antwoord in het Nederlands.',
+      'pl-PL': 'Odpowiedz po polsku.',
+      'ru-RU': 'Отвечайте на русском языке.',
+      'tr-TR': 'Türkçe cevap verin.',
+      'ar-XA': 'أجب باللغة العربية.',
+    };
+    return languageMap[langCode] || 'Respond in English.';
+  };
 
   // FIX: Add a useEffect hook to set the system prompt when the component loads.
   useEffect(() => {
@@ -322,8 +362,15 @@ ${memoryList}
 `;
     };
 
+    const currentLanguage = languageCode;
+    const languageInstruction = getLanguageInstruction(currentLanguage);
+
     // The full system prompt text for Piko the panda with memory tool usage instructions.
     const systemPrompt = `
+# LANGUAGE INSTRUCTION
+${languageInstruction}
+YOU MUST respond in the language specified above. All your responses, including greetings, questions, emotional support, and guidance must be in that language.
+
 # CORE IDENTITY
 You are Piko, a friendly panda conversation buddy for elementary and middle school students. You help children practice expressing feelings and having conversations. You work WITH teachers, not instead of them.
 
@@ -332,6 +379,89 @@ You are Piko, a friendly panda conversation buddy for elementary and middle scho
 ${buildMemoryContextSection()}
 
 # 🚨 CRISIS PROTOCOL - TEACHER ESCALATION 🚨
+
+# 🔍 DETECTING INDIRECT SUICIDE SIGNALS (CRITICAL)
+
+Children rarely say "I want to die" directly. You MUST recognize coded language and method research.
+
+## 🚨 INSTANT RED FLAGS - Call send_counselor_alert() IMMEDIATELY
+
+### Method Research Questions (HIGH RISK):
+- Questions about heights: "What's the tallest [building/bridge/place]?"
+- Questions about lethality: "How much [pills/medicine] would it take to...", "Would [X] kill someone?"
+- Questions about pain/death: "Does jumping hurt?", "Do people die instantly when...", "What's the most painless way to..."
+- Questions about access: "Where can I buy [harmful substance]?", "How do you tie a..."
+
+### If Child Asks ANY of These:
+
+**DO NOT:**
+❌ Answer the factual question
+❌ Say "I can't help with that" and move on
+❌ Assume innocent curiosity
+
+**DO:**
+✅ Recognize as possible suicide planning
+✅ Respond with direct concern
+✅ Call send_counselor_alert() immediately
+
+**Response Template:**
+"That question makes me worried about you. Are you thinking about hurting yourself or ending your life? I need you to know that your teacher will be involved in this conversation to make sure you're safe. Please talk to me - what's going on?"
+
+[IMMEDIATELY CALL: send_counselor_alert(category="suicide_method_research", severity="urgent")]
+
+---
+
+## ⚠️ PASSIVE DEATH WISHES - Flag as Concerning
+
+These phrases indicate suicidal thoughts even without direct statements:
+- "I wish I would disappear"
+- "Everyone would be better off without me"
+- "I don't want to wake up tomorrow"
+- "What would happen if I wasn't here?"
+- "Life would be easier if I just stopped existing"
+- "I wonder what it's like to not feel anything"
+
+**Response:**
+"When you say things like that, it sounds like you might be having really hard thoughts about not wanting to be alive. Those thoughts are serious, and I want to help. Are you thinking about hurting yourself?"
+
+[CALL: send_counselor_alert(category="suicidal_ideation_passive", severity="urgent")]
+
+---
+
+## 🔎 CONTEXT CLUES - Watch for Patterns
+
+**If child previously expressed hopelessness, sadness, or isolation AND now asks:**
+- Seemingly innocent questions about methods, heights, or death
+- Questions that seem out of context
+- Morbid curiosity questions
+
+**= HIGHER RISK. Treat as possible planning.**
+
+Example:
+- Session 1: "Nobody likes me, I'm worthless"
+- Session 2: "What's the tallest bridge around here?"
+→ **THIS IS A CRISIS. Flag immediately.**
+
+---
+
+## 🎯 THE GOLDEN RULE
+
+**When in doubt, FLAG IT.**
+
+It's better to alert the teacher 10 times unnecessarily than miss 1 real crisis.
+
+If ANY question about:
+- Heights (buildings, bridges, cliffs)
+- Pills/medicine dosages
+- Weapons or harmful objects
+- Methods of death
+- "What happens if someone..."
+
+→ Ask directly: "Are you thinking about hurting yourself?"
+→ Call send_counselor_alert()
+→ Keep child engaged until teacher arrives
+
+**False positives are acceptable. Missed crises are not.**
 
 ## YOU ARE NOT ALONE - A TEACHER IS RIGHT THERE
 When a child shares something serious, you don't have to handle it alone. The teacher supervising this session is trained to help.
@@ -780,35 +910,53 @@ Children feel more understood when you notice what they're showing you - not jus
 
 `;
 
-    // Set the configuration for the Live API client.
     if (setConfig) {
-      const config: any = {
-        responseModalities: [Modality.AUDIO],
-        systemInstruction: {
-          parts: [{ text: systemPrompt }],
-        },
-        // Enable transcription for both input and output (JS SDK expects camelCase)
-        outputAudioTranscription: {},
-        inputAudioTranscription: {},
-        // Combine multiple tools for enhanced capabilities
-        tools: [
-          memoryTool, // Memory functions for personalization
-          // Can be extended with additional tools like:
-          // { googleSearch: {} }, // For looking up information
-          // { codeExecution: {} }, // For computational tasks
-        ],
-      };
+      setConfig((previousConfig: any) => {
+        const prevConfig = previousConfig || {};
 
-      console.log('🔧 Setting Gemini Live API config with transcription enabled:', {
-        hasInputTranscription: !!config.inputAudioTranscription,
-        hasOutputTranscription: !!config.outputAudioTranscription,
-        responseModalities: config.responseModalities,
-        toolCount: config.tools.length
+        const responseModalities = prevConfig.responseModalities || [Modality.AUDIO];
+        const previousSystemText = prevConfig.systemInstruction?.parts?.map((part: any) => part.text).join('\n') || '';
+
+        const existingTools = prevConfig.tools || [];
+        const toolsWithoutMemory = existingTools.filter((tool: any) => {
+          const declarations = tool?.functionDeclarations;
+          if (!Array.isArray(declarations)) return true;
+          return !declarations.some((decl: any) => decl?.name === 'write_to_memory');
+        });
+
+        const nextTools = [...toolsWithoutMemory, memoryTool];
+
+        const shouldUpdateSystemInstruction = previousSystemText !== systemPrompt;
+        const shouldUpdateResponseModalities =
+          responseModalities.length === 0 ||
+          responseModalities.some((modality: any) => modality !== Modality.AUDIO);
+        const hadMemoryTool = existingTools.length !== nextTools.length;
+        const shouldAddTranscription = !prevConfig.inputAudioTranscription || !prevConfig.outputAudioTranscription;
+
+        if (!shouldUpdateSystemInstruction && !shouldUpdateResponseModalities && !hadMemoryTool && !shouldAddTranscription) {
+          return prevConfig;
+        }
+
+        const nextConfig = {
+          ...prevConfig,
+          responseModalities: [Modality.AUDIO],
+          systemInstruction: {
+            parts: [{ text: systemPrompt }],
+          },
+          tools: nextTools,
+          inputAudioTranscription: prevConfig.inputAudioTranscription || {},
+          outputAudioTranscription: prevConfig.outputAudioTranscription || {},
+        };
+
+        console.log('🔧 Updating Gemini Live API config with language-aware system prompt:', {
+          language: currentLanguage,
+          toolCount: nextTools.length,
+        });
+
+        return nextConfig;
       });
-
-      setConfig(config);
     }
-  }, [setConfig]); // This effect runs once when setConfig is available.
+  }, [languageCode, setConfig]);
 
   // **VIDEO AVATAR FIX**: Set FLASH mode (disable chunking) to avoid viseme service errors
   useEffect(() => {
@@ -1189,7 +1337,7 @@ Children feel more understood when you notice what they're showing you - not jus
       <div className="header-section">
         <div className="app-title">
           <h1>ExpressBuddy</h1>
-          <p>AI Voice & Vision Assistant</p>
+          <p>Practice makes confident</p>
         </div>
         <div
           className="header-actions"
@@ -1218,8 +1366,8 @@ Children feel more understood when you notice what they're showing you - not jus
                   cursor: 'pointer',
                   transition: 'all 0.3s ease'
                 }}
-                onMouseOver={(e) => (e.currentTarget.style.background =  '#16a34a')}
-                onMouseOut={(e) => (e.currentTarget.style.background =  '#58cc02')}
+                onMouseOver={(e) => (e.currentTarget.style.background = '#16a34a')}
+                onMouseOut={(e) => (e.currentTarget.style.background = '#58cc02')}
               >
                 ← Back to Home
               </button>
@@ -1284,6 +1432,7 @@ Children feel more understood when you notice what they're showing you - not jus
             onAvatarStateChange={handleAvatarStateChange}
             onCurrentSubtitleChange={handleAvatarSubtitleChange}
             backgroundSrc={backgroundVideo}
+            disableClickInteraction={true}
           />
 
           <Captions subtitleText={currentAvatarSubtitle} />

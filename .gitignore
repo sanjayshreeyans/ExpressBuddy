@@ -32,3 +32,43 @@ yarn-debug.log*
 yarn-error.log*
 # Local VS Code MCP server configs (should not be committed)
 .vscode/mcp.json
+
+# AI-generated documentation files (temporary/reference only)
+# Keep: README.md, CONTRIBUTING.md, TESTING_GUIDE.md
+TECH_STACK_*.md
+TECHNOLOGIES_USED.md
+PERFORMANCE_*.md
+*_GUIDE.md
+*_DOCUMENTATION.md
+*_SUMMARY.md
+*_PLAN.md
+*_RESULTS.md
+*_MIGRATION.md
+*_DEPLOYMENT.md
+*_INTEGRATION.md
+*_IMPLEMENTATION.md
+*_FEATURE.md
+*_REFERENCE.md
+*_QUICK_*.md
+*_VISUAL.md
+*_SLIDES.md
+*_FIXES.md
+*_FIX.md
+CODE_SPLITTING_RESULTS.md
+ADDING_BACKGROUNDS.md
+email_draft*.md
+TRANSCRIPT_DEBUG_GUIDE.md
+MEMORY_FEATURE_DOCUMENTATION.md
+SCHOOL_DEPLOYMENT_SAFETY_DOCUMENTATION.md
+SILENCE_DETECTION_GUIDE.md
+TRANSPARENT_VIDEO_IMPLEMENTATION.md
+KINDE_SUPABASE_INTEGRATION.md
+Copilot*.md
+MINIMAL_*.md
+
+# Whitelist important documentation files that should be committed
+!README.md
+!CONTRIBUTING.md
+!TESTING_GUIDE.md
+!migrations/README.md
+

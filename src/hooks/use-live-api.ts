@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GenAILiveClient } from "../lib/genai-live-client";
 import { LiveClientOptions } from "../types";
 import { AudioStreamer } from "../lib/audio-streamer";
@@ -28,7 +28,7 @@ import TranscriptService from "../services/transcript-service";
 
 export type UseLiveAPIResults = {
   client: GenAILiveClient;
-  setConfig: (config: LiveConnectConfig) => void;
+  setConfig: Dispatch<SetStateAction<LiveConnectConfig>>;
   config: LiveConnectConfig;
   model: string;
   setModel: (model: string) => void;

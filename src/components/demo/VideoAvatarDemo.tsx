@@ -83,7 +83,7 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">
               ExpressBuddy Avatar
             </h2>
-            
+
             <div className="relative w-full h-96 bg-gray-100 rounded-lg overflow-hidden">
               <VideoExpressBuddyAvatar
                 className="w-full h-full"
@@ -99,22 +99,20 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={() => setIsListening(!isListening)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    isListening
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${isListening
                       ? 'bg-red-500 text-white hover:bg-red-600'
                       : 'bg-green-500 text-white hover:bg-green-600'
-                  }`}
+                    }`}
                 >
                   {isListening ? '🔴 Stop Talking' : '🎤 Start Talking'}
                 </button>
 
                 <button
                   onClick={() => setAutoToggle(!autoToggle)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    autoToggle
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${autoToggle
                       ? 'bg-orange-500 text-white hover:bg-orange-600'
                       : 'bg-blue-500 text-white hover:bg-blue-600'
-                  }`}
+                    }`}
                 >
                   {autoToggle ? '⏹️ Stop Auto Demo' : '🔄 Auto Demo'}
                 </button>
@@ -174,25 +172,22 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
                   <div className="space-y-2 text-sm">
                     <div>
                       <span className="text-gray-600">Status:</span>
-                      <span className={`ml-2 font-medium ${
-                        avatarState.status === 'speaking' ? 'text-red-600' : 'text-blue-600'
-                      }`}>
+                      <span className={`ml-2 font-medium ${avatarState.status === 'speaking' ? 'text-red-600' : 'text-blue-600'
+                        }`}>
                         {avatarState.status === 'speaking' ? '🗣️ Speaking' : '😌 Idle'}
                       </span>
                     </div>
                     <div>
                       <span className="text-gray-600">Buffering:</span>
-                      <span className={`ml-2 font-medium ${
-                        avatarState.isBuffering ? 'text-yellow-600' : 'text-green-600'
-                      }`}>
+                      <span className={`ml-2 font-medium ${avatarState.isBuffering ? 'text-yellow-600' : 'text-green-600'
+                        }`}>
                         {avatarState.isBuffering ? '⏳ Yes' : '✅ No'}
                       </span>
                     </div>
                     <div>
                       <span className="text-gray-600">Content Ready:</span>
-                      <span className={`ml-2 font-medium ${
-                        avatarState.hasGeneratedContent ? 'text-green-600' : 'text-gray-600'
-                      }`}>
+                      <span className={`ml-2 font-medium ${avatarState.hasGeneratedContent ? 'text-green-600' : 'text-gray-600'
+                        }`}>
                         {avatarState.hasGeneratedContent ? '✅ Yes' : '❌ No'}
                       </span>
                     </div>
@@ -207,9 +202,8 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
                   <div className="space-y-2 text-sm">
                     <div>
                       <span className="text-gray-600">Playing:</span>
-                      <span className={`ml-2 font-medium ${
-                        playbackState.isPlaying ? 'text-green-600' : 'text-gray-600'
-                      }`}>
+                      <span className={`ml-2 font-medium ${playbackState.isPlaying ? 'text-green-600' : 'text-gray-600'
+                        }`}>
                         {playbackState.isPlaying ? '▶️ Yes' : '⏸️ No'}
                       </span>
                     </div>
@@ -235,9 +229,8 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
                 <div className="space-y-2 text-sm">
                   <div>
                     <span className="text-gray-600">Processing:</span>
-                    <span className={`ml-2 font-medium ${
-                      hintSystem.state.isProcessing ? 'text-orange-600' : 'text-gray-600'
-                    }`}>
+                    <span className={`ml-2 font-medium ${hintSystem.state.isProcessing ? 'text-orange-600' : 'text-gray-600'
+                      }`}>
                       {hintSystem.state.isProcessing ? '⏳ Yes' : '⚪ No'}
                     </span>
                   </div>
@@ -249,17 +242,15 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
                   </div>
                   <div>
                     <span className="text-gray-600">Indicator Visible:</span>
-                    <span className={`ml-2 font-medium ${
-                      isHintIndicatorVisible ? 'text-green-600' : 'text-gray-600'
-                    }`}>
+                    <span className={`ml-2 font-medium ${isHintIndicatorVisible ? 'text-green-600' : 'text-gray-600'
+                      }`}>
                       {isHintIndicatorVisible ? '✅ Yes' : '❌ No'}
                     </span>
                   </div>
                   <div>
                     <span className="text-gray-600">Enabled:</span>
-                    <span className={`ml-2 font-medium ${
-                      hintSystem.config.enabled ? 'text-green-600' : 'text-red-600'
-                    }`}>
+                    <span className={`ml-2 font-medium ${hintSystem.config.enabled ? 'text-green-600' : 'text-red-600'
+                      }`}>
                       {hintSystem.config.enabled ? '✅ Yes' : '❌ No'}
                     </span>
                   </div>
@@ -291,9 +282,10 @@ export const VideoAvatarDemo: React.FC<VideoAvatarDemoProps> = () => {
               <div className="bg-green-50 rounded-lg p-4">
                 <h3 className="font-semibold text-green-800 mb-2">Animation Files</h3>
                 <div className="text-sm text-green-700 space-y-1">
-                  <div>🎬 Idle: <code>Pandaalter1_2.mp4</code></div>
-                  <div>🗣️ Talking: <code>PandaTalkingAnim.mp4</code></div>
+                  <div>🎬 Idle: <code>Pandaalter1_2.webm</code></div>
+                  <div>🗣️ Talking: <code>PandaTalkingAnim.webm</code></div>
                   <div>📁 Location: <code>/public/VideoAnims/</code></div>
+                  <div>🎨 Format: <code>WebM VP9 with alpha channel</code></div>
                 </div>
               </div>
             </div>

@@ -46,6 +46,7 @@ interface VideoExpressBuddyAvatarProps {
   onCurrentSubtitleChange?: (subtitle: string) => void;
   hideDebugInfo?: boolean; // Hide debug overlay for cleaner display
   backgroundSrc?: string; // Background video source path
+  disableClickInteraction?: boolean; // Disable click handling to prevent accidental restarts during AI conversations
 }
 
 export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = ({
@@ -56,6 +57,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
   onCurrentSubtitleChange,
   hideDebugInfo = false,
   backgroundSrc = '/Backgrounds/AnimatedVideoBackgroundLooping1.mp4',
+  disableClickInteraction = true, // Default to disabled to prevent accidental clicks during conversations
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,93 +67,102 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
   const idleVideoRef = useRef<HTMLVideoElement>(null);
   const talkingVideoRef = useRef<HTMLVideoElement>(null);
   const backgroundVideoRef = useRef<HTMLVideoElement>(null);
-  const idleCanvasRef = useRef<HTMLCanvasElement>(null);
-  const talkingCanvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number>(0);
-  const chromaKeyFrameRef = useRef<number>(0);
+  const intersectionObserverRef = useRef<IntersectionObserver | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Video source paths
-  const idleVideoSrc = '/VideoAnims/Pandaalter1_2.mp4';
-  const talkingVideoSrc = '/VideoAnims/PandaTalkingAnim.mp4';
+  // Video source paths - using WebM with alpha channel for GPU-accelerated transparency
+  const idleVideoSrc = '/VideoAnims/Pandaalter1_2.webm';
+  const talkingVideoSrc = '/VideoAnims/PandaTalkingAnim.webm';
 
   // Initialize videos on mount
   useEffect(() => {
     const initializeVideos = async () => {
       try {
-        // Set up video event listeners
+        // Set up video event listeners with memory-efficient error handling
         const setupVideo = (video: HTMLVideoElement, isIdleVideo: boolean) => {
-          video.addEventListener('loadeddata', () => {
+          const onLoadedData = () => {
             console.log(`📹 Video loaded: ${isIdleVideo ? 'idle' : 'talking'}`);
             setIsLoaded(true);
-          });
+          };
 
-          video.addEventListener('error', (e) => {
+          const onError = (e: Event) => {
             console.error(`📹 Video error: ${isIdleVideo ? 'idle' : 'talking'}`, e);
             setError(`Failed to load ${isIdleVideo ? 'idle' : 'talking'} animation.`);
-          });
+          };
 
-          video.addEventListener('ended', () => {
+          const onEnded = () => {
             if (video.loop) {
               video.currentTime = 0;
               video.play().catch(console.error);
             }
-          });
+          };
+
+          video.addEventListener('loadeddata', onLoadedData);
+          video.addEventListener('error', onError);
+          video.addEventListener('ended', onEnded);
+
+          // Return cleanup function
+          return () => {
+            video.removeEventListener('loadeddata', onLoadedData);
+            video.removeEventListener('error', onError);
+            video.removeEventListener('ended', onEnded);
+          };
         };
 
+        const cleanupFunctions: (() => void)[] = [];
+
         if (idleVideoRef.current) {
-          setupVideo(idleVideoRef.current, true);
+          cleanupFunctions.push(setupVideo(idleVideoRef.current, true));
         }
         if (talkingVideoRef.current) {
-          setupVideo(talkingVideoRef.current, false);
+          cleanupFunctions.push(setupVideo(talkingVideoRef.current, false));
         }
 
-        // Setup background video
+        // Setup background video with cleanup
         if (backgroundVideoRef.current) {
           console.log('🎬 Setting up background video:', backgroundSrc);
-          backgroundVideoRef.current.addEventListener('loadeddata', () => {
-            console.log('✅ Background video loaded successfully');
-          });
-          backgroundVideoRef.current.addEventListener('error', (e) => {
+          const bgVideo = backgroundVideoRef.current;
+
+          const onBgLoadedData = () => console.log('✅ Background video loaded successfully');
+          const onBgError = (e: Event) => {
             console.error('❌ Background video error:', e);
             console.error('Video source:', backgroundSrc);
-          });
-          backgroundVideoRef.current.play()
+          };
+
+          bgVideo.addEventListener('loadeddata', onBgLoadedData);
+          bgVideo.addEventListener('error', onBgError);
+
+          bgVideo.play()
             .then(() => console.log('▶️ Background video playing'))
             .catch(err => console.error('❌ Background video play error:', err));
+
+          cleanupFunctions.push(() => {
+            bgVideo.removeEventListener('loadeddata', onBgLoadedData);
+            bgVideo.removeEventListener('error', onBgError);
+          });
         }
 
         // Start with idle animation
         setCurrentState('idle');
 
-        // Initialize canvas opacity states
-        if (idleCanvasRef.current) {
-          idleCanvasRef.current.style.opacity = '1';
-          idleCanvasRef.current.style.pointerEvents = 'auto';
-        }
-        if (talkingCanvasRef.current) {
-          talkingCanvasRef.current.style.opacity = '0';
-          talkingCanvasRef.current.style.pointerEvents = 'none';
-        }
-
         // Start both videos playing immediately for seamless transitions
         if (idleVideoRef.current) {
           idleVideoRef.current.currentTime = 0;
           await idleVideoRef.current.play();
-          if (idleCanvasRef.current) {
-            applyChromaKey(idleVideoRef.current, idleCanvasRef.current);
-          }
         }
 
         if (talkingVideoRef.current) {
           talkingVideoRef.current.currentTime = 0;
           await talkingVideoRef.current.play();
-          if (talkingCanvasRef.current) {
-            // Start rendering talking video in background (hidden by opacity)
-            applyChromaKey(talkingVideoRef.current, talkingCanvasRef.current);
-          }
         }
 
         console.log('📹 Both videos initialized and playing continuously');
+
+        // Store cleanup functions for unmount
+        return () => {
+          cleanupFunctions.forEach(cleanup => cleanup());
+        };
 
       } catch (err) {
         console.error('📹 Error initializing videos:', err);
@@ -159,75 +170,53 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
       }
     };
 
-    initializeVideos();
+    const cleanup = initializeVideos();
 
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
-      if (chromaKeyFrameRef.current) {
-        cancelAnimationFrame(chromaKeyFrameRef.current);
-      }
+      cleanup.then(cleanupFn => cleanupFn?.());
     };
   }, []);
 
-  // Chroma key effect - removes green background from video
-  // Continuously renders to canvas for seamless transitions
-  // Optimized for 60fps with cached context and efficient pixel processing
-  const applyChromaKey = useCallback((video: HTMLVideoElement, canvas: HTMLCanvasElement) => {
-    // Cache the context to avoid repeated getContext calls
-    let ctx = (canvas as any)._cachedCtx;
-    if (!ctx) {
-      ctx = canvas.getContext('2d', {
-        willReadFrequently: true,
-        alpha: true, // Enable alpha for transparency
-      });
-      (canvas as any)._cachedCtx = ctx;
-    }
+  // Visibility-based resource management for Chromebooks/mobile
+  useEffect(() => {
+    if (!containerRef.current) return;
 
-    if (!ctx || video.ended || video.paused) return;
+    const options = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.1, // Trigger when at least 10% visible
+    };
 
-    // Set canvas size to match video (only if needed)
-    if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      console.log(`📐 Canvas resized to ${canvas.width}x${canvas.height}`);
-    }
+    intersectionObserverRef.current = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const videos = [idleVideoRef.current, talkingVideoRef.current, backgroundVideoRef.current].filter(Boolean);
 
-    // Draw video frame
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // Get image data
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-
-    // Chroma key: remove green-screen pixels using green-dominance test
-    // Optimized loop with minimal branching for 60fps performance
-    const minGreen = 100; // minimum green channel value to consider (0-255)
-    const ratio = 1.4; // green must be > ratio * red and > ratio * blue
-    const dataLength = data.length;
-
-    for (let i = 0; i < dataLength; i += 4) {
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-
-      // Green-dominant detection with early exit optimization
-      if (g > minGreen) {
-        const rThreshold = r * ratio;
-        const bThreshold = b * ratio;
-        if (g > rThreshold && g > bThreshold) {
-          data[i + 3] = 0; // Set alpha to 0 (transparent)
+        if (!entry.isIntersecting) {
+          // Pause videos when off-screen to save memory/battery
+          console.log('📹 Avatar off-screen, pausing videos for performance');
+          videos.forEach(video => video?.pause());
+        } else {
+          // Resume videos when back on-screen
+          console.log('📹 Avatar visible, resuming videos');
+          videos.forEach(video => {
+            if (video && video.paused) {
+              video.play().catch(console.error);
+            }
+          });
         }
+      });
+    }, options);
+
+    intersectionObserverRef.current.observe(containerRef.current);
+
+    return () => {
+      if (intersectionObserverRef.current) {
+        intersectionObserverRef.current.disconnect();
       }
-    }
-
-    // Put modified image data back
-    ctx.putImageData(imageData, 0, 0);
-
-    // Continue rendering continuously for seamless transitions
-    // Using requestAnimationFrame ensures smooth 60fps rendering
-    requestAnimationFrame(() => applyChromaKey(video, canvas));
+    };
   }, []);
 
   // Helper function to play idle animation
@@ -235,23 +224,12 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
     if (!idleVideoRef.current || !talkingVideoRef.current) return;
 
     try {
-      // Keep both videos playing continuously - never pause
-      // Just ensure both are playing (in case user interaction was needed)
+      // Keep both videos playing continuously
       if (idleVideoRef.current.paused) {
         await idleVideoRef.current.play();
       }
       if (talkingVideoRef.current.paused) {
         await talkingVideoRef.current.play();
-      }
-
-      // Smooth opacity transition - hide talking, show idle
-      if (talkingCanvasRef.current) {
-        talkingCanvasRef.current.style.opacity = '0';
-        talkingCanvasRef.current.style.pointerEvents = 'none';
-      }
-      if (idleCanvasRef.current) {
-        idleCanvasRef.current.style.opacity = '1';
-        idleCanvasRef.current.style.pointerEvents = 'auto';
       }
 
       console.log('📹 Transitioned to idle animation (seamless)');
@@ -265,23 +243,12 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
     if (!talkingVideoRef.current || !idleVideoRef.current) return;
 
     try {
-      // Keep both videos playing continuously - never pause
-      // Just ensure both are playing (in case user interaction was needed)
+      // Keep both videos playing continuously
       if (talkingVideoRef.current.paused) {
         await talkingVideoRef.current.play();
       }
       if (idleVideoRef.current.paused) {
         await idleVideoRef.current.play();
-      }
-
-      // Smooth opacity transition - hide idle, show talking
-      if (idleCanvasRef.current) {
-        idleCanvasRef.current.style.opacity = '0';
-        idleCanvasRef.current.style.pointerEvents = 'none';
-      }
-      if (talkingCanvasRef.current) {
-        talkingCanvasRef.current.style.opacity = '1';
-        talkingCanvasRef.current.style.pointerEvents = 'auto';
       }
 
       console.log('📹 Transitioned to talking animation (seamless)');
@@ -306,19 +273,25 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
     }
   }, [isListening, currentState, isLoaded]);
 
-  // Update current time for debug purposes
+  // Update current time for debug purposes (optimized with throttling)
   useEffect(() => {
-    const updateTime = () => {
-      const activeVideo = currentState === 'talking' ? talkingVideoRef.current : idleVideoRef.current;
-      if (activeVideo && !activeVideo.paused) {
-        setCurrentTime(activeVideo.currentTime);
+    if (!isLoaded) return;
+
+    let lastUpdateTime = 0;
+    const throttleMs = 100; // Update every 100ms instead of every frame
+
+    const updateTime = (timestamp: number) => {
+      if (timestamp - lastUpdateTime >= throttleMs) {
+        const activeVideo = currentState === 'talking' ? talkingVideoRef.current : idleVideoRef.current;
+        if (activeVideo && !activeVideo.paused) {
+          setCurrentTime(activeVideo.currentTime);
+        }
+        lastUpdateTime = timestamp;
       }
       animationFrameRef.current = requestAnimationFrame(updateTime);
     };
 
-    if (isLoaded) {
-      animationFrameRef.current = requestAnimationFrame(updateTime);
-    }
+    animationFrameRef.current = requestAnimationFrame(updateTime);
 
     return () => {
       if (animationFrameRef.current) {
@@ -347,6 +320,12 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
   }, [currentState, currentTime, onPlaybackStateChange]);
 
   const handleCharacterClick = useCallback(() => {
+    // Prevent click interaction if disabled (during active conversations)
+    if (disableClickInteraction) {
+      console.log('🚫 Click interaction disabled - preventing accidental playback restart');
+      return;
+    }
+
     if (error) {
       setError(null);
       return;
@@ -361,10 +340,10 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
     } else {
       playIdleAnimation();
     }
-  }, [currentState, error]);
+  }, [currentState, error, disableClickInteraction]);
 
   return (
-    <div className={`relative h-full w-full ${className}`}>
+    <div ref={containerRef} className={`relative h-full w-full ${className}`}>
       {/* Debug info - only show if not hidden and in development */}
       {!hideDebugInfo && process.env.NODE_ENV === 'development' && (
         <div
@@ -411,57 +390,49 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
         />
       )}
 
-      {/* Hidden video elements - used as source for canvas rendering */}
-      <video
-        ref={idleVideoRef}
-        src={idleVideoSrc}
-        style={{ display: 'none' }}
-        loop
-        muted
-        playsInline
-        preload="auto"
-      />
+      {/* Talking Video - Base layer */}
       <video
         ref={talkingVideoRef}
         src={talkingVideoSrc}
-        style={{ display: 'none' }}
+        className="absolute inset-0 w-full h-full"
+        style={{
+          zIndex: 10,
+          opacity: currentState === 'talking' ? 1 : 0,
+          pointerEvents: currentState === 'talking' ? 'auto' : 'none',
+          cursor: disableClickInteraction ? 'default' : 'pointer',
+          objectFit: 'contain',
+          width: '100%',
+          height: '100%',
+        }}
         loop
         muted
         playsInline
         preload="auto"
-      />
-
-      {/* Canvas for Idle Video - with chroma key applied */}
-      <canvas
-        ref={idleCanvasRef}
-        className="absolute inset-0 w-full h-full"
-        style={{
-          zIndex: currentState === 'idle' ? 11 : 10,
-          opacity: 1, // Always fully opaque
-          pointerEvents: currentState === 'idle' ? 'auto' : 'none',
-          cursor: 'pointer',
-          objectFit: 'contain',
-          width: '100%',
-          height: '100%',
-          transition: 'z-index 0s linear 0.15s', // Delay z-index change until after crossfade
-        }}
+        disablePictureInPicture
+        disableRemotePlayback
         onClick={handleCharacterClick}
       />
 
-      {/* Canvas for Talking Video - with chroma key applied */}
-      <canvas
-        ref={talkingCanvasRef}
+      {/* Idle Video - Top layer */}
+      <video
+        ref={idleVideoRef}
+        src={idleVideoSrc}
         className="absolute inset-0 w-full h-full"
         style={{
-          zIndex: currentState === 'talking' ? 11 : 10,
-          opacity: 1, // Always fully opaque
-          pointerEvents: currentState === 'talking' ? 'auto' : 'none',
-          cursor: 'pointer',
+          zIndex: 11,
+          opacity: currentState === 'idle' ? 1 : 0,
+          pointerEvents: currentState === 'idle' ? 'auto' : 'none',
+          cursor: disableClickInteraction ? 'default' : 'pointer',
           objectFit: 'contain',
           width: '100%',
           height: '100%',
-          transition: 'z-index 0s linear 0.15s', // Delay z-index change until after crossfade
         }}
+        loop
+        muted
+        playsInline
+        preload="auto"
+        disablePictureInPicture
+        disableRemotePlayback
         onClick={handleCharacterClick}
       />
 
