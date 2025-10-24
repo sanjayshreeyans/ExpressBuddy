@@ -28,6 +28,7 @@ import { ReactPlugin } from "@stagewise-plugins/react";
 // Lazy load components for code splitting (70-80% bundle size reduction)
 const MainInterfaceWithAvatar = lazy(() => import("./components/main-interface/MainInterfaceWithAvatar"));
 const MainInterfaceWithVideoAvatar = lazy(() => import("./components/main-interface/MainInterfaceWithVideoAvatar"));
+const PikoChallengeInterface = lazy(() => import("./components/piko-challenges/PikoChallengeInterface"));
 const LandingPage = lazy(() => import("./components/landing-page/LandingPage"));
 const LearningPathHome = lazy(() => import("./components/home/LearningPathHome"));
 const AuthPage = lazy(() => import("./components/auth/AuthPage"));
@@ -187,6 +188,16 @@ function AppContent() {
               window.location.href = '/dashboard';
             }}
           />
+        } />
+
+        {/* Piko Challenge - Restaurant Ordering Level 1 - Public Demo Route */}
+        <Route path="/piko-challenge/restaurant-ordering-level1" element={
+          <>
+            <StagewiseToolbar config={{ plugins: [ReactPlugin] }} />
+            <LiveAPIProvider options={apiOptions}>
+              <PikoChallengeInterface />
+            </LiveAPIProvider>
+          </>
         } />
 
         {/* Question Types Demo - Development Route */}
