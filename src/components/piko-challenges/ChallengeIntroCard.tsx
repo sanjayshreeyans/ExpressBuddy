@@ -13,9 +13,8 @@ export function ChallengeIntroCard({ onStart, onLearnMore, onClose }: ChallengeI
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <Card className="w-full max-w-md mx-4 shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300">
         <CardHeader className="text-center space-y-2">
-          <div className="text-6xl mb-2">🐼</div>
           <CardTitle className="text-2xl font-bold text-gray-900">
-            PIKO NEEDS YOUR HELP!
+            Piko Needs Your Help!
           </CardTitle>
           <CardDescription className="text-base text-gray-600">
             Piko is at a restaurant and wants to order food, but he's not sure what to say.
@@ -31,7 +30,7 @@ export function ChallengeIntroCard({ onStart, onLearnMore, onClose }: ChallengeI
           </div>
 
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <h3 className="font-semibold text-green-900 mb-2">🎯 Level 1: Help Piko</h3>
+            <h3 className="font-semibold text-green-900 mb-2">Level 1: Help Piko</h3>
             <p className="text-sm text-green-800">
               Piko is nervous and confused. Give him advice and teach him what to do. 
               You'll see a checklist on the right showing what Piko needs to learn!
@@ -44,7 +43,7 @@ export function ChallengeIntroCard({ onStart, onLearnMore, onClose }: ChallengeI
               className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-6 text-lg"
               size="lg"
             >
-              🚀 START CHALLENGE
+              Start Challenge
             </Button>
             <Button 
               onClick={onLearnMore} 
@@ -52,7 +51,7 @@ export function ChallengeIntroCard({ onStart, onLearnMore, onClose }: ChallengeI
               className="flex-1 py-6 text-lg font-semibold"
               size="lg"
             >
-              📖 LEARN MORE
+              Learn More
             </Button>
           </div>
 

@@ -47,16 +47,20 @@ export function ChallengeChecklist({ todos, className }: ChallengeChecklistProps
 
   return (
     <Card 
-      className={`fixed top-4 right-4 z-50 w-80 shadow-lg ${className || ''}`}
+      className={`fixed top-40 right-4 z-50 w-80 shadow-lg ${className || ''}`}
       style={{
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        backdropFilter: 'blur(10px)'
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        border: '1px solid rgba(255, 255, 255, 0.25)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+        maxHeight: 'calc(100vh - 200px)',
+        overflowY: 'auto'
       }}
     >
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-bold flex items-center gap-2">
-            <span>🐼</span>
             <span>Piko's Learning Goals</span>
           </CardTitle>
           <Badge 
@@ -114,7 +118,7 @@ export function ChallengeChecklist({ todos, className }: ChallengeChecklistProps
               )}
             </div>
             {todo.complete && (
-              <span className="text-lg">✅</span>
+              <span className="text-lg"></span>
             )}
           </div>
         ))}

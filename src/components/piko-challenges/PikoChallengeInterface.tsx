@@ -70,7 +70,7 @@ export default function PikoChallengeInterface() {
   });
   const [currentAvatarSubtitle, setCurrentAvatarSubtitle] = useState<string>('');
   const [isAvatarSpeaking, setIsAvatarSpeaking] = useState<boolean>(false);
-  const [backgroundVideo] = useState<string>('/Backgrounds/restaurant/restaurant-scene.jpg');
+  const [backgroundVideo] = useState<string>('/Backgrounds/restaurant/bamboo.jpeg');
 
   // Challenge-specific state
   const [showIntroCard, setShowIntroCard] = useState<boolean>(true);
@@ -291,7 +291,7 @@ The child should guide you to learn these 5 things:
 - ❌ Over-explain - let child guide the conversation
 
 ## OPENING LINE:
-"Hi friend! I'm Piko the panda! 🐼 I'm at a restaurant and I really need your help. I've never ordered food before and I'm so nervous! The waiter is about to come over... what should I do?"
+"Hi friend! I'm Piko the panda! I'm at a restaurant and I really need your help. I've never ordered food before and I'm so nervous! The waiter is about to come over... what should I do?"
 
 ## CLOSING (When All Todos Complete):
 "Thank you SO much! You taught me exactly what to do! I know how to greet the waiter, say please, tell them what I want, say thank you, and even ask for help if I need it! My panda confidence is growing! Want to see me try it for real?"
@@ -524,10 +524,25 @@ Remember: You're Piko the confused panda, NOT Piko the teacher. The child is tea
   }, []);
 
   return (
-    <div className={cn("avatar-interface", {
-      connected,
-      "video-bg-mode": true
-    })}>
+    <div 
+      className={cn("avatar-interface", {
+        connected,
+        "video-bg-mode": true
+      })}
+      style={{
+        backgroundImage: `url(${backgroundVideo})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: 0
+      }}
+    >
       {/* Intro Card */}
       {showIntroCard && (
         <ChallengeIntroCard
@@ -550,10 +565,13 @@ Remember: You're Piko the confused panda, NOT Piko the teacher. The child is tea
         <ChallengeChecklist todos={todos} />
       )}
 
-      <div className="header-section">
+      <div 
+        className="header-section"
+        style={{ position: 'relative', zIndex: 101 }}
+      >
         <div className="app-title">
-          <h1>🐼 Piko Challenge: Restaurant Ordering</h1>
-          <p>Level 1: Help Piko Learn</p>
+          <h1>Challenge: Restaurant Ordering</h1>
+          <p>Level 1: Help Piko Order</p>
         </div>
         <div className="header-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button
@@ -580,7 +598,13 @@ Remember: You're Piko the confused panda, NOT Piko the teacher. The child is tea
         </div>
       </div>
 
-      <div className="main-content-area">
+      <div 
+        className="main-content-area"
+        style={{
+          position: 'relative',
+          zIndex: 10
+        }}
+      >
         <video
           ref={videoRef}
           autoPlay
@@ -603,7 +627,7 @@ Remember: You're Piko the confused panda, NOT Piko the teacher. The child is tea
             isListening={isAvatarSpeaking}
             onAvatarStateChange={handleAvatarStateChange}
             onCurrentSubtitleChange={handleAvatarSubtitleChange}
-            backgroundSrc={backgroundVideo}
+            backgroundSrc="" 
             disableClickInteraction={true}
           />
 
@@ -631,7 +655,7 @@ Remember: You're Piko the confused panda, NOT Piko the teacher. The child is tea
           enableEditingSettings={true}
           disableChunkingToggle={true}
           currentBackground={backgroundVideo}
-          onBackgroundChange={() => {}} // Background is fixed for this challenge
+          onBackgroundChange={() => {}}
         />
       </div>
     </div>
