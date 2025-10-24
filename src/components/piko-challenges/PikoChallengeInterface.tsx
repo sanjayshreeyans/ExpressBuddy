@@ -572,8 +572,8 @@ Remember: You're Piko the confused panda, NOT Piko the teacher. The child is tea
             style={{ position: 'relative', zIndex: 101 }}
           >
             <div className="app-title">
-              <h1>Challenge: Restaurant Ordering</h1>
-              <p>Level 1: Help Piko Order</p>
+              <h1 style={{ color: 'white' }}>Challenge: Restaurant Ordering</h1>
+              <p style={{ color: 'white' }}>Level 1: Help Piko Order</p>
             </div>
             <div className="header-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <button
