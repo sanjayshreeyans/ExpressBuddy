@@ -49,29 +49,29 @@ export function ChallengeChecklist({ todos, className }: ChallengeChecklistProps
     <Card 
       className={`fixed top-40 right-4 z-50 w-80 shadow-lg ${className || ''}`}
       style={{
-        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
-        border: '1px solid rgba(255, 255, 255, 0.25)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+        border: '1px solid rgba(255, 255, 255, 0.4)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
         maxHeight: 'calc(100vh - 200px)',
         overflowY: 'auto'
       }}
     >
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-bold flex items-center gap-2">
+          <CardTitle className="text-lg font-bold flex items-center gap-2 text-slate-900">
             <span>Piko's Learning Goals</span>
           </CardTitle>
           <Badge 
             variant={completionPercentage === 100 ? "default" : "secondary"}
-            className="text-sm"
+            className="text-sm font-semibold"
           >
             {completedCount}/{totalCount}
           </Badge>
         </div>
         <div className="mt-2">
-          <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-2 w-full bg-gray-300 rounded-full overflow-hidden">
             <div 
               className="h-full bg-green-500 transition-all duration-500 ease-out"
               style={{ width: `${completionPercentage}%` }}
@@ -105,14 +105,14 @@ export function ChallengeChecklist({ todos, className }: ChallengeChecklistProps
             <div className="flex-1">
               <label
                 htmlFor={`todo-${todo.id}`}
-                className={`text-sm font-medium leading-tight cursor-default ${
-                  todo.complete ? 'text-green-700 line-through' : 'text-gray-700'
+                className={`text-sm font-bold leading-tight cursor-default ${
+                  todo.complete ? 'text-green-700 line-through' : 'text-slate-900'
                 }`}
               >
                 {todo.text}
               </label>
               {!todo.complete && (
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-slate-600 mt-1">
                   {todo.description}
                 </p>
               )}
