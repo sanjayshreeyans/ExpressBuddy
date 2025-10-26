@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExpressBuddy Architecture - Complete System Flow</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+        
+        .diagram-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            overflow-x: auto;
+        }
+        
+        .diagram-container h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            min-height: 400px;
+        }
+        
+        .description {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f7ff;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 50px;
+            padding: 20px;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .nav-btn {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .nav-btn.active {
+            background: #764ba2;
+            border: 2px solid white;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .diagram-container {
+                padding: 15px;
+            }
+            
+            .mermaid {
+                min-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 ExpressBuddy Architecture Diagrams</h1>
+            <p class="subtitle">Complete System Flow & Components</p>
+        </header>
+        
+        <div class="nav-buttons">
+            <a href="#master" class="nav-btn active">Master Architecture</a>
+            <a href="#pico" class="nav-btn">Pico Complexity</a>
+            <a href="#flow" class="nav-btn">System Flow</a>
+            <a href="#journey" class="nav-btn">User Journey</a>
+            <a href="#memory" class="nav-btn">Memory System</a>
+            <a href="#avatar" class="nav-btn">Avatar States</a>
+            <a href="#tools" class="nav-btn">Tool Calling</a>
+            <a href="#audio" class="nav-btn">Audio Pipeline</a>
+        </div>
+        
+        <div id="master" class="diagram-container">
+            <h2>🎯 MASTER ARCHITECTURE - Complete System Blueprint</h2>
+            <div class="mermaid">
+graph TB
+    subgraph INPUT["🎤 INPUT LAYER"]
+        Mic["Microphone<br/>16kHz PCM16"]
+        VAD["Voice Activity<br/>Detection"]
+    end
+    
+    subgraph STREAMING["📡 REAL-TIME STREAMING"]
+        WebRTC["WebRTC Audio<br/>Stream"]
+        Gemini["🤖 Gemini Live API<br/>(Multimodal)"]
+        EventHandler["Event Handler<br/>setup|media|content|toolcall"]
+    end
+    
+    subgraph PROCESSING["⚙️ INTELLIGENT PROCESSING"]
+        AIDecision["AI Decision Engine<br/>- Tool usage?<br/>- Response generation<br/>- Intent understanding"]
+        ToolExecution["Tool Call Executor<br/>- Memory functions<br/>- Non-blocking async<br/>- Error handling"]
+        BufferingSystem["Smart Buffering<br/>- Audio chunks<br/>- Text chunks<br/>- State sync"]
+    end
+    
+    subgraph MEMORY["💾 PERSISTENT MEMORY LAYER"]
+        LocalStorage["localStorage<br/>Key-Value Store"]
+        MemoryTools["Memory Tools<br/>- write_to_memory<br/>- get_memories_by_keys"]
+        SessionState["Session State<br/>Memory Loaded"]
+    end
+    
+    subgraph OUTPUT["📤 OUTPUT SYNTHESIS"]
+        AudioBuffer["Audio Buffer<br/>Combine Chunks"]
+        TextAccumulator["Text Accumulator<br/>Subtitle Display"]
+        StateManager["State Machine<br/>IDLE→BUFF→TALK→IDLE"]
+    end
+    
+    subgraph RENDERING["🎭 AVATAR RENDERING"]
+        VideoPlayer["MP4 Video Player<br/>Talking Animation"]
+        ChromaKeyRemoval["Chroma Key<br/>Green Screen Removal"]
+        AvatarDisplay["Final Avatar<br/>Rendered Output"]
+    end
+    
+    subgraph PERSISTENCE["💾 DATA PERSISTENCE"]
+        Transcripts["Transcripts<br/>User & AI"]
+        ConvDatabase["Conversation DB<br/>Supabase"]
+        Analytics["Analytics<br/>Interaction Data"]
+    end
+    
+    subgraph SPEAKER["🔊 AUDIO OUTPUT"]
+        AudioPlayback["Audio Playback<br/>PCM16 16kHz"]
+        Speakers["Speaker Output<br/>User Hears Response"]
+    end
+    
+    Mic -->|Continuous| VAD
+    VAD -->|Detected| WebRTC
+    WebRTC -->|Stream| Gemini
+    
+    Gemini -->|Events| EventHandler
+    EventHandler -->|Content| AIDecision
+    EventHandler -->|Media| BufferingSystem
+    
+    AIDecision -->|Decision| ToolDecision{Use Tools?}
+    ToolDecision -->|YES| ToolExecution
+    ToolDecision -->|NO| Continue["Continue Stream"]
+    
+    ToolExecution -->|Async Exec| MemoryTools
+    MemoryTools -->|Store| LocalStorage
+    MemoryTools -->|Response| AIDecision
+    
+    SessionState -->|Load on Init| AIDecision
+    
+    EventHandler -->|Audio Data| BufferingSystem
+    EventHandler -->|Text Data| TextAccumulator
+    
+    BufferingSystem -->|turncomplete| AudioBuffer
+    AudioBuffer -->|Process| StateManager
+    StateManager -->|TALKING| VideoPlayer
+    
+    TextAccumulator -->|Subtitles| AvatarDisplay
+    VideoPlayer -->|Video| ChromaKeyRemoval
+    ChromaKeyRemoval -->|Clean| AvatarDisplay
+    
+    AudioBuffer -->|PCM16| AudioPlayback
+    AudioPlayback -->|Sound| Speakers
+    
+    TextAccumulator -->|Capture| Transcripts
+    Speakers -->|When Done| Transcripts
+    
+    Transcripts -->|Store| ConvDatabase
+    Transcripts -->|Track| Analytics
+    
+    Speakers -->|Audio End| StateManager
+    StateManager -->|Transition| Continue
+            </div>
+            <div class="description">
+                <strong>🎯 MASTER ARCHITECTURE:</strong> This is the complete system blueprint showing all major components working together:
+                <br><strong>Key Layers:</strong>
+                <br>• <strong>INPUT:</strong> Audio capture with VAD (Voice Activity Detection) for interruption handling
+                <br>• <strong>STREAMING:</strong> Real-time bidirectional communication with Gemini via WebRTC
+                <br>• <strong>PROCESSING:</strong> AI decision engine with tool execution and intelligent buffering
+                <br>• <strong>MEMORY:</strong> Persistent non-blocking memory system using localStorage and memory tools
+                <br>• <strong>OUTPUT:</strong> Smart buffering and state management for smooth transitions
+                <br>• <strong>RENDERING:</strong> Avatar animation with chroma key processing
+                <br>• <strong>PERSISTENCE:</strong> Comprehensive transcript and analytics storage
+                <br>• <strong>SPEAKER:</strong> Real-time audio output to user
+            </div>
+        </div>
+        
+        <div class="diagram-container">
+            <h2>🏗️ Component Architecture</h2>
+            <div class="mermaid">
+graph TB
+    subgraph React["React Components"]
+        Main["MainInterfaceWithAvatar"]
+        Avatar["VideoExpressBuddyAvatar"]
+        Captions["Captions"]
+        Control["ControlTray"]
+        Nudge["NudgeIndicator"]
+    end
+    
+    subgraph Context["Context & Hooks"]
+        LiveAPICtx["LiveAPIContext"]
+        Hook["use-live-api.ts"]
+        BufferHook["useResponseBuffer"]
+        HintHook["useHintSystem"]
+    end
+    
+    subgraph Services["Services"]
+        TranscriptSvc["TranscriptService"]
+        GenaiClient["GenAILiveClient"]
+    end
+    
+    subgraph Storage["Storage"]
+        LocalStore["localStorage"]
+        Supabase["Supabase DB"]
+    end
+    
+    subgraph External["External APIs"]
+        Gemini["🤖 Gemini<br/>Live API"]
+        WebRTC["🌐 WebRTC<br/>Audio"]
+    end
+    
+    Main -->|Uses| LiveAPICtx
+    Avatar -->|Uses| Main
+    Captions -->|Uses| Main
+    Control -->|Uses| Main
+    Nudge -->|Uses| Main
+    
+    LiveAPICtx -->|Provides| Hook
+    Hook -->|Manages| GenaiClient
+    Hook -->|Uses| BufferHook
+    Hook -->|Uses| HintHook
+    
+    Main -->|Uses| TranscriptSvc
+    TranscriptSvc -->|Logs to| Supabase
+    TranscriptSvc -->|Records| LocalStore
+    
+    HintHook -->|Sends to| GenaiClient
+    BufferHook -->|Buffers| Main
+    
+    GenaiClient -->|Communicates| Gemini
+    GenaiClient -->|Streams| WebRTC
+    
+    Hook -->|Stores memory| LocalStore
+    Main -->|Tool calls| LocalStore
+            </div>
+            <div class="description">
+                <strong>Components:</strong> Shows how React components, hooks, services, and external APIs interact. All components flow through the LiveAPIContext for state management and communication with the Gemini Live API.
+            </div>
+        </div>
+        
+        <div id="pico" class="diagram-container">
+            <h2>⚡ PICO COMPLEXITY - Technical Excellence & Innovation</h2>
+            <div class="mermaid">
+graph TB
+    subgraph COMPLEXITY["🔴 Core Complexity Points"]
+        RealTime["Real-Time Bidirectional<br/>Audio Streaming<br/>• 16kHz PCM16 chunks<br/>• Sub-200ms latency<br/>• WebRTC protocol"]
+        
+        StateMachine["🎭 Smart State Machine<br/>• IDLE → BUFFERING → TALKING → IDLE<br/>• Seamless transitions<br/>• No gaps or overlaps"]
+        
+        EventDriven["📡 Async Event Architecture<br/>• setup|media|content|toolcall<br/>• Non-blocking async handlers<br/>• Proper error recovery"]
+        
+        MemoryMagic["💾 Intelligent Memory<br/>• NON_BLOCKING async operations<br/>• localStorage persistence<br/>• Session context loading<br/>• Memory-aware AI responses"]
+        
+        ToolCalling["🔧 AI Tool Execution<br/>• Tool declarations to Gemini<br/>• Async tool call handling<br/>• Response injection back<br/>• Streaming continuation"]
+        
+        BufferSync["📦 Chunk Synchronization<br/>• Audio chunks accumulation<br/>• Text chunks buffering<br/>• turncomplete detection<br/>• State synchronization"]
+    end
+    
+    subgraph INNOVATION["🟢 Innovation & Excellence"]
+        ChromaKey["🎨 Chroma Key Processing<br/>• Real-time green screen removal<br/>• MP4 video layering<br/>• Smooth alpha blending"]
+        
+        VAD["🎤 Voice Activity Detection<br/>• Interrupt handling mid-response<br/>• Seamless user takeover<br/>• Buffer clearing strategy"]
+        
+        Transcripts["📝 Dual Transcripts<br/>• User input captured<br/>• AI response captured<br/>• Supabase persistence<br/>• Conversation history"]
+        
+        NonBlocking["⚡ Non-Blocking Everything<br/>• Memory ops don't block UI<br/>• Tool calls don't block streaming<br/>• Smooth 60fps rendering<br/>• Zero jank user experience"]
+        
+        StreamSync["🌊 Stream Synchronization<br/>• Audio stream to speaker<br/>• Video stream to avatar<br/>• Text stream to captions<br/>• Perfect timing synchronization"]
+        
+        RecoveryResilience["🛡️ Resilience & Recovery<br/>• Connection failure handling<br/>• Automatic reconnection<br/>• Graceful degradation<br/>• Error state management"]
+    end
+    
+    subgraph ADVANCED["🟠 Advanced Features"]
+        HintSystem["💡 Hint System<br/>• Dynamic hint generation<br/>• Tool-based execution<br/>• Context-aware suggestions"]
+        
+        EmotionDetective["😊 Emotion Detective<br/>• Sentiment analysis<br/>• Emotional state tracking<br/>• Response adaptation"]
+        
+        ResponseBuffer["📊 Response Buffer<br/>• Smart buffering strategy<br/>• Chunk combining logic<br/>• Performance optimization"]
+        
+        SystemPrompt["🧠 Dynamic System Prompt<br/>• Memory integration<br/>• Context personalization<br/>• Adaptive behavior"]
+    end
+    
+    COMPLEXITY -->|Enables| INNOVATION
+    INNOVATION -->|Powers| ADVANCED
+    
+    style RealTime fill:#ff6b6b,stroke:#c92a2a,color:#fff
+    style StateMachine fill:#ff6b6b,stroke:#c92a2a,color:#fff
+    style EventDriven fill:#ff6b6b,stroke:#c92a2a,color:#fff
+    style MemoryMagic fill:#ff6b6b,stroke:#c92a2a,color:#fff
+    style ToolCalling fill:#ff6b6b,stroke:#c92a2a,color:#fff
+    style BufferSync fill:#ff6b6b,stroke:#c92a2a,color:#fff
+    
+    style ChromaKey fill:#51cf66,stroke:#2f9e44,color:#fff
+    style VAD fill:#51cf66,stroke:#2f9e44,color:#fff
+    style Transcripts fill:#51cf66,stroke:#2f9e44,color:#fff
+    style NonBlocking fill:#51cf66,stroke:#2f9e44,color:#fff
+    style StreamSync fill:#51cf66,stroke:#2f9e44,color:#fff
+    style RecoveryResilience fill:#51cf66,stroke:#2f9e44,color:#fff
+    
+    style HintSystem fill:#ffa94d,stroke:#e67700,color:#fff
+    style EmotionDetective fill:#ffa94d,stroke:#e67700,color:#fff
+    style ResponseBuffer fill:#ffa94d,stroke:#e67700,color:#fff
+    style SystemPrompt fill:#ffa94d,stroke:#e67700,color:#fff
+            </div>
+            <div class="description">
+                <strong>⚡ PICO COMPLEXITY - Where the Magic Happens:</strong>
+                <br><br><strong>🔴 Core Complexity (Foundation):</strong>
+                <br>• <strong>Real-Time Streaming:</strong> Handles continuous bidirectional audio with sub-200ms latency
+                <br>• <strong>Smart State Machine:</strong> Seamlessly transitions between IDLE, BUFFERING, and TALKING states
+                <br>• <strong>Async Event Architecture:</strong> Non-blocking event handlers for setup, media, content, and tool calls
+                <br>• <strong>Memory Magic:</strong> NON_BLOCKING async memory operations that don't interrupt conversation flow
+                <br>• <strong>Tool Calling:</strong> Sophisticated Gemini tool execution with streaming continuation
+                <br>• <strong>Chunk Synchronization:</strong> Complex buffering logic ensuring audio and text stay in sync
+                <br><br><strong>🟢 Innovation & Excellence (Competitive Advantage):</strong>
+                <br>• <strong>Chroma Key Processing:</strong> Real-time green screen removal with smooth alpha blending
+                <br>• <strong>Voice Activity Detection:</strong> Intelligent interrupt handling for user takeover
+                <br>• <strong>Dual Transcripts:</strong> Both user and AI outputs captured and persisted
+                <br>• <strong>Non-Blocking Everything:</strong> Smooth 60fps rendering with zero UI jank
+                <br>• <strong>Stream Synchronization:</strong> Perfect timing between audio, video, and text
+                <br>• <strong>Resilience & Recovery:</strong> Automatic reconnection and graceful degradation
+                <br><br><strong>🟠 Advanced Features (Next Level):</strong>
+                <br>• <strong>Hint System:</strong> Dynamic hint generation powered by tool calling
+                <br>• <strong>Emotion Detective:</strong> Sentiment analysis and emotional adaptation
+                <br>• <strong>Response Buffer:</strong> Smart buffering strategy for optimal performance
+                <br>• <strong>Dynamic System Prompt:</strong> Personalization through memory integration
+            </div>
+        </div>
+        
+        <div id="flow" class="diagram-container">
+            <h2 id="flow">📊 Complete System Data Flow</h2>
+            <div class="mermaid">
+graph LR
+    UI["👤 User<br/>Interface"] -->|Audio Input| Input["🎤 INPUT PHASE<br/>- Microphone<br/>- 16kHz PCM16<br/>- Transcript"]
+    
+    Input -->|Stream| Process["🔄 PROCESS PHASE<br/>- Gemini analyze<br/>- Tool decision<br/>- Generate response"]
+    
+    Process -->|Audio + Text| Buffer["📦 BUFFER PHASE<br/>- Accumulate audio<br/>- Accumulate text<br/>- Detect completion"]
+    
+    Buffer -->|Combine| Output["📤 OUTPUT PHASE<br/>- Play audio<br/>- Show captions<br/>- Animate avatar"]
+    
+    Output -->|Feedback| UI
+    
+    Output -->|Persist| Persist["💾 PERSIST<br/>- localStorage<br/>- Supabase<br/>- Memories"]
+            </div>
+            <div class="description">
+                <strong>Simplified Flow:</strong> Shows the main pipeline: Input captures audio, Process handles Gemini interaction and tools, Buffer accumulates data, Output displays everything to the user, and Persist saves conversation data for future sessions.
+            </div>
+        </div>
+        
+        <div id="journey" class="diagram-container">
+            <h2 id="journey">👥 User Journey Timeline (T=0s to T=60s+)</h2>
+            <div class="mermaid">
+sequenceDiagram
+    participant User as 👤 User
+    participant Audio as 🎤 Audio
+    participant Gemini as 🤖 Gemini
+    participant Memory as 💾 Memory
+    participant Transcript as 📝 Transcript
+    participant Avatar as 🎭 Avatar
+    participant Speaker as 🔊 Speaker
+    
+    User->>Audio: Speaks "Hi Piko!"
+    Audio->>Gemini: Send audio stream
+    Gemini->>Transcript: Capture user input
+    Gemini->>Gemini: Process & decide tools
+    Gemini->>Memory: Call write_to_memory (async)
+    Memory->>Memory: Store in localStorage
+    Gemini->>Gemini: Generate response
+    Gemini->>Avatar: Start buffering audio
+    Avatar->>Avatar: Change to BUFFERING state
+    Gemini->>Avatar: Audio & text chunks stream
+    Avatar->>Avatar: Display subtitles
+    Gemini->>Avatar: turncomplete event
+    Avatar->>Avatar: Process complete audio
+    Avatar->>Avatar: Transition to TALKING
+    Avatar->>Speaker: Play audio PCM16
+    Speaker->>User: Audio plays to speakers
+    Avatar->>Avatar: Show talking animation
+    Transcript->>Transcript: Capture AI output
+    Speaker->>Speaker: Audio finished
+    Avatar->>Avatar: Transition to IDLE
+            </div>
+            <div class="description">
+                <strong>User Journey:</strong> Complete sequence showing how a single user interaction flows through the system, from speaking to getting a response with avatar animation and transcript recording.
+            </div>
+        </div>
+        
+        <div id="memory" class="diagram-container">
+            <h2 id="memory">💾 Memory System Flow</h2>
+            <div class="mermaid">
+graph LR
+    UserInput["User: My dog is Max"]
+    
+    UserInput -->|Gemini Analyzes| Decision{"Should<br/>Store?"}
+    
+    Decision -->|YES| ToolCall["Tool Call:<br/>write_to_memory"]
+    
+    ToolCall -->|Function Args| Execute["Execute:<br/>key: pet_name<br/>value: Max"]
+    
+    Execute -->|Async| localStorage["localStorage:<br/>expresbuddy_memory_pet_name"]
+    
+    localStorage -->|Stored| Ready["✓ Available in<br/>Future Sessions"]
+    
+    Ready -->|Next Session| Retrieve["get_memories_by_keys<br/>(['pet_name'])"]
+    
+    Retrieve -->|Returns| MemoryData["{ pet_name: 'Max' }"]
+    
+    MemoryData -->|Into System Prompt| Gemini["Gemini naturally<br/>references"]
+    
+    Gemini -->|Natural| Response["'How is Max?'<br/>No announcement"]
+            </div>
+            <div class="description">
+                <strong>Memory System:</strong> Shows how memories are stored, retrieved, and integrated. The key feature is NON_BLOCKING async behavior and natural integration without announcements like "I remember..."
+            </div>
+        </div>
+        
+        <div id="avatar" class="diagram-container">
+            <h2 id="avatar">🎭 Avatar State Machine</h2>
+            <div class="mermaid">
+stateDiagram-v2
+    [*] --> IDLE
+    
+    IDLE -->|AI starts| BUFFERING: onAITurnStart()
+    BUFFERING -->|Audio ready| PLAYING: Audio prep
+    PLAYING -->|Audio starts| TALKING: Video transition
+    TALKING -->|Audio streaming| TALKING: Continuous
+    TALKING -->|Audio finished| IDLE: onAITurnComplete()
+    
+    IDLE -->|User speaks| IDLE: Listen
+            </div>
+            <div class="description">
+                <strong>Avatar States:</strong> Shows the avatar animation state transitions: IDLE (listening) → BUFFERING (accumulating audio) → PLAYING/TALKING (streaming audio and talking video) → IDLE (ready for next input).
+            </div>
+        </div>
+        
+        <div id="tools" class="diagram-container">
+            <h2 id="tools">🔧 Tool Calling Lifecycle</h2>
+            <div class="mermaid">
+graph TD
+    Define["1️⃣ DEFINE TOOLS<br/>(Tool Declarations)"]
+    
+    Define -->|Config| Config["Send to Gemini<br/>setConfig(tools)"]
+    Config -->|Available| Waiting["⏳ Waiting"]
+    Waiting -->|User speaks| Process["🔄 Process"]
+    Process -->|Decision| Decision{"Use<br/>Tools?"}
+    
+    Decision -->|YES| PrepTool["Prepare Tool Call"]
+    Decision -->|NO| DirectResp["Direct Response"]
+    
+    PrepTool -->|functionCalls| Event["'toolcall' event"]
+    Event -->|Handler| Parse["Parse & Extract"]
+    Parse -->|Execute| Execute["Execute Tool<br/>(memory functions)"]
+    Execute -->|Build| BuildResp["Build Response"]
+    BuildResp -->|Send| Send["Send to Gemini"]
+    Send -->|Result| Gemini["Gemini Uses Result"]
+    Gemini -->|Continue| DirectResp
+    
+    DirectResp -->|Generate| Response["Response"]
+    Response -->|Stream| Output["Output"]
+            </div>
+            <div class="description">
+                <strong>Tool Calling:</strong> Complete lifecycle from defining tools through handling Gemini's tool calls asynchronously. Memory tools (write_to_memory, get_memories_by_keys) run non-blocking without interrupting conversation flow.
+            </div>
+        </div>
+        
+        <div id="audio" class="diagram-container">
+            <h2 id="audio">🔊 Audio Processing Pipeline</h2>
+            <div class="mermaid">
+graph TB
+    MicInput["🎤 Microphone<br/>16kHz PCM16"]
+    
+    MicInput -->|Send| AudioStreamer["📤 AudioStreamer"]
+    MicInput -->|Capture| TransService["📝 Transcript<br/>Service"]
+    
+    AudioStreamer -->|Upload| GeminiAPI["🤖 Gemini<br/>Live API"]
+    
+    GeminiAPI -->|'setup'| Setup["📊 Audio Setup"]
+    GeminiAPI -->|'media'| MediaEvents["📦 Media Events"]
+    GeminiAPI -->|'content'| TextEvents["📝 Text Events"]
+    
+    MediaEvents -->|Buffer| AudioBuf["🔁 Audio Buffer"]
+    TextEvents -->|Accumulate| TextBuf["📦 Text Buffer"]
+    
+    TextBuf -->|Chunks| Display["🎬 Captions"]
+    
+    AudioBuf -->|Check| Interrupt{"User<br/>Speaking?"}
+    
+    Interrupt -->|YES| Stop["🛑 Interrupt"]
+    Interrupt -->|NO| Normal["Continue"]
+    
+    Stop -->|Clear| Reset["Reset"]
+    
+    Normal -->|'turncomplete'| Complete["✅ Complete"]
+    
+    Complete -->|Process| Combine["Combine Chunks"]
+    Combine -->|Single| Play["🔊 Play Audio"]
+    
+    Play -->|Output| Speaker["🔊 Speaker"]
+    
+    Speaker -->|Finish| Cleanup["🧹 Cleanup"]
+    
+    Cleanup -->|Save| TransService
+    
+    TransService -->|Supabase| DB["💾 Database"]
+            </div>
+            <div class="description">
+                <strong>Audio Pipeline:</strong> Complete audio flow from microphone capture through Gemini processing, buffering, playback, and transcript saving. Includes user interruption handling via VAD (Voice Activity Detection).
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 40px;">
+            <p style="color: white; font-size: 1.2em; margin-bottom: 20px;">
+                💡 Tip: Right-click on any diagram to save as image (SVG format)
+            </p>
+        </div>
+    </div>
+    
+    <footer>
+        <p>ExpressBuddy Architecture Documentation - Generated October 2024</p>
+        <p>Interactive Mermaid Diagrams - Right-click to save as SVG</p>
+        <p>View ARCHITECTURE_DIAGRAM.md for complete detailed documentation</p>
+    </footer>
+    
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+        mermaid.contentLoaded();
+    </script>
+</body>
+</html>
