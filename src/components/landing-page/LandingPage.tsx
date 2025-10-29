@@ -1,14 +1,13 @@
 /**
  * ExpressBuddy Modern Landing Page
  * Specialized learning platform for children with autism, speech delays, and social anxiety
- * Built with shadcn/ui, Tailwind CSS, Framer Motion, and Rive
+ * Built with shadcn/ui, Tailwind CSS, and Framer Motion
  */
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
 import { motion } from 'framer-motion';
-import { useRive } from '@rive-app/react-canvas';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -133,15 +132,6 @@ export default function LandingPage({}: LandingPageProps) {
     { icon: Clock, value: '24/7', label: 'Available Support' },
     { icon: Award, value: '89%', label: 'Skill Improvement' }
   ];
-
-  // Rive animation for Pico
-  const { rive, RiveComponent } = useRive({
-    src: '/pandabot.riv',
-    stateMachines: 'InLesson',
-    artboard: 'Character', 
-    animations: 'head_idle',
-    autoplay: true,
-  });
 
   return (
     <div className="min-h-screen bg-white">
@@ -347,17 +337,18 @@ export default function LandingPage({}: LandingPageProps) {
                   <div className="text-center space-y-8 p-8 relative z-10">
                     <div className="relative">
                       <div className="w-64 h-64 lg:w-72 lg:h-72 mx-auto">
-                        {RiveComponent && (
-                          <RiveComponent 
-                            width="100%" 
-                            height="100%"
-                            style={{ borderRadius: '24px' }}
-                          />
-                        )}
+                        <video 
+                          src="/VideoAnims/Pandaalter1_2.webm"
+                          className="w-full h-full object-contain rounded-3xl"
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                        />
                       </div>
                     </div>
                     <div>
-                      <h3 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-3">Meet Pico!</h3>
+                      <h3 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-3">Meet ExpressBuddy!</h3>
                       <p className="text-gray-700 text-lg lg:text-xl">Your AI learning companion</p>
                       <p className="text-gray-600 text-sm mt-2 max-w-sm mx-auto">
                         Specially designed to help children practice social skills through interactive conversations
