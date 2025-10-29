@@ -4,9 +4,9 @@ ExpressBuddy is an innovative AI-powered communication tool designed to help chi
 
 ## Features Overview
 
-### 🗣️ Real-Time Voice Chat with AI Avatar (The panda avatar or any other assets don't belong to us and are part of mascotbot so we can't use it)
+### 🗣️ Real-Time Voice Chat with AI Avatar
 - **Live Conversations**: Natural voice conversations powered by Google Gemini Live API
-- **Animated Avatar**: Rive-based avatar with real-time lip-sync using ParakeetTDTV2-ASR backend
+- **Animated Avatar**: Video-based avatar system with smooth animations for idle and talking states
 - **Memory System**: Persistent child profiles that remember preferences and progress across sessions
 - **Silence Detection**: Intelligent monitoring with gentle nudges to maintain conversation flow
 
@@ -215,6 +215,7 @@ ExpressBuddy is built with a modern React/TypeScript stack, integrating multiple
 - Kinde (authentication provider)
 
 **Animation & Media:**
+- Video-based avatar system (WebM with alpha channel)
 - WebRTC (camera/microphone access)
 - Web Audio API (audio processing)
 

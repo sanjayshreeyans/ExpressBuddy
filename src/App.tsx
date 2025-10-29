@@ -34,9 +34,6 @@ const AuthPage = lazy(() => import("./components/auth/AuthPage"));
 const ProtectedRoute = lazy(() => import("./components/auth/ProtectedRoute"));
 const OnboardingPage = lazy(() => import("./components/auth/OnboardingPage"));
 const VideoAvatarDemo = lazy(() => import("./components/demo/VideoAvatarDemo"));
-const TTSIntegrationTest = lazy(() => import("./components/emotion-detective/TTSIntegrationTest"));
-const TTSQuickDemo = lazy(() => import("./components/emotion-detective/TTSQuickDemo"));
-const TTSVisemeTest = lazy(() => import("./components/emotion-detective/TTSVisemeTest"));
 const EmotionDetectionDemo = lazy(() => import("./components/emotion-detective/EmotionDetectionDemo"));
 const EmotionMirroringDemo = lazy(() => import("./components/emotion-detective/EmotionMirroringDemo"));
 const EmotionDetectiveLearning = lazy(() => import("./components/emotion-detective").then(m => ({ default: m.EmotionDetectiveLearning })));
@@ -140,31 +137,6 @@ function AppContent() {
               <MainInterfaceWithVideoAvatar onGoToLanding={() => window.location.href = '/'} />
             </LiveAPIProvider>
           </>
-        } />
-
-        {/* TTS Quick Demo - Development Route */}
-        <Route path="/demo-tts" element={
-          <ProtectedRoute>
-            <TTSQuickDemo />
-          </ProtectedRoute>
-        } />
-
-        {/* TTS Integration Test - Development Route */}
-        <Route path="/test-tts" element={
-          <ProtectedRoute>
-            <div className="min-h-screen bg-gray-50">
-              <TTSIntegrationTest />
-            </div>
-          </ProtectedRoute>
-        } />
-
-        {/* TTS Viseme Test - Development Route */}
-        <Route path="/test-visemes" element={
-          <ProtectedRoute>
-            <div className="min-h-screen bg-gray-50">
-              <TTSVisemeTest />
-            </div>
-          </ProtectedRoute>
         } />
 
         {/* Emotion Detection Demo - Development Route */}
