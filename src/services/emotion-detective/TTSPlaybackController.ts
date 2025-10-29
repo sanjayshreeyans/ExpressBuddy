@@ -1,83 +1,121 @@
-import { VisemePlaybackController } from '../../utils/VisemePlaybackController';
-import { VisemeData, SubtitleData } from '../../lib/viseme-transcription-service';
-import { RiveInputs } from '../../types/avatar';
-import TTSService, { TTSWithVisemeCallbacks } from './TTSService';
+import TTSService, { TTSCallbacks } from './TTSService';
 import { TTSRequest } from '../../types/emotion-detective';
 
-export interface TTSPlaybackOptions {
-  riveInputs?: RiveInputs;
-  transitionDuration?: number;
-  setSpeakingState?: boolean;
-  manualSpeakingStateControl?: boolean;
-}
-
-export interface TTSPlaybackCallbacks extends TTSWithVisemeCallbacks {
+export interface TTSPlaybackCallbacks extends TTSCallbacks {
   onPlaybackStart?: () => void;
   onPlaybackEnd?: () => void;
-  onCurrentSubtitle?: (subtitle: string) => void;
 }
 
 /**
- * TTS Playback Controller for Pico Avatar
- * Integrates browser TTS with VisemePlaybackController for synchronized lip-sync animation
+ * TTS Playback Controller
+ * Simplified controller for TTS playback without lip-sync
  */
 export class TTSPlaybackController {
-  private visemePlaybackController: VisemePlaybackController | null = null;
-  private currentVisemes: VisemeData[] = [];
-  private currentSubtitles: SubtitleData[] = [];
   private callbacks: TTSPlaybackCallbacks = {};
   private isPlaying = false;
-  private currentSubtitleIndex = -1;
-  private subtitleUpdateInterval: number | null = null;
-  private riveInputs: RiveInputs | null = null;
 
-  constructor(options: TTSPlaybackOptions = {}) {
-    this.riveInputs = options.riveInputs || null;
-
-    // Initialize viseme playback controller if rive inputs are provided
-    if (this.riveInputs) {
-      this.initializeVisemeController(options);
-    }
-
+  constructor() {
     // Setup TTS service callbacks
     this.setupTTSCallbacks();
   }
 
   /**
-   * Initialize the viseme playback controller
+   * Setup TTS service callbacks
    */
-  private initializeVisemeController(options: TTSPlaybackOptions): void {
-    if (!this.riveInputs) return;
-
-    this.visemePlaybackController = new VisemePlaybackController({
-      riveInputs: this.riveInputs,
-      transitionDuration: options.transitionDuration || 21,
-      setSpeakingState: options.setSpeakingState ?? true,
-      manualSpeakingStateControl: options.manualSpeakingStateControl ?? false
+  private setupTTSCallbacks(): void {
+    TTSService.setCallbacks({
+      onSpeechStart: () => {
+        this.isPlaying = true;
+        this.callbacks.onPlaybackStart?.();
+        this.callbacks.onSpeechStart?.();
+      },
+      onSpeechEnd: () => {
+        this.isPlaying = false;
+        this.callbacks.onPlaybackEnd?.();
+        this.callbacks.onSpeechEnd?.();
+      },
+      onError: (error) => {
+        this.callbacks.onError?.(error);
+      }
     });
-
-    console.log('✅ TTS Playback Controller: Viseme controller initialized');
   }
 
   /**
-   * Update rive inputs (useful when avatar loads after controller creation)
+   * Set callbacks for playback events
    */
-  updateRiveInputs(riveInputs: RiveInputs, options: TTSPlaybackOptions = {}): void {
-    this.riveInputs = riveInputs;
-
-    if (this.visemePlaybackController) {
-      this.visemePlaybackController.updateRiveInputs(riveInputs);
-    } else {
-      this.initializeVisemeController({
-        ...options,
-        riveInputs
-      });
-    }
-
-    console.log('✅ TTS Playback Controller: Rive inputs updated');
+  setCallbacks(callbacks: TTSPlaybackCallbacks): void {
+    this.callbacks = { ...this.callbacks, ...callbacks };
   }
 
   /**
+   * Speak text with TTS
+   * @param request - TTS request with text and optional voice
+   */
+  async speak(request: TTSRequest): Promise<void> {
+    try {
+      console.log('🎤 TTS Playback Controller: Starting speech with TTS:', request.text);
+
+      // Call TTS service to generate and play speech
+      await TTSService.speak(request);
+
+      console.log('✅ TTS Playback Controller: Speech completed');
+    } catch (error) {
+      console.error('❌ TTS Playback Controller: Error during speech:', error);
+      this.callbacks.onError?.(`Speech playback failed: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Stop current speech
+   */
+  stop(): void {
+    TTSService.stop();
+    this.isPlaying = false;
+  }
+
+  /**
+   * Pause current speech
+   */
+  pause(): void {
+    TTSService.pause();
+  }
+
+  /**
+   * Resume paused speech
+   */
+  resume(): void {
+    TTSService.resume();
+  }
+
+  /**
+   * Check if TTS is currently speaking
+   */
+  isSpeaking(): boolean {
+    return this.isPlaying;
+  }
+
+  /**
+   * Check if TTS is paused
+   */
+  isPaused(): boolean {
+    return TTSService.isPaused();
+  }
+
+  /**
+   * Get available voices
+   */
+  async getVoices(): Promise<string[]> {
+    return TTSService.getVoices();
+  }
+
+  /**
+   * Get child-friendly voices
+   */
+  async getChildFriendlyVoices(): Promise<string[]> {
+    return TTSService.getChildFriendlyVoices();
+  }
+}
    * Set callbacks for TTS and playback events
    */
   setCallbacks(callbacks: TTSPlaybackCallbacks): void {

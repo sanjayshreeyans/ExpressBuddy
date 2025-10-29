@@ -1,25 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { TTSPlaybackController, TTSPlaybackCallbacks } from '../services/emotion-detective/TTSPlaybackController';
-import { VisemeData, SubtitleData } from '../lib/viseme-transcription-service';
-import { RiveInputs } from '../types/avatar';
 import { TTSRequest } from '../types/emotion-detective';
-
-export interface UseTTSPlaybackOptions {
-  riveInputs?: RiveInputs;
-  transitionDuration?: number;
-  setSpeakingState?: boolean;
-  manualSpeakingStateControl?: boolean;
-  autoConnect?: boolean;
-}
 
 export interface TTSPlaybackState {
   isPlaying: boolean;
-  isConnected: boolean;
-  currentSubtitle: string;
   error: string | null;
   isSupported: boolean;
-  visemes: VisemeData[];
-  subtitles: SubtitleData[];
 }
 
 export interface TTSPlaybackActions {
@@ -27,25 +13,20 @@ export interface TTSPlaybackActions {
   stop: () => void;
   pause: () => void;
   resume: () => void;
-  updateRiveInputs: (riveInputs: RiveInputs) => void;
   getVoices: () => Promise<string[]>;
   getChildFriendlyVoices: () => Promise<string[]>;
   createSpeakerButton: (text: string, options?: Partial<TTSRequest>) => React.ComponentProps<'button'>;
 }
 
 /**
- * React hook for TTS playback with viseme integration
- * Provides easy-to-use interface for Pico avatar speech with lip-sync
+ * React hook for TTS playback
+ * Provides easy-to-use interface for speech synthesis
  */
-export function useTTSPlayback(options: UseTTSPlaybackOptions = {}): [TTSPlaybackState, TTSPlaybackActions] {
+export function useTTSPlayback(): [TTSPlaybackState, TTSPlaybackActions] {
   const [state, setState] = useState<TTSPlaybackState>({
     isPlaying: false,
-    isConnected: false,
-    currentSubtitle: '',
     error: null,
-    isSupported: true,
-    visemes: [],
-    subtitles: []
+    isSupported: true
   });
 
   const controllerRef = useRef<TTSPlaybackController | null>(null);
@@ -53,7 +34,7 @@ export function useTTSPlayback(options: UseTTSPlaybackOptions = {}): [TTSPlaybac
 
   // Initialize controller
   useEffect(() => {
-    controllerRef.current = new TTSPlaybackController(options);
+    controllerRef.current = new TTSPlaybackController();
 
     // Setup callbacks
     const callbacks: TTSPlaybackCallbacks = {
@@ -67,81 +48,24 @@ export function useTTSPlayback(options: UseTTSPlaybackOptions = {}): [TTSPlaybac
           setState(prev => ({ ...prev, isPlaying: false }));
         }
       },
-      onCurrentSubtitle: (subtitle: string) => {
-        if (mountedRef.current) {
-          setState(prev => ({ ...prev, currentSubtitle: subtitle }));
-        }
-      },
       onError: (error: string) => {
         if (mountedRef.current) {
           setState(prev => ({ ...prev, error, isPlaying: false }));
-        }
-      },
-      onVisemes: (visemes: VisemeData[], subtitles: SubtitleData[]) => {
-        console.log('🎯 useTTSPlayback: Received visemes and subtitles', {
-          visemes: visemes.length,
-          subtitles: subtitles.length
-        });
-        if (mountedRef.current) {
-          console.log('🎯 useTTSPlayback: Setting visemes in state:', visemes.length);
-          setState(prev => ({
-            ...prev,
-            visemes: [...visemes], // Create new array to ensure state update
-            subtitles: [...subtitles] // Create new array to ensure state update
-          }));
-        }
-      },
-      onStreamingChunk: (chunkText: string, visemes: VisemeData[]) => {
-        console.log('⚡ useTTSPlayback: Received streaming chunk', {
-          text: chunkText,
-          visemes: visemes.length
-        });
-        if (mountedRef.current) {
-          // For streaming, append to existing visemes
-          setState(prev => ({ ...prev, visemes: [...prev.visemes, ...visemes] }));
         }
       }
     };
 
     controllerRef.current.setCallbacks(callbacks);
 
-    // Check if TTS is supported
-    setState(prev => ({
-      ...prev,
-      isSupported: controllerRef.current?.isSupported || false,
-      isConnected: controllerRef.current?.isVisemeServiceConnected || false
-    }));
-
-    // Auto-connect if requested
-    if (options.autoConnect !== false) {
-      // Check connection status periodically
-      const checkConnection = () => {
-        if (controllerRef.current && mountedRef.current) {
-          const connected = controllerRef.current.isVisemeServiceConnected;
-          setState(prev => ({ ...prev, isConnected: connected }));
-        }
-      };
-
-      const connectionInterval = setInterval(checkConnection, 1000);
-      checkConnection(); // Initial check
-
-      return () => {
-        clearInterval(connectionInterval);
-      };
-    }
-
     return () => {
       mountedRef.current = false;
     };
-  }, [options]);
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       mountedRef.current = false;
-      if (controllerRef.current) {
-        controllerRef.current.disconnect();
-      }
     };
   }, []);
 
@@ -178,12 +102,6 @@ export function useTTSPlayback(options: UseTTSPlaybackOptions = {}): [TTSPlaybac
       controllerRef.current.resume();
     }
   }, []);
-
-  const updateRiveInputs = useCallback((riveInputs: RiveInputs) => {
-    if (controllerRef.current) {
-      controllerRef.current.updateRiveInputs(riveInputs, options);
-    }
-  }, [options]);
 
   const getVoices = useCallback(async (): Promise<string[]> => {
     return await controllerRef.current?.getVoices() || [];
@@ -228,7 +146,6 @@ export function useTTSPlayback(options: UseTTSPlaybackOptions = {}): [TTSPlaybac
     stop,
     pause,
     resume,
-    updateRiveInputs,
     getVoices,
     getChildFriendlyVoices,
     createSpeakerButton
@@ -239,7 +156,7 @@ export function useTTSPlayback(options: UseTTSPlaybackOptions = {}): [TTSPlaybac
 
 /**
  * Simple hook for just speaking text without full playback control
- * Useful for quick TTS without viseme integration
+ * Useful for quick TTS without complex integration
  */
 export function useSimpleTTS() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -269,38 +186,30 @@ export function useSimpleTTS() {
           }
         }
 
-        utterance.onstart = () => {
-          setIsPlaying(true);
-          setError(null);
-        };
-
+        utterance.onstart = () => setIsPlaying(true);
         utterance.onend = () => {
           setIsPlaying(false);
           resolve();
         };
-
         utterance.onerror = (event) => {
           setIsPlaying(false);
-          const errorMessage = `TTS Error: ${event.error}`;
-          setError(errorMessage);
-          reject(new Error(errorMessage));
+          setError(event.error);
+          reject(new Error(event.error));
         };
 
         window.speechSynthesis.speak(utterance);
-      } catch (error) {
+      } catch (err) {
         setIsPlaying(false);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown TTS error';
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         setError(errorMessage);
-        reject(error);
+        reject(err);
       }
     });
   }, []);
 
   const stop = useCallback(() => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      setIsPlaying(false);
-    }
+    window.speechSynthesis.cancel();
+    setIsPlaying(false);
   }, []);
 
   return {

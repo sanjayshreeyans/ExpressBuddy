@@ -1,1 +1,1 @@
-export { ExpressBuddyAvatar as default, ExpressBuddyAvatar } from './ExpressBuddyAvatar';
+export { VideoExpressBuddyAvatar as default, VideoExpressBuddyAvatar } from './VideoExpressBuddyAvatar';
