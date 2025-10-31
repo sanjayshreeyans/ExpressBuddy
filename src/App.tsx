@@ -22,12 +22,11 @@ import { LiveAPIProvider } from "./contexts/LiveAPIContext";
 import { SupabaseProvider } from "./contexts/SupabaseContext";
 import { UserProvider, useUser } from "./contexts/UserContext";
 import { LiveClientOptions } from "./types";
-import { StagewiseToolbar } from "@stagewise/toolbar-react";
-import { ReactPlugin } from "@stagewise-plugins/react";
 
 // Lazy load components for code splitting (70-80% bundle size reduction)
 const MainInterfaceWithAvatar = lazy(() => import("./components/main-interface/MainInterfaceWithAvatar"));
 const MainInterfaceWithVideoAvatar = lazy(() => import("./components/main-interface/MainInterfaceWithVideoAvatar"));
+const PikoChallengeInterface = lazy(() => import("./components/piko-challenges/PikoChallengeInterface"));
 const LandingPage = lazy(() => import("./components/landing-page/LandingPage"));
 const LearningPathHome = lazy(() => import("./components/home/LearningPathHome"));
 const AuthPage = lazy(() => import("./components/auth/AuthPage"));
@@ -120,7 +119,6 @@ function AppContent() {
         <Route path="/chat" element={
           <ProtectedRoute requiresProfile={true}>
             <>
-              <StagewiseToolbar config={{ plugins: [ReactPlugin] }} />
               <LiveAPIProvider options={apiOptions}>
                 <MainInterfaceWithAvatar />
               </LiveAPIProvider>
@@ -132,7 +130,6 @@ function AppContent() {
         <Route path="/video-avatar-demo" element={
           <>
             {/* Integrated toolbar only; moved demo nav button into header of the interface */}
-            <StagewiseToolbar config={{ plugins: [ReactPlugin] }} />
             <LiveAPIProvider options={apiOptions}>
               <MainInterfaceWithVideoAvatar onGoToLanding={() => window.location.href = '/'} />
             </LiveAPIProvider>
@@ -159,6 +156,15 @@ function AppContent() {
               window.location.href = '/dashboard';
             }}
           />
+        } />
+
+        {/* Piko Challenge - Restaurant Ordering Level 1 - Public Demo Route */}
+        <Route path="/piko-challenge/restaurant-ordering-level1" element={
+          <>
+            <LiveAPIProvider options={apiOptions}>
+              <PikoChallengeInterface />
+            </LiveAPIProvider>
+          </>
         } />
 
         {/* Question Types Demo - Development Route */}
