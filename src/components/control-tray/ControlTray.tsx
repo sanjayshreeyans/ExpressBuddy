@@ -21,7 +21,7 @@ import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import { UseMediaStreamResult } from "../../hooks/use-media-stream-mux";
 import { useScreenCapture } from "../../hooks/use-screen-capture";
 import { useWebcam } from "../../hooks/use-webcam";
-import { AudioRecorder } from "../../lib/audio-recorder";
+import { AudioRecorder, AudioPreprocessorSettings } from "../../lib/audio-recorder";
 import AudioPulse from "../audio-pulse/AudioPulse";
 import { SimpleHintButton } from "../simple-hint-button/SimpleHintButton";
 import "./control-tray.scss";
@@ -77,8 +77,16 @@ function ControlTray({
     useState<MediaStream | null>(null);
   const [webcam, screenCapture] = videoStreams;
   const [inVolume, setInVolume] = useState(0);
-  const [audioRecorder] = useState(() => new AudioRecorder());
+  
+  // Audio preprocessing settings - optimized for children's voices
+  const [audioRecorder] = useState(() => new AudioRecorder(16000, {
+    gainBoost: 2.5, // 2.5x amplification for quiet children's voices
+    noiseGateThreshold: 0.02, // Filter background noise below 2% level
+    compressionThreshold: 0.5, // Compress loud sounds above 50% to even out volume
+  }));
+  
   const [muted, setMuted] = useState(false);
+  const [preprocessorStats, setPreprocessorStats] = useState<any>(null);
   const renderCanvasRef = useRef<HTMLCanvasElement>(null);
   const connectButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -114,13 +122,27 @@ function ControlTray({
         },
       ]);
     };
+    
+    // Listen for audio preprocessing statistics
+    const onPreprocessorStats = (stats: any) => {
+      setPreprocessorStats(stats);
+    };
+    
     if (connected && !muted && audioRecorder) {
-      audioRecorder.on("data", onData).on("volume", setInVolume).start();
+      audioRecorder
+        .on("data", onData)
+        .on("volume", setInVolume)
+        .on("preprocessor-stats", onPreprocessorStats)
+        .start();
     } else {
       audioRecorder.stop();
+      setPreprocessorStats(null);
     }
     return () => {
-      audioRecorder.off("data", onData).off("volume", setInVolume);
+      audioRecorder
+        .off("data", onData)
+        .off("volume", setInVolume)
+        .off("preprocessor-stats", onPreprocessorStats);
     };
   }, [connected, client, muted, audioRecorder]);
 
@@ -233,11 +255,38 @@ function ControlTray({
         <button
           className={cn("action-button mic-button")}
           onClick={() => setMuted(!muted)}
+          title={
+            preprocessorStats
+              ? `Microphone (Gain: ${preprocessorStats.effectiveGain?.toFixed(1)}x)`
+              : "Microphone"
+          }
         >
           {!muted ? (
             <span className="material-symbols-outlined filled">mic</span>
           ) : (
             <span className="material-symbols-outlined filled">mic_off</span>
+          )}
+          {/* Audio preprocessing indicator - show when gain boost is active */}
+          {connected && !muted && preprocessorStats && preprocessorStats.effectiveGain > 1.5 && (
+            <span 
+              style={{
+                position: 'absolute',
+                top: '2px',
+                right: '2px',
+                fontSize: '12px',
+                color: '#4CAF50',
+                background: 'rgba(0,0,0,0.6)',
+                borderRadius: '50%',
+                width: '16px',
+                height: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title="Audio boost active"
+            >
+              ↑
+            </span>
           )}
         </button>
 
@@ -311,6 +360,7 @@ function ControlTray({
         <SimplifiedSettingsDialog
           currentBackground={currentBackground}
           onBackgroundChange={onBackgroundChange}
+          audioRecorder={audioRecorder}
         />
       ) : ""}
     </section>

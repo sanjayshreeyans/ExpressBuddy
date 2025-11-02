@@ -18,6 +18,7 @@ import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Slider } from "../ui/slider";
 
 // Available voice options
 const VOICE_OPTIONS = [
@@ -71,11 +72,15 @@ interface BackgroundOption {
 interface SimplifiedSettingsDialogProps {
   currentBackground: string;
   onBackgroundChange: (backgroundPath: string) => void;
+  audioRecorder?: any; // Optional: AudioRecorder instance to update settings
 }
+
+const STORAGE_AUDIO_SETTINGS_KEY = "expressbuddy_audio_preprocessor_settings_v1";
 
 export default function SimplifiedSettingsDialog({
   currentBackground,
   onBackgroundChange,
+  audioRecorder,
 }: SimplifiedSettingsDialogProps) {
   const [open, setOpen] = useState(false);
   const { config, setConfig, connected } = useLiveAPIContext();
@@ -84,6 +89,68 @@ export default function SimplifiedSettingsDialog({
   const [selectedBackground, setSelectedBackground] = useState<string>(currentBackground);
   const [availableBackgrounds, setAvailableBackgrounds] = useState<BackgroundOption[]>([]);
   const [isUserChangingSettings, setIsUserChangingSettings] = useState(false);
+  
+  // Audio preprocessing settings
+  const [audioSettings, setAudioSettings] = useState<{ 
+    gainBoost: number;
+    noiseGateThreshold: number;
+    compressionThreshold: number;
+  }>({
+    gainBoost: 2.5,
+    noiseGateThreshold: 0.02,
+    compressionThreshold: 0.5,
+  });
+  const { gainBoost, noiseGateThreshold, compressionThreshold } = audioSettings;
+  const [showAdvancedAudio, setShowAdvancedAudio] = useState(false);
+
+  // Load persisted audio settings once audio recorder is available
+  useEffect(() => {
+    if (!audioRecorder) return;
+
+    let applied = false;
+    try {
+      const stored = localStorage.getItem(STORAGE_AUDIO_SETTINGS_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setAudioSettings((prev) => ({
+          gainBoost: parsed.gainBoost ?? prev.gainBoost,
+          noiseGateThreshold: parsed.noiseGateThreshold ?? prev.noiseGateThreshold,
+          compressionThreshold: parsed.compressionThreshold ?? prev.compressionThreshold,
+        }));
+        applied = true;
+      }
+    } catch (error) {
+      console.warn("Could not load audio preprocessing settings:", error);
+    }
+
+    if (!applied && typeof audioRecorder.getPreprocessorSettings === "function") {
+      const recorderSettings = audioRecorder.getPreprocessorSettings();
+      if (recorderSettings) {
+        setAudioSettings((prev) => ({
+          gainBoost: recorderSettings.gainBoost ?? prev.gainBoost,
+          noiseGateThreshold: recorderSettings.noiseGateThreshold ?? prev.noiseGateThreshold,
+          compressionThreshold: recorderSettings.compressionThreshold ?? prev.compressionThreshold,
+        }));
+      }
+    }
+  }, [audioRecorder]);
+
+  // Persist audio settings whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_AUDIO_SETTINGS_KEY, JSON.stringify(audioSettings));
+    } catch (error) {
+      console.warn("Could not persist audio preprocessing settings:", error);
+    }
+  }, [audioSettings]);
+
+  // Push settings to active audio recorder
+  useEffect(() => {
+    if (!audioRecorder || typeof audioRecorder.updatePreprocessorSettings !== "function") {
+      return;
+    }
+    audioRecorder.updatePreprocessorSettings(audioSettings);
+  }, [audioRecorder, audioSettings]);
 
   // Storage keys for preferences
   const STORAGE_VOICE_KEY = "expresbuddy_preferred_voice";
@@ -365,6 +432,155 @@ export default function SimplifiedSettingsDialog({
               <p className="text-sm text-muted-foreground">
                 Disconnect to change voice
               </p>
+            )}
+          </div>
+
+          {/* Audio Preprocessing Settings */}
+          <div className="space-y-4 p-4 bg-gray-50 rounded-lg" style={{ backgroundColor: '#f9fafb' }}>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary">equalizer</span>
+                <Label className="text-base font-semibold">Audio Presets</Label>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAdvancedAudio((val) => !val)}
+                className="text-xs"
+              >
+                <span className="material-symbols-outlined text-sm mr-1">
+                  {showAdvancedAudio ? 'expand_less' : 'expand_more'}
+                </span>
+                {showAdvancedAudio ? 'Hide advanced' : 'Show advanced'}
+              </Button>
+            </div>
+
+            {/* Preset Buttons */}
+            <div className="flex gap-2 pt-1">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  setAudioSettings((prev) => ({
+                    ...prev,
+                    gainBoost: 2.8,
+                    noiseGateThreshold: 0.015,
+                    compressionThreshold: 0.45,
+                  }));
+                }}
+                className="flex-1 bg-rose-500 text-white hover:bg-rose-500/90 shadow-sm"
+              >
+                <span className="material-symbols-outlined text-lg mr-2">hearing</span>
+                Quiet Voice
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  setAudioSettings((prev) => ({
+                    ...prev,
+                    gainBoost: 2.5,
+                    noiseGateThreshold: 0.02,
+                    compressionThreshold: 0.5,
+                  }));
+                }}
+                className="flex-1 bg-teal-500 text-white hover:bg-teal-500/90 shadow-sm"
+              >
+                <span className="material-symbols-outlined text-lg mr-2">check_circle</span>
+                Default
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  setAudioSettings((prev) => ({
+                    ...prev,
+                    gainBoost: 2.2,
+                    noiseGateThreshold: 0.035,
+                    compressionThreshold: 0.55,
+                  }));
+                }}
+                className="flex-1 bg-amber-600 text-white hover:bg-amber-600/90 shadow-sm"
+              >
+                <span className="material-symbols-outlined text-lg mr-2">noise_control_off</span>
+                Noisy Room
+              </Button>
+            </div>
+
+            {showAdvancedAudio && (
+              <div className="space-y-4 border-t border-dashed border-gray-200 pt-4 mt-2">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-sm">Voice Amplification</Label>
+                    <span className="text-sm font-medium">{gainBoost.toFixed(1)}x</span>
+                  </div>
+                  <Slider
+                    value={[gainBoost]}
+                    onValueChange={(value: number[]) => {
+                      const newGain = Number(value[0]);
+                      setAudioSettings((prev) => ({
+                        ...prev,
+                        gainBoost: Math.max(1, Math.min(3, newGain)),
+                      }));
+                    }}
+                    min={1.0}
+                    max={3.0}
+                    step={0.1}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Amplifies quiet children's voices (2.5× recommended).
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-sm">Noise Gate Threshold</Label>
+                    <span className="text-sm font-medium">{(noiseGateThreshold * 100).toFixed(0)}%</span>
+                  </div>
+                  <Slider
+                    value={[noiseGateThreshold * 100]}
+                    onValueChange={(value: number[]) => {
+                      const newThreshold = Number(value[0]) / 100;
+                      setAudioSettings((prev) => ({
+                        ...prev,
+                        noiseGateThreshold: Math.max(0, Math.min(0.1, newThreshold)),
+                      }));
+                    }}
+                    min={0}
+                    max={10}
+                    step={0.5}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Filters background noise below this level (2% recommended).
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-sm">Compression Threshold</Label>
+                    <span className="text-sm font-medium">{(compressionThreshold * 100).toFixed(0)}%</span>
+                  </div>
+                  <Slider
+                    value={[compressionThreshold * 100]}
+                    onValueChange={(value: number[]) => {
+                      const newThreshold = Number(value[0]) / 100;
+                      setAudioSettings((prev) => ({
+                        ...prev,
+                        compressionThreshold: Math.max(0.3, Math.min(0.8, newThreshold)),
+                      }));
+                    }}
+                    min={30}
+                    max={80}
+                    step={5}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Evens out volume variations (50% recommended).
+                  </p>
+                </div>
+              </div>
             )}
           </div>
 

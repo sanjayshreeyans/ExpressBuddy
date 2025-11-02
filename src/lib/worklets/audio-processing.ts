@@ -56,8 +56,8 @@ class AudioProcessingWorklet extends AudioWorkletProcessor {
     
     for (let i = 0; i < l; i++) {
       // convert float32 -1 to 1 to int16 -32768 to 32767
-      const int16Value = float32Array[i] * 32768;
-      this.buffer[this.bufferWriteIndex++] = int16Value;
+  const int16Value = Math.max(-32768, Math.min(32767, Math.round(float32Array[i] * 32767)));
+  this.buffer[this.bufferWriteIndex++] = int16Value;
       if(this.bufferWriteIndex >= this.buffer.length) {
         this.sendAndClearBuffer();
       }
