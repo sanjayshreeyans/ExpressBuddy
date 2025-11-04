@@ -56,7 +56,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
   onPlaybackStateChange,
   onCurrentSubtitleChange,
   hideDebugInfo = false,
-  backgroundSrc = '/Backgrounds/AnimatedVideoBackgroundLooping1.mp4',
+  backgroundSrc = '/Backgrounds/Animated_Fall_Scene_background.mp4',
   disableClickInteraction = true, // Default to disabled to prevent accidental clicks during conversations
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);

@@ -145,7 +145,7 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
   });
   const [currentAvatarSubtitle, setCurrentAvatarSubtitle] = useState<string>('');
   const [isAvatarSpeaking, setIsAvatarSpeaking] = useState<boolean>(false); // Avatar state for video
-  const [backgroundVideo, setBackgroundVideo] = useState<string>('/Backgrounds/AnimatedVideoBackgroundLooping1.mp4');
+  const [backgroundVideo, setBackgroundVideo] = useState<string>('/Backgrounds/Animated_Fall_Scene_background.mp4');
 
   // **NEW**: Transcript service for saving conversation transcripts
   const transcriptService = TranscriptService;
