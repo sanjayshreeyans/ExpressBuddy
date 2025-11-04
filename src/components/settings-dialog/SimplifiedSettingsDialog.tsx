@@ -89,9 +89,9 @@ export default function SimplifiedSettingsDialog({
   const [selectedBackground, setSelectedBackground] = useState<string>(currentBackground);
   const [availableBackgrounds, setAvailableBackgrounds] = useState<BackgroundOption[]>([]);
   const [isUserChangingSettings, setIsUserChangingSettings] = useState(false);
-  
+
   // Audio preprocessing settings
-  const [audioSettings, setAudioSettings] = useState<{ 
+  const [audioSettings, setAudioSettings] = useState<{
     gainBoost: number;
     noiseGateThreshold: number;
     compressionThreshold: number;
@@ -176,7 +176,7 @@ export default function SimplifiedSettingsDialog({
     }
   }, []);
 
-  // Scan for available background videos dynamically
+  // Scan for available background videos dynamically from manifest
   useEffect(() => {
     const scanBackgrounds = async () => {
       const backgrounds: BackgroundOption[] = [
@@ -187,64 +187,57 @@ export default function SimplifiedSettingsDialog({
         },
       ];
 
-      // Known video files to check - we'll try to fetch them
-      // This list will be automatically discovered by checking common naming patterns
-      const potentialVideos = [
-        'AnimatedVideoBackgroundLooping1',
-        'haloweenbackground',
-      ];
+      console.log('🔍 Loading background videos from manifest...');
 
-      console.log('🔍 Scanning for background videos...');
+      try {
+        // Load the manifest file that lists all available backgrounds
+        const manifestResponse = await fetch('/Backgrounds/manifest.json');
+        if (!manifestResponse.ok) {
+          console.error('❌ Failed to load manifest:', manifestResponse.status);
+          setAvailableBackgrounds(backgrounds);
+          return;
+        }
 
-      // Check each potential video
-      for (const videoName of potentialVideos) {
-        const videoPath = `/Backgrounds/${videoName}.mp4`;
-        const thumbnailPath = `/Backgrounds/${videoName}_thumb.jpg`;
+        const manifest = await manifestResponse.json();
+        console.log('📋 Manifest loaded:', manifest);
 
-        try {
-          // Try to fetch the video file to see if it exists
-          const videoResponse = await fetch(videoPath, { method: 'HEAD' });
+        // Process each background entry from the manifest
+        for (const bgEntry of manifest.backgrounds || []) {
+          const videoName = bgEntry.filename;
+          const displayName = bgEntry.displayName || videoName;
+          const videoPath = `/Backgrounds/${videoName}.mp4`;
+          const thumbnailPath = bgEntry.thumbnail;
 
-          if (videoResponse.ok) {
-            console.log(`✅ Found video: ${videoName}`);
-
-            // Check if thumbnail exists
-            let hasThumbnail = false;
-            try {
-              const thumbResponse = await fetch(thumbnailPath, { method: 'HEAD' });
-              hasThumbnail = thumbResponse.ok;
-              if (hasThumbnail) {
-                console.log(`  ✅ Found thumbnail: ${videoName}_thumb.jpg`);
-              }
-            } catch (err) {
-              console.log(`  ⚠️ No thumbnail for: ${videoName}`);
+          try {
+            // Verify the video file exists
+            const videoResponse = await fetch(videoPath, { method: 'HEAD' });
+            if (!videoResponse.ok) {
+              console.warn(`⚠️ Video not found: ${videoPath}`);
+              continue;
             }
 
-            // Generate a friendly display name
-            const displayName = videoName
-              .replace(/([A-Z])/g, ' $1') // Add space before capitals
-              .replace(/background/gi, '') // Remove "background" word
-              .replace(/looping/gi, '') // Remove "looping" word
-              .replace(/video/gi, '') // Remove "video" word
-              .replace(/animated/gi, '') // Remove "animated" word
-              .replace(/_/g, ' ') // Replace underscores with spaces
-              .replace(/\s+/g, ' ') // Remove extra spaces
-              .trim() || videoName; // Fallback to original name
+            console.log(`✅ Found video: ${videoName}`);
+            if (thumbnailPath) {
+              console.log(`  ✅ Using thumbnail: ${thumbnailPath}`);
+            }
 
             backgrounds.push({
               id: videoName.toLowerCase(),
-              name: displayName.charAt(0).toUpperCase() + displayName.slice(1), // Capitalize first letter
+              name: displayName,
               path: videoPath,
-              thumbnail: hasThumbnail ? thumbnailPath : undefined,
+              thumbnail: thumbnailPath,
             });
+          } catch (err) {
+            console.error(`❌ Error processing video ${videoName}:`, err);
           }
-        } catch (err) {
-          // Video doesn't exist, skip it
         }
-      }
 
-      console.log(`🎉 Found ${backgrounds.length - 1} background videos`);
-      setAvailableBackgrounds(backgrounds);
+        console.log(`🎉 Found ${backgrounds.length - 1} background videos`);
+        setAvailableBackgrounds(backgrounds);
+      } catch (err) {
+        console.error('❌ Error scanning backgrounds:', err);
+        setAvailableBackgrounds(backgrounds);
+      }
     };
 
     scanBackgrounds();
@@ -617,7 +610,7 @@ export default function SimplifiedSettingsDialog({
                         {background.name}
                       </Label>
                     </div>
-                    <div className="aspect-video bg-muted rounded-md flex items-center justify-center">
+                    <div className="aspect-video bg-muted rounded-md flex items-center justify-center overflow-hidden">
                       {background.id === "none" ? (
                         <div className="text-center p-4">
                           <span className="material-symbols-outlined text-4xl text-muted-foreground">
@@ -631,7 +624,13 @@ export default function SimplifiedSettingsDialog({
                         <img
                           src={background.thumbnail}
                           alt={background.name}
-                          className="w-full h-full object-cover rounded-md"
+                          className="w-full h-full object-contain bg-gray-900 rounded-md"
+                          style={{
+                            objectFit: 'contain',
+                            backgroundColor: '#111827',
+                            maxWidth: '100%',
+                            maxHeight: '100%',
+                          }}
                         />
                       ) : (
                         <div className="text-center p-4">
@@ -652,10 +651,17 @@ export default function SimplifiedSettingsDialog({
         </div>
 
         <div className="flex justify-end gap-3 mt-4">
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button 
+            variant="outline" 
+            onClick={() => setOpen(false)}
+            className="border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+          >
             Close
           </Button>
-          <Button onClick={handleApply}>
+          <Button 
+            onClick={handleApply}
+            className="bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 hover:border-blue-700 transition-colors font-medium"
+          >
             Apply
           </Button>
         </div>
