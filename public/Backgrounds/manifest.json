@@ -1,0 +1,19 @@
+{
+  "backgrounds": [
+    {
+      "filename": "AnimatedVideoBackgroundLooping1",
+      "displayName": "Forest Scene",
+      "thumbnail": "/Backgrounds/AnimatedVideoBackgroundLooping1_thumb.jpg"
+    },
+    {
+      "filename": "Animated_Fall_Scene_background",
+      "displayName": "Fall Scene",
+      "thumbnail": "/Backgrounds/Animated_Fall_Scene_background_thumb.png"
+    },
+    {
+      "filename": "halloweenbackground",
+      "displayName": "Halloween",
+      "thumbnail": "/Backgrounds/halloweenbackground_thumb.jpg"
+    }
+  ]
+}

@@ -18,6 +18,7 @@ import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Slider } from "../ui/slider";
 
 // Available voice options
 const VOICE_OPTIONS = [
@@ -71,11 +72,15 @@ interface BackgroundOption {
 interface SimplifiedSettingsDialogProps {
   currentBackground: string;
   onBackgroundChange: (backgroundPath: string) => void;
+  audioRecorder?: any; // Optional: AudioRecorder instance to update settings
 }
+
+const STORAGE_AUDIO_SETTINGS_KEY = "expressbuddy_audio_preprocessor_settings_v1";
 
 export default function SimplifiedSettingsDialog({
   currentBackground,
   onBackgroundChange,
+  audioRecorder,
 }: SimplifiedSettingsDialogProps) {
   const [open, setOpen] = useState(false);
   const { config, setConfig, connected } = useLiveAPIContext();
@@ -84,6 +89,68 @@ export default function SimplifiedSettingsDialog({
   const [selectedBackground, setSelectedBackground] = useState<string>(currentBackground);
   const [availableBackgrounds, setAvailableBackgrounds] = useState<BackgroundOption[]>([]);
   const [isUserChangingSettings, setIsUserChangingSettings] = useState(false);
+
+  // Audio preprocessing settings
+  const [audioSettings, setAudioSettings] = useState<{
+    gainBoost: number;
+    noiseGateThreshold: number;
+    compressionThreshold: number;
+  }>({
+    gainBoost: 2.5,
+    noiseGateThreshold: 0.02,
+    compressionThreshold: 0.5,
+  });
+  const { gainBoost, noiseGateThreshold, compressionThreshold } = audioSettings;
+  const [showAdvancedAudio, setShowAdvancedAudio] = useState(false);
+
+  // Load persisted audio settings once audio recorder is available
+  useEffect(() => {
+    if (!audioRecorder) return;
+
+    let applied = false;
+    try {
+      const stored = localStorage.getItem(STORAGE_AUDIO_SETTINGS_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setAudioSettings((prev) => ({
+          gainBoost: parsed.gainBoost ?? prev.gainBoost,
+          noiseGateThreshold: parsed.noiseGateThreshold ?? prev.noiseGateThreshold,
+          compressionThreshold: parsed.compressionThreshold ?? prev.compressionThreshold,
+        }));
+        applied = true;
+      }
+    } catch (error) {
+      console.warn("Could not load audio preprocessing settings:", error);
+    }
+
+    if (!applied && typeof audioRecorder.getPreprocessorSettings === "function") {
+      const recorderSettings = audioRecorder.getPreprocessorSettings();
+      if (recorderSettings) {
+        setAudioSettings((prev) => ({
+          gainBoost: recorderSettings.gainBoost ?? prev.gainBoost,
+          noiseGateThreshold: recorderSettings.noiseGateThreshold ?? prev.noiseGateThreshold,
+          compressionThreshold: recorderSettings.compressionThreshold ?? prev.compressionThreshold,
+        }));
+      }
+    }
+  }, [audioRecorder]);
+
+  // Persist audio settings whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_AUDIO_SETTINGS_KEY, JSON.stringify(audioSettings));
+    } catch (error) {
+      console.warn("Could not persist audio preprocessing settings:", error);
+    }
+  }, [audioSettings]);
+
+  // Push settings to active audio recorder
+  useEffect(() => {
+    if (!audioRecorder || typeof audioRecorder.updatePreprocessorSettings !== "function") {
+      return;
+    }
+    audioRecorder.updatePreprocessorSettings(audioSettings);
+  }, [audioRecorder, audioSettings]);
 
   // Storage keys for preferences
   const STORAGE_VOICE_KEY = "expresbuddy_preferred_voice";
@@ -109,7 +176,7 @@ export default function SimplifiedSettingsDialog({
     }
   }, []);
 
-  // Scan for available background videos dynamically
+  // Scan for available background videos dynamically from manifest
   useEffect(() => {
     const scanBackgrounds = async () => {
       const backgrounds: BackgroundOption[] = [
@@ -120,64 +187,57 @@ export default function SimplifiedSettingsDialog({
         },
       ];
 
-      // Known video files to check - we'll try to fetch them
-      // This list will be automatically discovered by checking common naming patterns
-      const potentialVideos = [
-        'AnimatedVideoBackgroundLooping1',
-        'haloweenbackground',
-      ];
+      console.log('🔍 Loading background videos from manifest...');
 
-      console.log('🔍 Scanning for background videos...');
+      try {
+        // Load the manifest file that lists all available backgrounds
+        const manifestResponse = await fetch('/Backgrounds/manifest.json');
+        if (!manifestResponse.ok) {
+          console.error('❌ Failed to load manifest:', manifestResponse.status);
+          setAvailableBackgrounds(backgrounds);
+          return;
+        }
 
-      // Check each potential video
-      for (const videoName of potentialVideos) {
-        const videoPath = `/Backgrounds/${videoName}.mp4`;
-        const thumbnailPath = `/Backgrounds/${videoName}_thumb.jpg`;
+        const manifest = await manifestResponse.json();
+        console.log('📋 Manifest loaded:', manifest);
 
-        try {
-          // Try to fetch the video file to see if it exists
-          const videoResponse = await fetch(videoPath, { method: 'HEAD' });
+        // Process each background entry from the manifest
+        for (const bgEntry of manifest.backgrounds || []) {
+          const videoName = bgEntry.filename;
+          const displayName = bgEntry.displayName || videoName;
+          const videoPath = `/Backgrounds/${videoName}.mp4`;
+          const thumbnailPath = bgEntry.thumbnail;
 
-          if (videoResponse.ok) {
-            console.log(`✅ Found video: ${videoName}`);
-
-            // Check if thumbnail exists
-            let hasThumbnail = false;
-            try {
-              const thumbResponse = await fetch(thumbnailPath, { method: 'HEAD' });
-              hasThumbnail = thumbResponse.ok;
-              if (hasThumbnail) {
-                console.log(`  ✅ Found thumbnail: ${videoName}_thumb.jpg`);
-              }
-            } catch (err) {
-              console.log(`  ⚠️ No thumbnail for: ${videoName}`);
+          try {
+            // Verify the video file exists
+            const videoResponse = await fetch(videoPath, { method: 'HEAD' });
+            if (!videoResponse.ok) {
+              console.warn(`⚠️ Video not found: ${videoPath}`);
+              continue;
             }
 
-            // Generate a friendly display name
-            const displayName = videoName
-              .replace(/([A-Z])/g, ' $1') // Add space before capitals
-              .replace(/background/gi, '') // Remove "background" word
-              .replace(/looping/gi, '') // Remove "looping" word
-              .replace(/video/gi, '') // Remove "video" word
-              .replace(/animated/gi, '') // Remove "animated" word
-              .replace(/_/g, ' ') // Replace underscores with spaces
-              .replace(/\s+/g, ' ') // Remove extra spaces
-              .trim() || videoName; // Fallback to original name
+            console.log(`✅ Found video: ${videoName}`);
+            if (thumbnailPath) {
+              console.log(`  ✅ Using thumbnail: ${thumbnailPath}`);
+            }
 
             backgrounds.push({
               id: videoName.toLowerCase(),
-              name: displayName.charAt(0).toUpperCase() + displayName.slice(1), // Capitalize first letter
+              name: displayName,
               path: videoPath,
-              thumbnail: hasThumbnail ? thumbnailPath : undefined,
+              thumbnail: thumbnailPath,
             });
+          } catch (err) {
+            console.error(`❌ Error processing video ${videoName}:`, err);
           }
-        } catch (err) {
-          // Video doesn't exist, skip it
         }
-      }
 
-      console.log(`🎉 Found ${backgrounds.length - 1} background videos`);
-      setAvailableBackgrounds(backgrounds);
+        console.log(`🎉 Found ${backgrounds.length - 1} background videos`);
+        setAvailableBackgrounds(backgrounds);
+      } catch (err) {
+        console.error('❌ Error scanning backgrounds:', err);
+        setAvailableBackgrounds(backgrounds);
+      }
     };
 
     scanBackgrounds();
@@ -368,6 +428,155 @@ export default function SimplifiedSettingsDialog({
             )}
           </div>
 
+          {/* Audio Preprocessing Settings */}
+          <div className="space-y-4 p-4 bg-gray-50 rounded-lg" style={{ backgroundColor: '#f9fafb' }}>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary">equalizer</span>
+                <Label className="text-base font-semibold">Audio Presets</Label>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAdvancedAudio((val) => !val)}
+                className="text-xs"
+              >
+                <span className="material-symbols-outlined text-sm mr-1">
+                  {showAdvancedAudio ? 'expand_less' : 'expand_more'}
+                </span>
+                {showAdvancedAudio ? 'Hide advanced' : 'Show advanced'}
+              </Button>
+            </div>
+
+            {/* Preset Buttons */}
+            <div className="flex gap-2 pt-1">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  setAudioSettings((prev) => ({
+                    ...prev,
+                    gainBoost: 2.8,
+                    noiseGateThreshold: 0.015,
+                    compressionThreshold: 0.45,
+                  }));
+                }}
+                className="flex-1 bg-rose-500 text-white hover:bg-rose-500/90 shadow-sm"
+              >
+                <span className="material-symbols-outlined text-lg mr-2">hearing</span>
+                Quiet Voice
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  setAudioSettings((prev) => ({
+                    ...prev,
+                    gainBoost: 2.5,
+                    noiseGateThreshold: 0.02,
+                    compressionThreshold: 0.5,
+                  }));
+                }}
+                className="flex-1 bg-teal-500 text-white hover:bg-teal-500/90 shadow-sm"
+              >
+                <span className="material-symbols-outlined text-lg mr-2">check_circle</span>
+                Default
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  setAudioSettings((prev) => ({
+                    ...prev,
+                    gainBoost: 2.2,
+                    noiseGateThreshold: 0.035,
+                    compressionThreshold: 0.55,
+                  }));
+                }}
+                className="flex-1 bg-amber-600 text-white hover:bg-amber-600/90 shadow-sm"
+              >
+                <span className="material-symbols-outlined text-lg mr-2">noise_control_off</span>
+                Noisy Room
+              </Button>
+            </div>
+
+            {showAdvancedAudio && (
+              <div className="space-y-4 border-t border-dashed border-gray-200 pt-4 mt-2">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-sm">Voice Amplification</Label>
+                    <span className="text-sm font-medium">{gainBoost.toFixed(1)}x</span>
+                  </div>
+                  <Slider
+                    value={[gainBoost]}
+                    onValueChange={(value: number[]) => {
+                      const newGain = Number(value[0]);
+                      setAudioSettings((prev) => ({
+                        ...prev,
+                        gainBoost: Math.max(1, Math.min(3, newGain)),
+                      }));
+                    }}
+                    min={1.0}
+                    max={3.0}
+                    step={0.1}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Amplifies quiet children's voices (2.5× recommended).
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-sm">Noise Gate Threshold</Label>
+                    <span className="text-sm font-medium">{(noiseGateThreshold * 100).toFixed(0)}%</span>
+                  </div>
+                  <Slider
+                    value={[noiseGateThreshold * 100]}
+                    onValueChange={(value: number[]) => {
+                      const newThreshold = Number(value[0]) / 100;
+                      setAudioSettings((prev) => ({
+                        ...prev,
+                        noiseGateThreshold: Math.max(0, Math.min(0.1, newThreshold)),
+                      }));
+                    }}
+                    min={0}
+                    max={10}
+                    step={0.5}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Filters background noise below this level (2% recommended).
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-sm">Compression Threshold</Label>
+                    <span className="text-sm font-medium">{(compressionThreshold * 100).toFixed(0)}%</span>
+                  </div>
+                  <Slider
+                    value={[compressionThreshold * 100]}
+                    onValueChange={(value: number[]) => {
+                      const newThreshold = Number(value[0]) / 100;
+                      setAudioSettings((prev) => ({
+                        ...prev,
+                        compressionThreshold: Math.max(0.3, Math.min(0.8, newThreshold)),
+                      }));
+                    }}
+                    min={30}
+                    max={80}
+                    step={5}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Evens out volume variations (50% recommended).
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Background Selection */}
           <div className="space-y-3">
             <Label className="text-base font-semibold">
@@ -401,7 +610,7 @@ export default function SimplifiedSettingsDialog({
                         {background.name}
                       </Label>
                     </div>
-                    <div className="aspect-video bg-muted rounded-md flex items-center justify-center">
+                    <div className="aspect-video bg-muted rounded-md flex items-center justify-center overflow-hidden">
                       {background.id === "none" ? (
                         <div className="text-center p-4">
                           <span className="material-symbols-outlined text-4xl text-muted-foreground">
@@ -415,7 +624,13 @@ export default function SimplifiedSettingsDialog({
                         <img
                           src={background.thumbnail}
                           alt={background.name}
-                          className="w-full h-full object-cover rounded-md"
+                          className="w-full h-full object-contain bg-gray-900 rounded-md"
+                          style={{
+                            objectFit: 'contain',
+                            backgroundColor: '#111827',
+                            maxWidth: '100%',
+                            maxHeight: '100%',
+                          }}
                         />
                       ) : (
                         <div className="text-center p-4">
@@ -436,10 +651,17 @@ export default function SimplifiedSettingsDialog({
         </div>
 
         <div className="flex justify-end gap-3 mt-4">
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button 
+            variant="outline" 
+            onClick={() => setOpen(false)}
+            className="border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+          >
             Close
           </Button>
-          <Button onClick={handleApply}>
+          <Button 
+            onClick={handleApply}
+            className="bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 hover:border-blue-700 transition-colors font-medium"
+          >
             Apply
           </Button>
         </div>

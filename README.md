@@ -4,9 +4,9 @@ ExpressBuddy is an innovative AI-powered communication tool designed to help chi
 
 ## Features Overview
 
-### 🗣️ Real-Time Voice Chat with AI Avatar (The panda avatar or any other assets don't belong to us and are part of mascotbot so we can't use it)
+### 🗣️ Real-Time Voice Chat with AI Avatar
 - **Live Conversations**: Natural voice conversations powered by Google Gemini Live API
-- **Animated Avatar**: Rive-based avatar with real-time lip-sync using ParakeetTDTV2-ASR backend
+- **Animated Avatar**: Video-based avatar system with smooth animations for idle and talking states
 - **Memory System**: Persistent child profiles that remember preferences and progress across sessions
 - **Silence Detection**: Intelligent monitoring with gentle nudges to maintain conversation flow
 
@@ -16,11 +16,6 @@ ExpressBuddy is an innovative AI-powered communication tool designed to help chi
 - **Progress Tracking**: Supabase-powered analytics to monitor learning progress
 - **Interactive Learning**: Engaging activities that help children recognize and express emotions
 
-### 🤖 Avatar Integration
-- **Lip-Sync Technology**: Real-time viseme generation for natural speech animation
-- **ParakeetTDTV2-ASR Backend**: FastAPI-powered audio processing for accurate mouth movements
-- **Multiple Avatar Options**: Various character designs to match child preferences
-- **Subtitle Support**: Text synchronization for enhanced comprehension
 
 ## Getting Started
 
@@ -30,7 +25,6 @@ ExpressBuddy is an innovative AI-powered communication tool designed to help chi
 - npm or yarn
 - Google Gemini API key
 - Supabase account (for progress tracking)
-- ParakeetTDTV2-ASR backend (for lip-sync functionality)
 
 ### Installation
 
@@ -59,14 +53,6 @@ REACT_APP_GEMINI_API_KEY=your_gemini_api_key_here
 REACT_APP_SUPABASE_URL=your_supabase_url
 REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-# Kinde Authentication
-REACT_APP_KINDE_DOMAIN=your_kinde_domain
-REACT_APP_KINDE_CLIENT_ID=your_kinde_client_id
-REACT_APP_KINDE_REDIRECT_URI=http://localhost:3000
-REACT_APP_KINDE_LOGOUT_URI=http://localhost:3000
-
-# ParakeetTDTV2-ASR Backend
-REACT_APP_PARAKEET_ASR_URL=ws://localhost:8000/stream-audio
 ```
 
 
@@ -186,58 +172,6 @@ detector.startDetection(videoElement, {
 });
 ```
 
-### Avatar Integration with Lip-Sync
-
-ExpressBuddy features advanced avatar integration with real-time lip-sync capabilities:
-
-#### ParakeetTDTV2-ASR Backend Integration
-
-The lip-sync system uses a FastAPI backend for audio-to-viseme conversion:
-
-```typescript
-// Viseme service integration
-class VisemeTranscriptionService {
-  private websocket: WebSocket;
-  
-  async sendAudioChunk(audioData: Uint8Array): Promise<void> {
-    // Send audio to ParakeetTDTV2-ASR backend
-    this.websocket.send(audioData);
-  }
-  
-  onVisemeReceived(callback: (visemes: VisemeData[]) => void): void {
-    // Handle real-time viseme data
-    this.websocket.onmessage = (event) => {
-      const visemes = JSON.parse(event.data);
-      callback(visemes);
-    };
-  }
-}
-```
-
-#### Rive Avatar System
-
-The avatar system uses Rive animations with real-time viseme control:
-
-```typescript
-// Avatar component with lip-sync
-const RealtimeExpressBuddyAvatar = () => {
-  const { currentVisemes, currentSubtitles } = useLiveAPIContext();
-  
-  useEffect(() => {
-    // Update avatar mouth movements based on visemes
-    if (riveInstance && currentVisemes.length > 0) {
-      visemeController.playVisemes(currentVisemes);
-    }
-  }, [currentVisemes]);
-  
-  return (
-    <RiveCanvas 
-      src="/avatars/realistic_female_v1_3.riv"
-      onLoad={handleRiveLoad}
-    />
-  );
-};
-```
 
 ### Google Gemini Live API Integration
 
@@ -276,15 +210,12 @@ ExpressBuddy is built with a modern React/TypeScript stack, integrating multiple
 **AI & ML Services:**
 - Google Gemini Live API (multimodal conversations)
 - face-api.js (emotion detection)
-- ParakeetTDTV2-ASR (audio-to-viseme conversion)
-
 **Backend Services:**
 - Supabase (database, authentication, real-time subscriptions)
 - Kinde (authentication provider)
-- FastAPI backend for lip-sync processing
 
 **Animation & Media:**
-- Rive (avatar animations)
+- Video-based avatar system (WebM with alpha channel)
 - WebRTC (camera/microphone access)
 - Web Audio API (audio processing)
 

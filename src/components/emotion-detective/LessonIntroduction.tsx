@@ -5,11 +5,10 @@ import { Badge } from '../ui/badge';
 import { VideoExpressBuddyAvatar } from '../avatar/VideoExpressBuddyAvatar';
 import { useTTSPlayback } from '../../hooks/useTTSPlayback';
 import { LessonIntroductionProps, EMOTION_LEVELS, EMOTION_METADATA } from '../../types/emotion-detective';
-import { RiveInputs } from '../../types/avatar';
 
 /**
- * Lesson Introduction Component with Pico TTS Integration
- * Features center-to-left Pico transition and lesson narration
+ * Lesson Introduction Component with TTS Integration
+ * Features center-to-left avatar transition and lesson narration
  */
 const LessonIntroduction: React.FC<LessonIntroductionProps> = ({
   lessonLevel,
@@ -18,17 +17,10 @@ const LessonIntroduction: React.FC<LessonIntroductionProps> = ({
   // Component state
   const [introPhase, setIntroPhase] = useState<'greeting' | 'explanation' | 'ready'>('greeting');
   const [picoPosition, setPicoPosition] = useState<'center' | 'left'>('center');
-  const [currentSubtitle, setCurrentSubtitle] = useState<string>('');
   const [isNarrationComplete, setIsNarrationComplete] = useState(false);
-  const [riveInputs, setRiveInputs] = useState<RiveInputs | null>(null);
 
   // TTS integration
-  const [ttsState, ttsActions] = useTTSPlayback({
-    riveInputs: riveInputs || undefined,
-    autoConnect: true,
-    setSpeakingState: true,
-    transitionDuration: 21
-  });
+  const [ttsState, ttsActions] = useTTSPlayback();
 
   // Refs
   const narrationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -44,27 +36,11 @@ const LessonIntroduction: React.FC<LessonIntroductionProps> = ({
     ).join(', ');
 
     return {
-      greeting: `Hi there! I'm Pico, your emotion detective guide! Welcome to Level ${lessonLevel}.`,
+      greeting: `Hi there! Welcome to Level ${lessonLevel}.`,
       explanation: `Today we'll explore emotions like ${emotionNames}. You'll look at faces, identify emotions, and even practice making the expressions yourself!`,
       ready: `Are you ready to become an emotion detective? Let's start our adventure!`
     };
   }, [lessonLevel]);
-
-  /**
-   * Handle Rive inputs ready callback
-   */
-  const handleRiveInputsReady = useCallback((inputs: RiveInputs) => {
-    console.log('🎯 LessonIntroduction: Rive inputs ready');
-    setRiveInputs(inputs);
-    ttsActions.updateRiveInputs(inputs);
-  }, [ttsActions]);
-
-  /**
-   * Handle subtitle changes
-   */
-  const handleSubtitleChange = useCallback((subtitle: string) => {
-    setCurrentSubtitle(subtitle);
-  }, []);
 
   /**
    * Start narration sequence
@@ -207,7 +183,7 @@ const LessonIntroduction: React.FC<LessonIntroductionProps> = ({
               <CardContent className="p-4 h-full">
                 <VideoExpressBuddyAvatar
                   className="w-full h-full"
-                  onCurrentSubtitleChange={handleSubtitleChange}
+                  isListening={ttsState.isPlaying}
                 />
               </CardContent>
             </Card>

@@ -32,16 +32,45 @@ export interface ConversationTranscript {
   deviceInfo?: any;
 }
 
-class TranscriptService {
+export class TranscriptService {
   private supabase: SupabaseClient;
   private currentTranscript: TranscriptMessage[] = [];
   private sessionId: string | null = null;
   private conversationStartTime: number | null = null;
+  private supabaseUrl?: string;
+  private supabaseAnonKey?: string;
   // Buffer incremental fragments per speaker and flush on idle
   private pendingBuffers: { user: string; ai: string } = { user: '', ai: '' };
   private pendingMetadata: { user?: any; ai?: any } = {};
   private flushTimers: { user: number | null; ai: number | null } = { user: null, ai: null };
   private readonly FLUSH_IDLE_MS = 700; // idle window to merge fragments into an utterance
+  private readonly AUTOSAVE_INTERVAL_MS = 60000;
+  private autosaveTimer: number | null = null;
+  private saveInFlight = false;
+  private pendingAutosave = false;
+  private unloadHandlerRegistered = false;
+  private hasWarnedSupabase = false;
+  private currentSavePromise: Promise<boolean> | null = null;
+
+  private handlePageHide = (event: Event) => {
+    const type = event.type || 'unknown';
+
+    if (!this.sessionId) {
+      return;
+    }
+
+    console.log(`🚪 Page visibility event detected (${type}) - attempting keep-alive transcript save`);
+
+    this.flushAllBuffers(true);
+
+    this.saveTranscriptSnapshot({
+      markEnded: true,
+      keepAlive: true,
+      reason: `unload:${type}`
+    }).catch((error: unknown) => {
+      console.error('❌ Keep-alive transcript save failed during unload:', error);
+    });
+  };
 
   constructor() {
     const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
@@ -49,6 +78,9 @@ class TranscriptService {
 
     if (!supabaseUrl || !supabaseKey) {
       console.warn('⚠️ TranscriptService: Supabase credentials not found. Transcript saving disabled.');
+    } else {
+      this.supabaseUrl = supabaseUrl;
+      this.supabaseAnonKey = supabaseKey;
     }
 
     this.supabase = createClient(
@@ -65,7 +97,12 @@ class TranscriptService {
     this.sessionId = sessionId;
     this.currentTranscript = [];
     this.conversationStartTime = Date.now();
-  this.resetBuffers();
+    this.resetBuffers();
+    this.cancelAutosaveTimer();
+    this.pendingAutosave = false;
+    this.saveInFlight = false;
+    this.currentSavePromise = null;
+    this.registerUnloadHandlers();
   }
 
   /**
@@ -118,7 +155,7 @@ class TranscriptService {
   /**
    * Flush a single speaker buffer into the transcript as one utterance.
    */
-  private flushBuffer(speaker: 'user' | 'ai') {
+  private flushBuffer(speaker: 'user' | 'ai', options: { skipAutosave?: boolean } = {}) {
     if (this.flushTimers[speaker]) {
       clearTimeout(this.flushTimers[speaker]!);
       this.flushTimers[speaker] = null;
@@ -147,14 +184,67 @@ class TranscriptService {
     // Clear buffer
     this.pendingBuffers[speaker] = '';
     this.pendingMetadata[speaker] = undefined;
+
+    if (!options.skipAutosave) {
+      this.scheduleAutosave('flush');
+    }
   }
 
   /**
    * Flush both speaker buffers.
    */
-  private flushAllBuffers() {
-    this.flushBuffer('user');
-    this.flushBuffer('ai');
+  private flushAllBuffers(skipAutosave: boolean = false) {
+    this.flushBuffer('user', { skipAutosave });
+    this.flushBuffer('ai', { skipAutosave });
+  }
+
+  private scheduleAutosave(trigger: 'flush' | 'manual' | 'queued' | 'timer' = 'manual') {
+    if (!this.hasSupabaseCredentials() || !this.sessionId) {
+      return;
+    }
+
+    if (this.autosaveTimer) {
+      clearTimeout(this.autosaveTimer);
+    }
+
+    this.autosaveTimer = (setTimeout(() => {
+      this.autosaveTimer = null;
+      this.autosaveTranscript('timer').catch((error: unknown) => {
+        console.error('❌ Autosave transcript error:', {
+          error,
+          trigger
+        });
+      });
+    }, this.AUTOSAVE_INTERVAL_MS) as unknown) as number;
+  }
+
+  private cancelAutosaveTimer() {
+    if (this.autosaveTimer) {
+      clearTimeout(this.autosaveTimer);
+      this.autosaveTimer = null;
+    }
+  }
+
+  private async autosaveTranscript(trigger: 'flush' | 'manual' | 'queued' | 'timer') {
+    if (!this.sessionId || this.currentTranscript.length === 0) {
+      return;
+    }
+
+    console.log('💾 Autosave triggered', { trigger, messages: this.currentTranscript.length });
+
+    const saved = await this.saveTranscriptSnapshot({
+      markEnded: false,
+      keepAlive: false,
+      reason: `autosave:${trigger}`
+    });
+
+    if (!saved) {
+      console.warn('⚠️ Autosave did not complete successfully. Will retry on next trigger.');
+    }
+  }
+
+  private hasSupabaseCredentials(): boolean {
+    return Boolean(this.supabaseUrl && this.supabaseAnonKey && this.supabaseUrl !== 'dummy-url');
   }
 
   /**
@@ -166,6 +256,210 @@ class TranscriptService {
     if (this.flushTimers.user) clearTimeout(this.flushTimers.user);
     if (this.flushTimers.ai) clearTimeout(this.flushTimers.ai);
     this.flushTimers = { user: null, ai: null };
+  }
+
+  private buildConversationPayload(markEnded: boolean) {
+    if (!this.sessionId) {
+      return null;
+    }
+
+    const now = new Date();
+    const conversationDurationSeconds = this.conversationStartTime
+      ? Math.floor((now.getTime() - this.conversationStartTime) / 1000)
+      : 0;
+
+    const stats = {
+      totalMessages: this.currentTranscript.length,
+      userMessageCount: this.currentTranscript.filter(m => m.speaker === 'user').length,
+      aiMessageCount: this.currentTranscript.filter(m => m.speaker === 'ai').length,
+      conversationDurationSeconds
+    };
+
+    const conversationData = {
+      session_id: this.sessionId,
+      created_at: new Date(this.conversationStartTime || now.getTime()).toISOString(),
+      ended_at: markEnded ? now.toISOString() : null,
+      transcript: this.currentTranscript,
+      total_messages: stats.totalMessages,
+      user_message_count: stats.userMessageCount,
+      ai_message_count: stats.aiMessageCount,
+      conversation_duration_seconds: stats.conversationDurationSeconds,
+      user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+      device_info: typeof window !== 'undefined'
+        ? {
+          screen: {
+            width: (window as any).screen?.width || 0,
+            height: (window as any).screen?.height || 0
+          },
+          viewport: {
+            width: (window as any).innerWidth,
+            height: (window as any).innerHeight
+          },
+          language: (navigator as any)?.language,
+          platform: (navigator as any)?.platform
+        }
+        : undefined
+    } as const;
+
+    return conversationData;
+  }
+
+  private async saveTranscriptSnapshot(options: { markEnded?: boolean; keepAlive?: boolean; reason?: string } = {}): Promise<boolean> {
+    const { markEnded = false, keepAlive = false, reason = 'manual' } = options;
+
+    if (!this.sessionId) {
+      console.warn('⚠️ TranscriptService: No active session to save');
+      return false;
+    }
+
+    if (!this.hasSupabaseCredentials()) {
+      if (!this.hasWarnedSupabase) {
+        console.warn('⚠️ TranscriptService: Supabase credentials missing - transcript saving skipped.');
+        this.hasWarnedSupabase = true;
+      }
+      return false;
+    }
+
+    this.flushAllBuffers(true);
+
+    const payload = this.buildConversationPayload(markEnded);
+
+    if (!payload || payload.transcript.length === 0) {
+      console.warn('⚠️ TranscriptService: No transcript data to save in snapshot');
+      return false;
+    }
+
+    if (keepAlive) {
+      return this.sendKeepAliveSave(payload, reason);
+    }
+
+    if (this.saveInFlight && this.currentSavePromise) {
+      if (markEnded) {
+        console.log('⏳ TranscriptService: Waiting for in-flight save before finalizing conversation');
+        try {
+          await this.currentSavePromise;
+        } catch (waitError) {
+          console.error('❌ Error while waiting for in-flight save to finish:', waitError);
+        }
+
+        return this.saveTranscriptSnapshot({ markEnded, keepAlive, reason });
+      }
+
+      console.log('⏳ TranscriptService: Save already in progress, queueing autosave');
+      this.pendingAutosave = true;
+      return false;
+    }
+
+    this.saveInFlight = true;
+
+    const saveOperation = (async () => {
+      try {
+        const { data, error } = await this.supabase
+          .from('conversation_transcripts')
+          .upsert(payload, { onConflict: 'session_id' })
+          .select();
+
+        if (error) {
+          console.error('❌ Supabase error during transcript snapshot save:', {
+            error,
+            reason
+          });
+          return false;
+        }
+
+        console.log('✅ Transcript snapshot saved successfully:', {
+          reason,
+          recordId: data?.[0]?.id,
+          sessionId: data?.[0]?.session_id,
+          messageCount: data?.[0]?.total_messages
+        });
+
+        return true;
+      } catch (error) {
+        console.error('❌ Unexpected error saving transcript snapshot:', {
+          error,
+          reason
+        });
+        return false;
+      } finally {
+        this.saveInFlight = false;
+        this.currentSavePromise = null;
+
+        const shouldProcessQueuedAutosave = this.pendingAutosave && !markEnded && Boolean(this.sessionId);
+        this.pendingAutosave = false;
+
+        if (shouldProcessQueuedAutosave) {
+          this.autosaveTranscript('queued').catch((queueError: unknown) => {
+            console.error('❌ Failed to process queued autosave:', queueError);
+          });
+        }
+      }
+    })();
+
+    this.currentSavePromise = saveOperation;
+
+    const result = await saveOperation;
+    return result;
+  }
+
+  private async sendKeepAliveSave(payload: ReturnType<typeof this.buildConversationPayload>, reason: string): Promise<boolean> {
+    if (!payload || !this.supabaseUrl || !this.supabaseAnonKey || typeof fetch !== 'function') {
+      return false;
+    }
+
+    try {
+      const response = await fetch(`${this.supabaseUrl}/rest/v1/conversation_transcripts?on_conflict=session_id`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: this.supabaseAnonKey,
+          Authorization: `Bearer ${this.supabaseAnonKey}`,
+          Prefer: 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify([payload]),
+        keepalive: true
+      });
+
+      if (!response.ok) {
+        console.error('❌ Keep-alive transcript save failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          reason
+        });
+        return false;
+      }
+
+      console.log('✅ Keep-alive transcript save succeeded:', { reason });
+      return true;
+    } catch (error) {
+      console.error('❌ Error performing keep-alive transcript save:', {
+        error,
+        reason
+      });
+      return false;
+    }
+  }
+
+  private registerUnloadHandlers() {
+    if (typeof window === 'undefined' || this.unloadHandlerRegistered) {
+      return;
+    }
+
+    window.addEventListener('pagehide', this.handlePageHide);
+    window.addEventListener('beforeunload', this.handlePageHide);
+    this.unloadHandlerRegistered = true;
+    console.log('🛡️ TranscriptService: Registered unload handlers for transcript protection');
+  }
+
+  private unregisterUnloadHandlers() {
+    if (typeof window === 'undefined' || !this.unloadHandlerRegistered) {
+      return;
+    }
+
+    window.removeEventListener('pagehide', this.handlePageHide);
+    window.removeEventListener('beforeunload', this.handlePageHide);
+    this.unloadHandlerRegistered = false;
+    console.log('🧹 TranscriptService: Unregistered unload handlers');
   }
 
   /**
@@ -181,8 +475,8 @@ class TranscriptService {
   public getConversationStats() {
     const userMessages = this.currentTranscript.filter(m => m.speaker === 'user');
     const aiMessages = this.currentTranscript.filter(m => m.speaker === 'ai');
-    const duration = this.conversationStartTime 
-      ? Math.floor((Date.now() - this.conversationStartTime) / 1000) 
+    const duration = this.conversationStartTime
+      ? Math.floor((Date.now() - this.conversationStartTime) / 1000)
       : 0;
 
     return {
@@ -200,7 +494,7 @@ class TranscriptService {
    */
   public async endConversationAndSave(): Promise<boolean> {
     console.log('🏁 Starting endConversationAndSave process...');
-    
+
     if (!this.sessionId) {
       console.warn('⚠️ TranscriptService: No active session to save');
       return false;
@@ -220,98 +514,18 @@ class TranscriptService {
     }
 
     try {
-      // Ensure we capture any trailing fragments
-      this.flushAllBuffers();
-      console.log('💾 Attempting to save transcript to Supabase...');
-      console.log('🔧 Supabase connection check:', {
-        hasUrl: !!process.env.REACT_APP_SUPABASE_URL,
-        hasKey: !!process.env.REACT_APP_SUPABASE_ANON_KEY,
-        supabaseUrl: process.env.REACT_APP_SUPABASE_URL ? `${process.env.REACT_APP_SUPABASE_URL.substring(0, 20)}...` : 'MISSING',
-        supabaseKey: process.env.REACT_APP_SUPABASE_ANON_KEY ? 'configured' : 'MISSING'
-      });
-      
-      const now = new Date();
-      const conversationDurationSeconds = this.conversationStartTime 
-        ? Math.floor((now.getTime() - this.conversationStartTime) / 1000)
-        : 0;
-
-      // Calculate statistics
-      const stats = {
-        totalMessages: this.currentTranscript.length,
-        userMessageCount: this.currentTranscript.filter(m => m.speaker === 'user').length,
-        aiMessageCount: this.currentTranscript.filter(m => m.speaker === 'ai').length,
-        conversationDurationSeconds
-      };
-
-      console.log('📈 Conversation statistics:', stats);
-
-      // Build payload using snake_case column names to match DB schema
-      const conversationData = {
-        session_id: this.sessionId,
-        created_at: new Date(this.conversationStartTime || now.getTime()).toISOString(),
-        ended_at: now.toISOString(),
-        transcript: this.currentTranscript,
-        total_messages: stats.totalMessages,
-        user_message_count: stats.userMessageCount,
-        ai_message_count: stats.aiMessageCount,
-        conversation_duration_seconds: stats.conversationDurationSeconds,
-        user_agent: navigator.userAgent,
-        device_info: {
-          screen: {
-            width: (window as any).screen?.width || 0,
-            height: (window as any).screen?.height || 0
-          },
-          viewport: {
-            width: (window as any).innerWidth,
-            height: (window as any).innerHeight
-          },
-          language: (navigator as any).language,
-          platform: (navigator as any).platform
-        }
-      } as const;
-
-      console.log('📤 Sending data to Supabase:', {
-        sessionId: conversationData.session_id,
-        messageCount: conversationData.transcript.length,
-        duration: conversationData.conversation_duration_seconds,
-        userMessages: conversationData.user_message_count,
-        aiMessages: conversationData.ai_message_count
+      this.cancelAutosaveTimer();
+      const saved = await this.saveTranscriptSnapshot({
+        markEnded: true,
+        reason: 'endConversation'
       });
 
-  const { data, error } = await this.supabase
-        .from('conversation_transcripts')
-        .insert([conversationData])
-        .select();
-
-      if (error) {
-        console.error('❌ Supabase error saving transcript:', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          fullError: error
-        });
-        
-        // Check for specific RLS error
-        if (error.code === '42501' || error.message.includes('policy')) {
-          console.error('🔒 This looks like a Row Level Security (RLS) policy error!');
-          console.error('💡 Suggestion: Check your Supabase RLS policies for the conversation_transcripts table');
-        }
-        
-        return false;
+      if (saved) {
+        console.log('✅ 🎉 Transcript saved successfully to Supabase during endConversation!');
+        this.clearSession();
       }
 
-      console.log('✅ 🎉 Transcript saved successfully to Supabase!:', {
-        recordId: data?.[0]?.id,
-        sessionId: data?.[0]?.session_id,
-        messageCount: data?.[0]?.total_messages,
-        savedAt: new Date().toLocaleTimeString()
-      });
-      
-      // Clear current session
-      this.clearSession();
-      
-      return true;
+      return saved;
 
     } catch (error) {
       console.error('❌ 💥 Critical error saving transcript:', {
@@ -333,7 +547,12 @@ class TranscriptService {
     this.sessionId = null;
     this.currentTranscript = [];
     this.conversationStartTime = null;
-  this.resetBuffers();
+    this.resetBuffers();
+    this.cancelAutosaveTimer();
+    this.pendingAutosave = false;
+    this.saveInFlight = false;
+    this.currentSavePromise = null;
+    this.unregisterUnloadHandlers();
   }
 
   /**
@@ -389,7 +608,7 @@ class TranscriptService {
       console.warn('⚠️ TranscriptService: No active session to force save');
       return false;
     }
-    
+
     console.log('🚨 Force saving transcript...');
     return await this.endConversationAndSave();
   }
