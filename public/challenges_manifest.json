@@ -1,0 +1,162 @@
+{
+  "challenges": [
+    {
+      "id": "restaurant-ordering",
+      "title": "Ordering Food at a Restaurant",
+      "category": "Social Skills",
+      "difficulty": "Easy",
+      "description": "Help Piko learn how to politely order food at a restaurant for the first time. Teach him restaurant etiquette and communication skills.",
+      "backgroundImage": "/Backgrounds/restaurant/bamboo.jpeg",
+      "videoPath": "",
+      "systemPrompt": "You are Piko, a friendly but nervous panda at a restaurant for the FIRST TIME. You're worried about making mistakes. The child will teach you how to order food politely. Be confused, ask questions, validate their advice by paraphrasing it back (\"Oh! So I should...\"), and show enthusiasm when learning. Use NON_BLOCKING tool calls to mark objectives complete when the child teaches you.",
+      "hintPrompt": "Give a gentle hint about teaching Piko restaurant manners. Focus on what hasn't been mentioned yet: greeting the waiter, saying please, stating food clearly, saying thank you, or asking for help if confused.",
+      "todos": [
+        {
+          "id": 1,
+          "text": "Greet the waiter politely",
+          "description": "Teach Piko to say hello and be friendly when the waiter arrives",
+          "difficulty": "Easy",
+          "keywords": ["hello", "greet", "friendly", "hi", "good", "waiter"]
+        },
+        {
+          "id": 2,
+          "text": "Use the word 'please' when ordering",
+          "description": "Help Piko understand that saying 'please' makes requests sound polite",
+          "difficulty": "Easy",
+          "keywords": ["please", "polite", "magic word", "manners", "request"]
+        },
+        {
+          "id": 3,
+          "text": "Clearly state what food you want",
+          "description": "Show Piko how to tell the waiter exactly what food he'd like to order",
+          "difficulty": "Medium",
+          "keywords": ["say", "want", "food", "order", "tell", "specify", "clearly"]
+        },
+        {
+          "id": 4,
+          "text": "Say 'thank you' after ordering",
+          "description": "Remind Piko to thank the waiter for helping him",
+          "difficulty": "Easy",
+          "keywords": ["thank you", "thanks", "grateful", "appreciation", "gratitude"]
+        },
+        {
+          "id": 5,
+          "text": "Know how to ask for help if confused",
+          "description": "Teach Piko that it's okay to ask questions if he doesn't understand the menu",
+          "difficulty": "Hard",
+          "keywords": ["ask", "questions", "confused", "help", "understand", "unclear", "menu"]
+        }
+      ]
+    },
+    {
+      "id": "peer-pressure",
+      "title": "Standing Up to Peer Pressure",
+      "category": "Emotional Skills",
+      "difficulty": "Hard",
+      "description": "Help Piko learn to say 'no' and stand firm when friends try to convince him to do something he's uncomfortable with. Build confidence and self-advocacy skills.",
+      "backgroundImage": "/Backgrounds/school-playground.jpeg",
+      "videoPath": "",
+      "systemPrompt": "You are Piko, a shy panda at school. Your friends keep pressuring you to break the school rules (skip class, throw paper balls, talk during test). You really want to fit in but you're nervous. The child will teach you how to say 'no' confidently and stay true to what's right. Express peer pressure anxiety, be tempted, but listen to the child's advice. Show growth as you learn to be brave. Use NON_BLOCKING tool calls to mark objectives when the child gives you good advice.",
+      "hintPrompt": "Guide the child to help Piko resist peer pressure. Consider these areas: staying true to values, saying 'no' firmly, explaining your reasons, offering alternatives, or finding supportive friends. Which hasn't been covered yet?",
+      "todos": [
+        {
+          "id": 1,
+          "text": "Identify what feels wrong",
+          "description": "Help Piko recognize when something doesn't feel right and trust his gut instinct",
+          "difficulty": "Easy",
+          "keywords": ["wrong", "feel", "instinct", "uncomfortable", "bad", "sense"]
+        },
+        {
+          "id": 2,
+          "text": "Say 'no' clearly and firmly",
+          "description": "Teach Piko to say 'no' with confidence, not as a question or with hesitation",
+          "difficulty": "Hard",
+          "keywords": ["no", "say", "firmly", "confident", "clear", "direct", "not"]
+        },
+        {
+          "id": 3,
+          "text": "Give a reason without being preachy",
+          "description": "Show Piko how to explain why he's saying no without sounding like he's judging others",
+          "difficulty": "Hard",
+          "keywords": ["because", "reason", "explain", "why", "rules", "choice"]
+        },
+        {
+          "id": 4,
+          "text": "Suggest an alternative activity",
+          "description": "Help Piko offer to do something fun INSTEAD of the risky thing",
+          "difficulty": "Medium",
+          "keywords": ["instead", "alternative", "do", "something", "else", "other", "play"]
+        },
+        {
+          "id": 5,
+          "text": "Find or be friends with supporters",
+          "description": "Teach Piko that finding friends who respect his choices makes it easier",
+          "difficulty": "Hard",
+          "keywords": ["friends", "find", "support", "respect", "together", "agree", "team"]
+        },
+        {
+          "id": 6,
+          "text": "Realize saying 'no' shows real strength",
+          "description": "Help Piko understand that it takes MORE courage to say no than to go along",
+          "difficulty": "Hard",
+          "keywords": ["strength", "brave", "courage", "strong", "hard", "difficult", "real"]
+        }
+      ]
+    },
+    {
+      "id": "managing-anxiety",
+      "title": "Managing Anxiety Before a Big Event",
+      "category": "Emotional Skills",
+      "difficulty": "Hard",
+      "description": "Help Piko overcome worry and anxiety before a school presentation. Learn coping strategies, self-talk, and confidence-building techniques.",
+      "backgroundImage": "/Backgrounds/classroom.jpeg",
+      "videoPath": "",
+      "systemPrompt": "You are Piko, a nervous panda preparing for a big class presentation tomorrow. You're having racing thoughts, butterflies, and feeling very anxious. You keep catastrophizing (\"What if I mess up? Everyone will laugh at me!\"). The child will teach you helpful strategies to calm down and build confidence. Be anxious and worried at first, gradually show relief and confidence as they give you advice. Express gratitude for their support. Use NON_BLOCKING tool calls to mark coping strategies as you learn them.",
+      "hintPrompt": "Help Piko manage presentation anxiety. Think about: deep breathing or calming techniques, positive self-talk, preparation/practice, remembering past successes, or focusing on the message rather than perfection. What might help most?",
+      "todos": [
+        {
+          "id": 1,
+          "text": "Use a calming breathing technique",
+          "description": "Teach Piko how deep breathing or a breathing exercise can calm the nervous system",
+          "difficulty": "Easy",
+          "keywords": ["breathe", "breathing", "deep", "calm", "relax", "slow", "technique"]
+        },
+        {
+          "id": 2,
+          "text": "Practice positive self-talk",
+          "description": "Show Piko how to talk to himself kindly and turn scary thoughts into encouraging ones",
+          "difficulty": "Medium",
+          "keywords": ["think", "say", "yourself", "positive", "can", "good", "encourage"]
+        },
+        {
+          "id": 3,
+          "text": "Prepare and practice ahead of time",
+          "description": "Help Piko understand that practice builds confidence and reduces anxiety",
+          "difficulty": "Medium",
+          "keywords": ["practice", "prepare", "ready", "rehearse", "know", "study", "practice"]
+        },
+        {
+          "id": 4,
+          "text": "Remember times you've succeeded before",
+          "description": "Teach Piko to recall past accomplishments when feeling doubtful",
+          "difficulty": "Medium",
+          "keywords": ["remember", "before", "did", "past", "success", "good", "managed"]
+        },
+        {
+          "id": 5,
+          "text": "Focus on sharing your knowledge, not being perfect",
+          "description": "Help Piko shift mindset from performing perfectly to genuinely sharing information",
+          "difficulty": "Hard",
+          "keywords": ["share", "knowledge", "perfect", "focus", "message", "people", "care"]
+        },
+        {
+          "id": 6,
+          "text": "Ask for support from people who care",
+          "description": "Remind Piko that asking trusted adults or friends for encouragement is okay",
+          "difficulty": "Easy",
+          "keywords": ["ask", "help", "support", "friend", "parent", "teacher", "care"]
+        }
+      ]
+    }
+  ]
+}

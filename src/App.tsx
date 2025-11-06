@@ -27,6 +27,7 @@ import { LiveClientOptions } from "./types";
 const MainInterfaceWithAvatar = lazy(() => import("./components/main-interface/MainInterfaceWithAvatar"));
 const MainInterfaceWithVideoAvatar = lazy(() => import("./components/main-interface/MainInterfaceWithVideoAvatar"));
 const PikoChallengeInterface = lazy(() => import("./components/piko-challenges/PikoChallengeInterface"));
+const ChallengesHub = lazy(() => import("./components/piko-challenges/ChallengesHub"));
 const LandingPage = lazy(() => import("./components/landing-page/LandingPage"));
 const LearningPathHome = lazy(() => import("./components/home/LearningPathHome"));
 const AuthPage = lazy(() => import("./components/auth/AuthPage"));
@@ -186,7 +187,25 @@ function AppContent() {
           />
         } />
 
-        {/* Piko Challenge - Restaurant Ordering Level 1 - Public Demo Route */}
+        {/* Piko Challenges Hub - Selection Page */}
+        <Route path="/piko-challenges" element={
+          <>
+            <LiveAPIProvider options={apiOptions}>
+              <ChallengesHub />
+            </LiveAPIProvider>
+          </>
+        } />
+
+        {/* Piko Challenge - Dynamic Route for All Challenges */}
+        <Route path="/piko-challenge/:id" element={
+          <>
+            <LiveAPIProvider options={apiOptions}>
+              <PikoChallengeInterface />
+            </LiveAPIProvider>
+          </>
+        } />
+
+        {/* Piko Challenge - Restaurant Ordering Level 1 - Legacy Route (for backwards compatibility) */}
         <Route path="/piko-challenge/restaurant-ordering-level1" element={
           <>
             <LiveAPIProvider options={apiOptions}>

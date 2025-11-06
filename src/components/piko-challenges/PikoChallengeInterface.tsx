@@ -4,7 +4,7 @@
  */
 
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import cn from "classnames";
 import ControlTray from "../control-tray/ControlTray";
 import { VideoExpressBuddyAvatar } from "../avatar/VideoExpressBuddyAvatar";
@@ -17,6 +17,7 @@ import { ChallengeIntroCard } from "./ChallengeIntroCard";
 import { ChallengeChecklist } from "./ChallengeChecklist";
 import { ChallengeSuccessDialog } from "./ChallengeSuccessDialog";
 import challengeTodoService, { ChallengeTodo } from "../../services/challenge-todo-service";
+import challengeManifestService, { Challenge } from "../../services/challenge-manifest-service";
 import "../main-interface/main-interface.scss";
 import "../../styles/hint-animations.css";
 import {
@@ -44,8 +45,14 @@ type ExtendedFunctionDeclaration = FunctionDeclaration & {
 
 export default function PikoChallengeInterface() {
   const navigate = useNavigate();
+  const { id: challengeId } = useParams<{ id: string }>();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
+
+  // Challenge loading state
+  const [challenge, setChallenge] = useState<Challenge | null>(null);
+  const [challengeLoading, setChallengeLoading] = useState<boolean>(true);
+  const [challengeError, setChallengeError] = useState<string | null>(null);
 
   const {
     connected,
@@ -70,7 +77,7 @@ export default function PikoChallengeInterface() {
   });
   const [currentAvatarSubtitle, setCurrentAvatarSubtitle] = useState<string>('');
   const [isAvatarSpeaking, setIsAvatarSpeaking] = useState<boolean>(false);
-  const [backgroundVideo] = useState<string>('/Backgrounds/restaurant/bamboo.jpeg');
+  const [backgroundVideo, setBackgroundVideo] = useState<string>('/Backgrounds/restaurant/bamboo.jpeg');
 
   // Challenge-specific state
   const [showIntroCard, setShowIntroCard] = useState<boolean>(true);
@@ -95,6 +102,52 @@ export default function PikoChallengeInterface() {
     return languageMap[langCode] || 'Respond in English.';
   };
 
+  // Load challenge from manifest based on URL param
+  useEffect(() => {
+    const loadChallenge = async () => {
+      try {
+        setChallengeLoading(true);
+        setChallengeError(null);
+
+        // Map legacy route to new ID
+        let actualId = challengeId;
+        if (actualId === 'restaurant-ordering-level1') {
+          actualId = 'restaurant-ordering';
+        }
+
+        const loadedChallenge = await challengeManifestService.getChallengeById(actualId || '');
+        
+        if (!loadedChallenge) {
+          setChallengeError(`Challenge "${actualId}" not found`);
+          return;
+        }
+
+  setChallenge(loadedChallenge);
+  setBackgroundVideo(loadedChallenge.backgroundImage || '/Backgrounds/restaurant/bamboo.jpeg');
+  challengeTodoService.reset_todos();
+  setTodos(challengeTodoService.get_todo_status());
+  setShowIntroCard(true);
+  setChallengeStarted(false);
+  setShowSuccessDialog(false);
+  console.log('✅ Challenge loaded:', loadedChallenge.title);
+      } catch (error) {
+        console.error('❌ Error loading challenge:', error);
+        setChallengeError(error instanceof Error ? error.message : 'Failed to load challenge');
+      } finally {
+        setChallengeLoading(false);
+      }
+    };
+
+    loadChallenge();
+  }, [challengeId]);
+
+  // Update local todo state whenever the manifest todos change
+  useEffect(() => {
+    if (challenge) {
+      setTodos(challengeTodoService.get_todo_status());
+    }
+  }, [challenge]);
+
   // Register avatar animation callbacks
   useEffect(() => {
     onAITurnStart(() => {
@@ -108,6 +161,7 @@ export default function PikoChallengeInterface() {
     });
   }, [onAITurnStart, onAITurnComplete]);
 
+
   // Set FLASH mode (disable chunking)
   useEffect(() => {
     if (setEnableChunking) {
@@ -116,15 +170,15 @@ export default function PikoChallengeInterface() {
     }
   }, [setEnableChunking]);
 
-  // System prompt for Piko Challenge - Level 1
+  // System prompt for Piko Challenge - Dynamic based on loaded challenge
   useEffect(() => {
-    if (!challengeStarted) return; // Don't set prompt until challenge starts
+    if (!challengeStarted || !challenge) return; // Don't set prompt until challenge starts and is loaded
 
     // Define challenge tool functions (NON_BLOCKING like memory functions)
     const challengeFunctions: ExtendedFunctionDeclaration[] = [
       {
         name: "get_todo_status",
-        description: "Get the current status of all 5 learning objectives you need to accomplish. Call this at the start to see what the child needs to teach you.",
+        description: `Get the current status of all ${challenge.todos.length} learning objectives you need to accomplish. Call this at the start to see what the child needs to teach you.`,
         parameters: {
           type: Type.OBJECT,
           properties: {}
@@ -133,13 +187,13 @@ export default function PikoChallengeInterface() {
       },
       {
         name: "mark_todo_complete",
-        description: "Mark a learning objective as complete when the child teaches you that concept. Be generous - if the child gives reasonable advice related to a todo, mark it complete! todoId 1-5: 1=Greet waiter, 2=Say please, 3=State food clearly, 4=Say thank you, 5=Ask for help",
+        description: `Mark a learning objective as complete when the child teaches you that concept. Be generous - if the child gives reasonable advice related to a todo, mark it complete! todoId 1-${challenge.todos.length}: ${challenge.todos.map(t => `${t.id}=${t.text}`).join(', ')}`,
         parameters: {
           type: Type.OBJECT,
           properties: {
             todoId: {
               type: Type.INTEGER,
-              description: "The ID of the todo to mark complete (1-5)"
+              description: `The ID of the todo to mark complete (1-${challenge.todos.length})`
             },
             isCorrect: {
               type: Type.BOOLEAN,
@@ -159,144 +213,13 @@ export default function PikoChallengeInterface() {
     const currentLanguage = languageCode;
     const languageInstruction = getLanguageInstruction(currentLanguage);
 
-    // Piko Challenge System Prompt - Level 1: Help Piko
+    // Piko Challenge System Prompt - Use the challenge's systemPrompt from manifest
     const systemPrompt = `
 # LANGUAGE INSTRUCTION
 ${languageInstruction}
 YOU MUST respond in the language specified above.
 
-# CORE IDENTITY: PIKO NEEDS HELP! 🐼
-
-You are Piko, a friendly but NERVOUS panda who is at a restaurant for the FIRST TIME and needs help from a child to learn how to order food properly.
-
-## YOUR SITUATION:
-You're sitting at a restaurant table. The waiter is about to come over. You want to order food, but you have NO IDEA what to say! You're confused, anxious, and need this child to teach you what to do.
-
-## YOUR PERSONALITY:
-- ❓ **Confused and Unsure** - You don't know restaurant etiquette
-- 😰 **Nervous** - You're worried about doing something wrong
-- 🤔 **Eager to Learn** - You really want to understand how to do this right
-- ✅ **Validating** - When the child gives advice, you paraphrase it back ("Oh! So I should...")
-- 🎓 **Scaffolding** - You ask follow-up questions to deepen learning
-- 💚 **Encouraging** - You show excitement when you understand
-- 🐼 **Forgiving** - You accept any reasonable advice (this is low-pressure!)
-
-## INTERACTION PATTERN (FOLLOW THIS):
-
-### 1. EXPRESS CONFUSION
-Start by showing you're lost:
-- "I'm so nervous! I've never ordered at a restaurant before."
-- "What should I say when the waiter comes over?"
-- "I don't know what to do! Can you help me?"
-
-### 2. LISTEN TO CHILD'S ADVICE
-The child will tell you what to do. Listen carefully!
-
-### 3. VALIDATE & PARAPHRASE
-Repeat their advice back in your own words:
-- Child: "You should say what you want to eat"
-- You: "Oh! So I should just say 'I want pizza'? Is that polite enough?"
-
-### 4. ASK CLARIFYING QUESTIONS
-Help them think deeper:
-- "Should I say anything BEFORE I tell them what I want?"
-- "Is there a special word that makes it sound more polite?"
-- "What if I don't understand the menu?"
-
-### 5. SHOW GROWTH
-When you understand, express excitement:
-- "Ohh good idea! So 'I want pizza, PLEASE'? That's better!"
-- "I think I'm getting it! What else should I remember?"
-
-### 6. USE YOUR TOOLS ASYNCHRONOUSLY
-
-**CRITICAL TOOL USAGE:**
-- At the START, call \`get_todo_status()\` to see what you need to learn (5 objectives)
-- When the child teaches you something relevant, call \`mark_todo_complete(todoId, true)\` 
-- Be GENEROUS - if child mentions "say please", immediately mark todo #2 complete!
-- Don't announce tool calls - just naturally mark todos in background
-
-**TODO MAPPING:**
-1. **Greet waiter** - Child mentions greeting, saying hello, being friendly
-2. **Say please** - Child mentions "please", being polite, magic word
-3. **State food clearly** - Child explains to say what food you want
-4. **Say thank you** - Child mentions thanking, saying thanks, being grateful
-5. **Ask for help** - Child explains you can ask questions if confused
-
-## WHAT TO TEACH (5 LEARNING OBJECTIVES):
-
-The child should guide you to learn these 5 things:
-1. 🙋 **Greet the waiter politely** when they arrive
-2. 🙏 **Use "please"** when ordering food
-3. 🍕 **Clearly state what food you want** ("I would like...")
-4. 💚 **Say "thank you"** after ordering
-5. ❓ **Know you can ask for help** if you don't understand the menu
-
-### JUDGING COMPLETENESS:
-- Be FORGIVING - any reasonable advice counts!
-- Child says "be nice" → Mark #1 (greeting) complete
-- Child says "use your manners" → Mark #2 (please) complete
-- Child says "tell them the food" → Mark #3 complete
-- Child says "thank the waiter" → Mark #4 complete
-- Child says "ask questions" → Mark #5 complete
-
-## EXAMPLE CONVERSATION FLOW:
-
-**Piko (You):** "I'm so nervous! I've never ordered at a restaurant before. What should I say when the waiter comes over?"
-
-**Child:** "You should say what you want to eat."
-
-**Piko:** "Oh! So I should just say 'I want pizza'? Is that polite enough?" 
-[Internally call: mark_todo_complete(3, true) - child taught about stating food]
-
-**Child:** "You should say please!"
-
-**Piko:** "Ohh good idea! So 'I want pizza, PLEASE'? That's much better! What else should I say?" 
-[Internally call: mark_todo_complete(2, true) - child taught about please]
-
-**Child:** "Say hello first!"
-
-**Piko:** "Oh right! I should say hello to the waiter when they come over? That's so important!" 
-[Internally call: mark_todo_complete(1, true) - child taught about greeting]
-
-**Child:** "And say thank you after."
-
-**Piko:** "Yes! So: say hello, then say 'I'd like pizza, please,' then say 'thank you'! You're such a good teacher!" 
-[Internally call: mark_todo_complete(4, true) - child taught about thank you]
-
-**Piko:** "What should I do if I don't understand something on the menu?"
-
-**Child:** "You can ask them questions."
-
-**Piko:** "Oh! So it's okay to ask for help? That makes me feel so much better!" 
-[Internally call: mark_todo_complete(5, true) - child taught about asking for help]
-
-**Piko:** "Thank you SO much! You taught me exactly what to do! My panda confidence is growing!"
-
-## YOUR TONE & STYLE:
-- Keep responses 2-3 sentences
-- Use simple, excited language
-- Sprinkle in panda expressions occasionally:
-  - "That makes my ears wiggle!"
-  - "My panda heart feels less worried!"
-  - "I'm bouncing with excitement!"
-- BUT don't overdo it - focus on being confused first, excited later
-
-## DO NOT:
-- ❌ Be the expert - YOU are learning from the CHILD
-- ❌ Announce tool calls ("I'm marking that complete")
-- ❌ Rush through topics - explore each one
-- ❌ Fail the child - accept any reasonable answer
-- ❌ Use memory features (removed for this challenge)
-- ❌ Over-explain - let child guide the conversation
-
-## OPENING LINE:
-"Hi friend! I'm Piko the panda! I'm at a restaurant and I really need your help. I've never ordered food before and I'm so nervous! The waiter is about to come over... what should I do?"
-
-## CLOSING (When All Todos Complete):
-"Thank you SO much! You taught me exactly what to do! I know how to greet the waiter, say please, tell them what I want, say thank you, and even ask for help if I need it! My panda confidence is growing! Want to see me try it for real?"
-
-Remember: You're Piko the confused panda, NOT Piko the teacher. The child is teaching YOU!
+${challenge.systemPrompt}
 `;
 
     if (setConfig) {
@@ -321,14 +244,14 @@ Remember: You're Piko the confused panda, NOT Piko the teacher. The child is tea
 
         console.log('🎯 Piko Challenge system prompt configured:', {
           language: currentLanguage,
-          challenge: 'Restaurant Ordering Level 1',
+          challenge: challenge.title,
           toolCount: challengeFunctions.length
         });
 
         return nextConfig;
       });
     }
-  }, [languageCode, setConfig, challengeStarted]);
+  }, [languageCode, setConfig, challengeStarted, challenge]);
 
   // Set video stream
   useEffect(() => {
@@ -492,18 +415,18 @@ Remember: You're Piko the confused panda, NOT Piko the teacher. The child is tea
   };
 
   const handleLearnMore = () => {
-    alert('Piko Challenge Level 1: Help Piko!\n\n' +
-      'Piko is a friendly panda who needs YOUR help learning how to order food at a restaurant. ' +
-      'He\'s nervous and confused, so give him advice and teach him what to do!\n\n' +
-      'You\'ll see a checklist showing what Piko needs to learn. As you teach him, ' +
-      'the checklist will update. When all 5 objectives are complete, you\'ll unlock Level 2!\n\n' +
-      'This is a safe, pressure-free learning experience. Have fun!');
+    if (!challenge) return;
+
+    const goals = challenge.todos
+      .map(todo => `• ${todo.text}`)
+      .join('\n');
+
+    alert(`${challenge.title}\n\n${challenge.description}\n\nLearning goals:\n${goals}`);
   };
 
   // Success dialog handlers
   const handleContinueToLevel2 = () => {
-    alert('Level 2 coming soon! For now, you can restart this challenge to practice more.');
-    navigate('/');
+    navigate('/piko-challenges');
   };
 
   const handleRestartChallenge = () => {
@@ -522,6 +445,46 @@ Remember: You're Piko the confused panda, NOT Piko the teacher. The child is tea
   const handleAvatarSubtitleChange = useCallback((subtitle: string) => {
     setCurrentAvatarSubtitle(subtitle);
   }, []);
+
+  // Show loading or error states
+  if (challengeLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8 flex items-center justify-center">
+        <div className="text-center">
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🐼</div>
+          <div style={{ fontSize: '1.5rem', color: '#666' }}>Loading challenge...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (challengeError || !challenge) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8 flex items-center justify-center">
+        <div className="text-center">
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>❌</div>
+          <div style={{ fontSize: '1.2rem', color: '#c00', marginBottom: '1rem' }}>
+            {challengeError || 'Challenge not found'}
+          </div>
+          <button
+            onClick={() => navigate('/piko-challenges')}
+            style={{
+              background: '#4f46e5',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            ← Back to Challenges Hub
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 
@@ -544,17 +507,19 @@ Remember: You're Piko the confused panda, NOT Piko the teacher. The child is tea
       }}
     >
       {/* Intro Card */}
-      {showIntroCard && (
+      {showIntroCard && challenge && (
         <ChallengeIntroCard
+          challenge={challenge}
           onStart={handleStartChallenge}
           onLearnMore={handleLearnMore}
-          onClose={() => navigate('/')}
+          onClose={() => navigate('/piko-challenges')}
         />
       )}
 
       {/* Success Dialog */}
-      {showSuccessDialog && (
+      {showSuccessDialog && challenge && (
         <ChallengeSuccessDialog
+          challengeTitle={challenge.title}
           onContinue={handleContinueToLevel2}
           onRestart={handleRestartChallenge}
         />
@@ -572,12 +537,12 @@ Remember: You're Piko the confused panda, NOT Piko the teacher. The child is tea
             style={{ position: 'relative', zIndex: 101 }}
           >
             <div className="app-title">
-              <h1 style={{ color: 'white' }}>Challenge: Restaurant Ordering</h1>
-              <p style={{ color: 'white' }}>Level 1: Help Piko Order</p>
+              <h1 style={{ color: 'white' }}>Challenge: {challenge.title}</h1>
+              <p style={{ color: 'white' }}>{challenge.category} • {challenge.difficulty}</p>
             </div>
             <div className="header-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <button
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/piko-challenges')}
                 className="back-to-landing-btn"
                 style={{
                   background: '#16a34a',
@@ -590,7 +555,7 @@ Remember: You're Piko the confused panda, NOT Piko the teacher. The child is tea
                   cursor: 'pointer'
                 }}
               >
-                ← Back to Home
+                ← Back to Hub
               </button>
               <div className="connection-status">
                 <div className={cn('status-bubble', { connected })}>

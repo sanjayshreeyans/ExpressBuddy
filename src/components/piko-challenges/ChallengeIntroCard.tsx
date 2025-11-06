@@ -1,14 +1,18 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
+import { Challenge } from '../../services/challenge-manifest-service';
 
 interface ChallengeIntroCardProps {
+  challenge: Challenge;
   onStart: () => void;
   onLearnMore: () => void;
   onClose?: () => void;
 }
 
-export function ChallengeIntroCard({ onStart, onLearnMore, onClose }: ChallengeIntroCardProps) {
+export function ChallengeIntroCard({ challenge, onStart, onLearnMore, onClose }: ChallengeIntroCardProps) {
+  const bulletPoints = challenge.todos.slice(0, 5);
+
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center px-4 py-12 sm:py-16 relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none bg-slate-950/35 backdrop-blur-lg" />
@@ -19,14 +23,14 @@ export function ChallengeIntroCard({ onStart, onLearnMore, onClose }: ChallengeI
 
         <CardHeader className="px-8 pt-10 pb-0 text-left space-y-4">
           <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50/90 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-600 ring-1 ring-emerald-200/80">
-            Interactive Challenge
+            {challenge.category}
           </div>
           <div className="space-y-2">
             <CardTitle className="text-3xl font-semibold leading-snug text-slate-900">
-              Guide Piko Through His First Restaurant Order
+              {challenge.title}
             </CardTitle>
             <CardDescription className="max-w-2xl text-base text-slate-600">
-              Piko is at the table, nervous about speaking to the waiter. Coach him through each step so he feels confident, calm, and ready to order on his own.
+              {challenge.description}
             </CardDescription>
           </div>
         </CardHeader>
@@ -39,7 +43,7 @@ export function ChallengeIntroCard({ onStart, onLearnMore, onClose }: ChallengeI
                   Your Mission
                 </h3>
                 <p className="mt-3 text-sm leading-relaxed text-slate-700">
-                  Teach Piko how to order food politely at a restaurant. Help him practice what to say when the waiter arrives, how to explain what he wants, and how to respond with confidence.
+                  {challenge.description}
                 </p>
               </section>
 
@@ -48,26 +52,18 @@ export function ChallengeIntroCard({ onStart, onLearnMore, onClose }: ChallengeI
                   What You'll Cover
                 </h3>
                 <ul className="mt-4 space-y-3 text-sm text-slate-700">
-                  <li className="flex items-start gap-3">
-                    <span className="mt-1 inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                    <span>Greeting the waiter with a friendly hello.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="mt-1 inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                    <span>Using polite words like "please" when asking for food.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="mt-1 inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                    <span>Describing his meal choice clearly so the waiter understands.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="mt-1 inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                    <span>Remembering to thank the waiter after ordering.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="mt-1 inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                    <span>Asking for help if he feels unsure about the menu.</span>
-                  </li>
+                  {bulletPoints.map((todo) => (
+                    <li key={todo.id} className="flex items-start gap-3">
+                      <span className="mt-1 inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                      <span>{todo.text}</span>
+                    </li>
+                  ))}
+                  {challenge.todos.length > bulletPoints.length && (
+                    <li className="flex items-start gap-3 text-slate-500 italic text-sm">
+                      <span className="mt-1 inline-flex h-2 w-2 rounded-full bg-emerald-300" />
+                      <span>+{challenge.todos.length - bulletPoints.length} more objectives</span>
+                    </li>
+                  )}
                 </ul>
               </section>
             </div>

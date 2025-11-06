@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 
 interface ChallengeSuccessDialogProps {
+  challengeTitle: string;
   onContinue: () => void;
   onRestart: () => void;
 }
 
-export function ChallengeSuccessDialog({ onContinue, onRestart }: ChallengeSuccessDialogProps) {
+export function ChallengeSuccessDialog({ challengeTitle, onContinue, onRestart }: ChallengeSuccessDialogProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <Card className="w-full max-w-lg mx-4 shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300">
@@ -19,7 +20,7 @@ export function ChallengeSuccessDialog({ onContinue, onRestart }: ChallengeSucce
         <CardContent className="space-y-6 text-center">
           <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6">
             <p className="text-lg text-green-900 font-semibold mb-3">
-              "Thank you SO much! You taught me exactly what to do!"
+              "We did it! I feel ready for {challengeTitle}!"
             </p>
             <p className="text-base text-green-800">
               - Piko the Panda
@@ -31,7 +32,7 @@ export function ChallengeSuccessDialog({ onContinue, onRestart }: ChallengeSucce
               My panda confidence is growing!
             </p>
             <p className="text-sm text-yellow-800">
-              Now I know how to order food at a restaurant! You're an amazing teacher!
+              You're an amazing teacher! Thanks for guiding me through {challengeTitle}.
             </p>
           </div>
 
@@ -41,7 +42,7 @@ export function ChallengeSuccessDialog({ onContinue, onRestart }: ChallengeSucce
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-6 text-lg"
               size="lg"
             >
-              Unlock Level 2
+              Back to Challenges
             </Button>
             <Button 
               onClick={onRestart} 
@@ -54,7 +55,7 @@ export function ChallengeSuccessDialog({ onContinue, onRestart }: ChallengeSucce
 
           <div className="pt-4 border-t border-gray-200">
             <p className="text-xs text-gray-500">
-              Level 2 coming soon! You can restart this challenge to practice more.
+              You can restart this challenge to practice more or pick another adventure.
             </p>
           </div>
         </CardContent>
