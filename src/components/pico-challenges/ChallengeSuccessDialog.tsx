@@ -23,7 +23,7 @@ export function ChallengeSuccessDialog({ challengeTitle, onContinue, onRestart }
               "We did it! I feel ready for {challengeTitle}!"
             </p>
             <p className="text-base text-green-800">
-              - Piko the Panda
+              - Pico the Panda
             </p>
           </div>
 
@@ -37,16 +37,16 @@ export function ChallengeSuccessDialog({ challengeTitle, onContinue, onRestart }
           </div>
 
           <div className="space-y-3 pt-4">
-            <Button 
-              onClick={onContinue} 
+            <Button
+              onClick={onContinue}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-6 text-lg"
               size="lg"
             >
               Back to Challenges
             </Button>
-            <Button 
-              onClick={onRestart} 
-              variant="outline" 
+            <Button
+              onClick={onRestart}
+              variant="outline"
               className="w-full py-4"
             >
               Try Again

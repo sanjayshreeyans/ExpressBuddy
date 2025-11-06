@@ -17,7 +17,7 @@ interface NudgeIndicatorProps {
 
 export const NudgeIndicator: React.FC<NudgeIndicatorProps> = ({
   visible,
-  message = "Piko is trying to say hi!",
+  message = "Pico is trying to say hi!",
   className = "",
 }) => {
   if (!visible) return null;

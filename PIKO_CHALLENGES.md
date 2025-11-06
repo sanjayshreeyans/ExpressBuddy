@@ -1,8 +1,8 @@
-# Piko Challenges System Documentation
+# Pico Challenges System Documentation
 
 ## 🎯 Overview
 
-Piko Challenges is an interactive learning system where children teach Piko the Panda social skills through guided conversations. Unlike traditional learning where AI teaches the child, **the child becomes the teacher**, reinforcing their own understanding through explanation.
+Pico Challenges is an interactive learning system where children teach Pico the Panda social skills through guided conversations. Unlike traditional learning where AI teaches the child, **the child becomes the teacher**, reinforcing their own understanding through explanation.
 
 ## 🏗️ System Architecture
 
@@ -10,8 +10,8 @@ Piko Challenges is an interactive learning system where children teach Piko the 
 
 ```
 src/
-├── components/piko-challenges/
-│   ├── PikoChallengeInterface.tsx    # Main interface (copy of MainInterfaceWithVideoAvatar)
+├── components/Pico-challenges/
+│   ├── PicoChallengeInterface.tsx    # Main interface (copy of MainInterfaceWithVideoAvatar)
 │   ├── ChallengeIntroCard.tsx        # Welcome screen with challenge description
 │   ├── ChallengeChecklist.tsx        # Floating todo list (top-right)
 │   └── ChallengeSuccessDialog.tsx    # Completion celebration
@@ -60,16 +60,16 @@ When all 5 complete → Show success dialog
   onLearnMore={handleLearnMore}
 />
 ```
-- Shows mission: "Piko needs your help!"
+- Shows mission: "Pico needs your help!"
 - Explains Level 1: Coach Mode
 - Buttons: [START CHALLENGE] [LEARN MORE]
 
 #### 2. **Active Challenge**
 - Background: Restaurant scene
-- Piko avatar: Looking confused/nervous
+- Pico avatar: Looking confused/nervous
 - Checklist visible (top-right)
-- Child gives advice → Piko responds with validation
-- Todos check off automatically as Piko learns
+- Child gives advice → Pico responds with validation
+- Todos check off automatically as Pico learns
 
 #### 3. **Success Dialog** (all 5 complete)
 ```tsx
@@ -78,7 +78,7 @@ When all 5 complete → Show success dialog
   onRestart={handleRestartChallenge}
 />
 ```
-- Celebration message from Piko
+- Celebration message from Pico
 - "Thank you SO much! You taught me exactly what to do!"
 - Buttons: [🏆 UNLOCK LEVEL 2] [🔄 Try Again]
 
@@ -182,10 +182,10 @@ useEffect(() => {
 
 ## 🤖 System Prompt Design
 
-### Core Personality: "Piko Needs Help!"
+### Core Personality: "Pico Needs Help!"
 
 ```
-You are Piko, a friendly but NERVOUS panda at a restaurant for the FIRST TIME.
+You are Pico, a friendly but NERVOUS panda at a restaurant for the FIRST TIME.
 You need help from a child to learn how to order food properly.
 
 PERSONALITY:
@@ -234,7 +234,7 @@ The hint button prompt should be challenge-specific:
 
 ```typescript
 const challengeHintPrompt = `
-Give the child a gentle hint about teaching Piko restaurant manners.
+Give the child a gentle hint about teaching Pico restaurant manners.
 Focus on what they haven't mentioned yet from:
 - Greeting the waiter
 - Saying please
@@ -255,7 +255,7 @@ Be encouraging and give ONE specific hint related to an incomplete objective.
 ```tsx
 <Card className="fixed top-4 right-4 z-50 w-80">
   <CardHeader>
-    <CardTitle>🐼 Piko's Learning Goals</CardTitle>
+    <CardTitle>🐼 Pico's Learning Goals</CardTitle>
     <Badge>{completedCount}/{totalCount}</Badge>
     <ProgressBar value={completionPercentage} />
   </CardHeader>
@@ -277,7 +277,7 @@ Be encouraging and give ONE specific hint related to an incomplete objective.
 <Card className="fixed inset-0 z-50 flex items-center justify-center">
   <div className="text-7xl animate-bounce">🎉</div>
   <h2>Amazing Job!</h2>
-  <p>"Thank you SO much! You taught me exactly what to do!" - Piko</p>
+  <p>"Thank you SO much! You taught me exactly what to do!" - Pico</p>
   <Button onClick={onContinue}>🏆 UNLOCK LEVEL 2</Button>
   <Button onClick={onRestart}>🔄 Try Again</Button>
 </Card>
@@ -293,7 +293,7 @@ const GROCERY_SHOPPING_TODOS: ChallengeTodo[] = [
   {
     id: 1,
     text: "Make a shopping list first",
-    description: "Teach Piko to write down what he needs",
+    description: "Teach Pico to write down what he needs",
     complete: false
   },
   // ... more todos
@@ -304,15 +304,15 @@ const GROCERY_SHOPPING_TODOS: ChallengeTodo[] = [
 
 ```bash
 # Copy template
-cp src/components/piko-challenges/PikoChallengeInterface.tsx \
-   src/components/piko-challenges/GroceryShoppingChallenge.tsx
+cp src/components/Pico-challenges/PicoChallengeInterface.tsx \
+   src/components/Pico-challenges/GroceryShoppingChallenge.tsx
 ```
 
 ### 3. Update System Prompt
 
 ```typescript
 const systemPrompt = `
-You are Piko at a grocery store for the first time.
+You are Pico at a grocery store for the first time.
 You need help learning how to shop for food properly.
 
 LEARNING OBJECTIVES:
@@ -329,7 +329,7 @@ LEARNING OBJECTIVES:
 
 ```typescript
 // App.tsx
-<Route path="/piko-challenge/grocery-shopping-level1" element={
+<Route path="/Pico-challenge/grocery-shopping-level1" element={
   <LiveAPIProvider options={apiOptions}>
     <GroceryShoppingChallenge />
   </LiveAPIProvider>
@@ -340,8 +340,8 @@ LEARNING OBJECTIVES:
 
 - [ ] Intro card displays correctly
 - [ ] Challenge starts when clicking "START"
-- [ ] Piko acts confused and asks for help
-- [ ] When child gives advice, Piko validates it ("Oh! So I should...")
+- [ ] Pico acts confused and asks for help
+- [ ] When child gives advice, Pico validates it ("Oh! So I should...")
 - [ ] Checklist updates in real-time when todo marked complete
 - [ ] All 5 todos can be completed
 - [ ] Success dialog shows when all complete
@@ -358,7 +358,7 @@ LEARNING OBJECTIVES:
 1. **Role Reversal** - Child teaches instead of being taught (deeper learning)
 2. **Low Pressure** - Very forgiving, can't really fail
 3. **Clear Goals** - Visible checklist shows progress
-4. **Scaffolding** - Piko asks clarifying questions to deepen thinking
+4. **Scaffolding** - Pico asks clarifying questions to deepen thinking
 5. **Immediate Feedback** - Checklist updates as child teaches
 6. **Celebration** - Success dialog validates child's teaching ability
 
@@ -374,22 +374,22 @@ LEARNING OBJECTIVES:
 
 ### With Main ExpressBuddy System:
 
-1. **Route**: `/piko-challenge/restaurant-ordering-level1`
+1. **Route**: `/Pico-challenge/restaurant-ordering-level1`
 2. **Shared Components**: `VideoExpressBuddyAvatar`, `ControlTray`, `Captions`
 3. **Shared Contexts**: `LiveAPIContext` (but NO memory features)
 4. **Independent State**: Challenge todos are session-based (localStorage not used)
 
 ### Future Expansion:
 
-- Level 2: Practice Mode (Piko tries it, child judges)
-- Level 3: Role Play (Child orders, Piko is waiter)
+- Level 2: Practice Mode (Pico tries it, child judges)
+- Level 3: Role Play (Child orders, Pico is waiter)
 - Level 4: Challenge Mode (Time pressure, menu complications)
 - Progress tracking across multiple challenges
 - Unlock system for new challenges
 
 ## 🎯 Key Differentiators from Main App
 
-| Feature | Main ExpressBuddy | Piko Challenges |
+| Feature | Main ExpressBuddy | Pico Challenges |
 |---------|-------------------|-----------------|
 | **Role** | AI teaches child | Child teaches AI |
 | **Memory** | Stores conversation history | No memory (session-only) |
@@ -397,14 +397,14 @@ LEARNING OBJECTIVES:
 | **Goals** | Open conversation | Specific 5 objectives |
 | **Feedback** | Implicit | Explicit (checklist) |
 | **Structure** | Free-form | Guided with clear end |
-| **Personality** | Confident Piko | Confused/nervous Piko |
+| **Personality** | Confident Pico | Confused/nervous Pico |
 
 ## 📚 Resources
 
-- System Prompt: `PikoChallengeInterface.tsx` lines 120-350
-- Tool Declarations: `PikoChallengeInterface.tsx` lines 95-118
+- System Prompt: `PicoChallengeInterface.tsx` lines 120-350
+- Tool Declarations: `PicoChallengeInterface.tsx` lines 95-118
 - Service API: `challenge-todo-service.ts`
-- UI Components: `src/components/piko-challenges/`
+- UI Components: `src/components/Pico-challenges/`
 - Route Config: `App.tsx` line ~170
 
 ## 🐛 Troubleshooting
@@ -414,7 +414,7 @@ LEARNING OBJECTIVES:
 - Verify `mark_todo_complete` is being called
 - Ensure event listeners are registered in `ChallengeChecklist`
 
-### Piko not calling tools
+### Pico not calling tools
 - Check tool declarations include `behavior: AsyncBehavior.NON_BLOCKING`
 - Verify system prompt includes tool usage instructions
 - Look for tool call logs in console (`🎯 Challenge tool call received`)
@@ -434,4 +434,4 @@ LEARNING OBJECTIVES:
 **Created**: 2025-10-23  
 **Version**: 1.0  
 **Last Updated**: Initial implementation  
-**Author**: Piko Challenge Development Team 🐼
+**Author**: Pico Challenge Development Team 🐼

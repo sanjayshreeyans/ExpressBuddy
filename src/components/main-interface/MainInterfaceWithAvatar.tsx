@@ -83,7 +83,7 @@ const AsyncBehavior = {
 
 const AsyncScheduling = {
   INTERRUPT: "INTERRUPT",
-  WHEN_IDLE: "WHEN_IDLE", 
+  WHEN_IDLE: "WHEN_IDLE",
   SILENT: "SILENT"
 };
 
@@ -102,10 +102,10 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
 
   // FIX: Destructure `setConfig` from the context to send the system prompt.
   // **NEW**: Include hint system functionality
-  const { 
-    connected, 
-    client, 
-    setConfig, 
+  const {
+    connected,
+    client,
+    setConfig,
     hintSystem,
     isHintIndicatorVisible,
     sendHintToGemini
@@ -118,7 +118,7 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
     hasGeneratedContent: false
   });
   const [currentAvatarSubtitle, setCurrentAvatarSubtitle] = useState<string>('');
-  
+
   // **REMOVED**: No longer need settings visibility state since we removed silence detection settings
 
   const { buffer, addChunk, markComplete, reset, accumulatedText } = useResponseBuffer();
@@ -138,7 +138,7 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
               description: "The memory key (e.g., 'favorite_color', 'pet_name', 'best_friend', 'favorite_activity', 'recent_experience')"
             },
             value: {
-              type: Type.STRING, 
+              type: Type.STRING,
               description: "The detailed memory value to store about the child"
             }
           },
@@ -193,8 +193,8 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
     };
 
     console.log('🔧 Memory tools configured with async behavior:', {
-      functions: memoryFunctions.map(f => ({ 
-        name: f.name, 
+      functions: memoryFunctions.map(f => ({
+        name: f.name,
         behavior: f.behavior,
         async: f.behavior === AsyncBehavior.NON_BLOCKING
       })),
@@ -206,7 +206,7 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
     // **NEW**: Automatically retrieve available memory keys from localStorage
     const getAvailableMemoryKeys = (): string[] => {
       const availableKeys: string[] = [];
-      
+
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith('memory_')) {
@@ -214,14 +214,14 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
           availableKeys.push(memoryKey);
         }
       }
-      
+
       return availableKeys;
     };
 
     // **NEW**: Get all stored memories with their values for context
     const getStoredMemories = (): { [key: string]: string } => {
       const memories: { [key: string]: string } = {};
-      
+
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith('memory_')) {
@@ -232,7 +232,7 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
           }
         }
       }
-      
+
       return memories;
     };
 
@@ -240,13 +240,13 @@ export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterface
     const buildMemoryContextSection = (): string => {
       const availableKeys = getAvailableMemoryKeys();
       const storedMemories = getStoredMemories();
-      
+
       console.log('🧠 Building memory context for system prompt:', {
         availableKeys,
         memoryCount: availableKeys.length,
         storedMemories
       });
-      
+
       if (availableKeys.length === 0) {
         return `
 [ CURRENT MEMORY CONTEXT ]
@@ -281,10 +281,10 @@ ${memoryList}
 `;
     };
 
-    // The full system prompt text for Piko the panda with memory tool usage instructions.
-const systemPrompt = `
+    // The full system prompt text for Pico the panda with memory tool usage instructions.
+    const systemPrompt = `
 [ YOUR IDENTITY ]
-You are Piko, a friendly and curious panda avatar inside the ExpressBuddy app. You are a kind, patient, and supportive friend for children. You are not a doctor or a therapist; you are a peer and a learning buddy. You are gentle, encouraging, and always positive. You love learning about your friend's world, their ideas, and their feelings.
+You are Pico, a friendly and curious panda avatar inside the ExpressBuddy app. You are a kind, patient, and supportive friend for children. You are not a doctor or a therapist; you are a peer and a learning buddy. You are gentle, encouraging, and always positive. You love learning about your friend's world, their ideas, and their feelings.
 
 ${buildMemoryContextSection()}
 
@@ -503,7 +503,7 @@ Example:
 - If they look bored or distracted: "Need a quick brain break? Or want to play a short game?"
 
 [ INTRO + CONVERSATION KICKOFF ]
-You are Piko. Start with a warm, friendly greeting like:  
+You are Pico. Start with a warm, friendly greeting like:  
 - "Hi there, friend! How's your day going so far?"  
 - "I'm so happy to see you again! What are you feeling today?"
 
@@ -538,9 +538,9 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
   // Set the video stream to the video element for display purposes
   useEffect(() => {
     if (videoRef.current && videoStream) {
-      console.log('MainInterface: Setting video srcObject:', { 
+      console.log('MainInterface: Setting video srcObject:', {
         streamId: videoStream.id,
-        tracks: videoStream.getVideoTracks().length 
+        tracks: videoStream.getVideoTracks().length
       });
       videoRef.current.srcObject = videoStream;
     } else {
@@ -554,7 +554,7 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
       log(streamingLog);
 
       if (streamingLog.type === 'server.content' &&
-          streamingLog.message?.serverContent?.modelTurn?.parts) {
+        streamingLog.message?.serverContent?.modelTurn?.parts) {
         reset(); // Clear previous content to show only the newest full message
         const parts = streamingLog.message.serverContent.modelTurn.parts;
         for (const part of parts) {
@@ -585,7 +585,7 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
   useEffect(() => {
     const handleToolCall = (toolCall: any) => {
       console.log('🔧 ASYNC Tool call received:', toolCall);
-      
+
       if (!toolCall.functionCalls) {
         console.warn('⚠️ No function calls in tool call');
         return;
@@ -593,34 +593,34 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
 
       const functionResponses = toolCall.functionCalls.map((fc: any) => {
         console.log(`🔧 Processing ASYNC function call: ${fc.name}`, fc.args);
-        
+
         let result;
-        
+
         try {
           if (fc.name === 'write_to_memory') {
             const { key, value } = fc.args;
             if (!key || !value) {
               throw new Error('Missing key or value for write_to_memory');
             }
-            
+
             // ASYNC: Store in localStorage (non-blocking operation)
             const memoryKey = `memory_${key}`;
             localStorage.setItem(memoryKey, value);
             console.log(`💾 ASYNC memory stored: ${memoryKey} = ${value}`);
-            
-            result = { 
-              success: true, 
+
+            result = {
+              success: true,
               message: `Successfully remembered: ${key} = ${value}`,
               stored_key: key,
               stored_value: value,
               timestamp: new Date().toISOString(),
               async_operation: true
             };
-            
+
           } else if (fc.name === 'get_available_memory_keys') {
             // ASYNC: Get list of available memory keys from localStorage (non-blocking)
             const availableKeys: string[] = [];
-            
+
             for (let i = 0; i < localStorage.length; i++) {
               const key = localStorage.key(i);
               if (key && key.startsWith('memory_')) {
@@ -628,24 +628,24 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
                 availableKeys.push(memoryKey);
               }
             }
-            
+
             console.log(`🔑 ASYNC found ${availableKeys.length} available memory keys:`, availableKeys);
-            
+
             result = {
               success: true,
               available_keys: availableKeys,
               key_count: availableKeys.length,
-              message: availableKeys.length > 0 
-                ? `Found ${availableKeys.length} memory categories: ${availableKeys.join(', ')}` 
+              message: availableKeys.length > 0
+                ? `Found ${availableKeys.length} memory categories: ${availableKeys.join(', ')}`
                 : "No memories stored yet - this appears to be a new conversation with this child",
               async_operation: true
             };
-            
+
           } else if (fc.name === 'read_all_memories') {
             // ASYNC: Retrieve all memories from localStorage (non-blocking)
             const memories: { [key: string]: string } = {};
             let memoryCount = 0;
-            
+
             for (let i = 0; i < localStorage.length; i++) {
               const key = localStorage.key(i);
               if (key && key.startsWith('memory_')) {
@@ -657,16 +657,16 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
                 }
               }
             }
-            
+
             console.log(`🧠 ASYNC retrieved ${memoryCount} memories:`, memories);
-            
+
             if (memoryCount > 0) {
               // Format memories for better context
               const memoryList = Object.entries(memories)
                 .map(([key, value]) => `${key}: ${value}`)
                 .join('; ');
-              
-              result = { 
+
+              result = {
                 success: true,
                 memories,
                 memory_count: memoryCount,
@@ -683,37 +683,37 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
                 async_operation: true
               };
             }
-            
+
           } else if (fc.name === 'get_memories_by_keys') {
             // ASYNC: Retrieve specific memories by keys from localStorage (non-blocking)
             const { keys } = fc.args;
-            
+
             if (!keys || !Array.isArray(keys)) {
               throw new Error('Missing or invalid keys array for get_memories_by_keys');
             }
-            
+
             const foundMemories: { [key: string]: string } = {};
             const missingKeys: string[] = [];
-            
+
             keys.forEach((key: string) => {
               const memoryKey = `memory_${key}`;
               const memoryValue = localStorage.getItem(memoryKey);
-              
+
               if (memoryValue) {
                 foundMemories[key] = memoryValue;
               } else {
                 missingKeys.push(key);
               }
             });
-            
+
             const foundCount = Object.keys(foundMemories).length;
             console.log(`🔍 ASYNC retrieved ${foundCount}/${keys.length} specific memories:`, foundMemories);
-            
+
             if (foundCount > 0) {
               const memoryList = Object.entries(foundMemories)
                 .map(([key, value]) => `${key}: ${value}`)
                 .join('; ');
-              
+
               result = {
                 success: true,
                 requested_keys: keys,
@@ -737,18 +737,18 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
                 async_operation: true
               };
             }
-            
+
           } else {
             console.warn(`⚠️ Unknown function call: ${fc.name}`);
-            result = { 
-              success: false, 
-              error: `Unknown function: ${fc.name}` 
+            result = {
+              success: false,
+              error: `Unknown function: ${fc.name}`
             };
           }
         } catch (error) {
           console.error(`❌ Error processing ASYNC function call ${fc.name}:`, error);
-          result = { 
-            success: false, 
+          result = {
+            success: false,
             error: error instanceof Error ? error.message : 'Unknown error occurred',
             async_operation: true
           };
@@ -757,7 +757,7 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
         return {
           id: fc.id,
           name: fc.name,
-          response: { 
+          response: {
             result,
             // Asynchronous scheduling using SILENT for seamless memory integration
             // SILENT: Process in background without announcing - Pico just "remembers" naturally
@@ -772,7 +772,7 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
       if (functionResponses.length > 0) {
         console.log('📤 Sending SILENT function responses to Gemini:', functionResponses);
         console.log('🤫 Scheduling: SILENT - Memory operations will complete in background, Pico will naturally integrate information');
-        
+
         // Use immediate processing for async operations (no artificial delay needed)
         setTimeout(() => {
           try {
@@ -837,12 +837,12 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
             <div className={cn("status-bubble", { connected })}>
               {connected ? "● Connected" : "○ Disconnected"}
             </div>
-            
+
             {/* **NEW**: Get Hint Button (replaces silence detection) */}
             <button
               onClick={() => hintSystem.triggerHint()}
               className="get-hint-btn"
-              title="Get a helpful hint or suggestion from Piko"
+              title="Get a helpful hint or suggestion from Pico"
               disabled={!connected || !hintSystem.config.enabled}
               style={{
                 background: connected && hintSystem.config.enabled ? 'var(--primary)' : '#6b7280',
@@ -907,7 +907,7 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
             hidden: !videoRef.current || !videoStream,
             placeholder: !videoStream,
           })}
-          style={{ 
+          style={{
             width: '320px',
             height: '240px',
             position: 'absolute',
@@ -951,11 +951,11 @@ Designed for elementary and middle school students, ExpressBuddy supports specia
           enableEditingSettings={true}
         />
       </div>
-      
+
       {/* **NEW**: Hint Indicator (replaces nudge indicator) */}
-      <NudgeIndicator 
+      <NudgeIndicator
         visible={isHintIndicatorVisible}
-        message="Piko has a helpful hint for you!"
+        message="Pico has a helpful hint for you!"
       />
     </div>
   );

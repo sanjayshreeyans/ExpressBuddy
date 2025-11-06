@@ -14,9 +14,10 @@ export function ChallengeIntroCard({ challenge, onStart, onLearnMore, onClose }:
   const bulletPoints = challenge.todos.slice(0, 5);
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center px-4 py-12 sm:py-16 relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none bg-slate-950/35 backdrop-blur-lg" />
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.28),_transparent_55%),radial-gradient(circle_at_bottom,_rgba(16,185,129,0.25),_transparent_60%)] opacity-95" />
+    <div className="fixed inset-0 z-40 flex items-center justify-center px-4 py-12 sm:py-16">
+      <div className="absolute inset-0 pointer-events-none bg-slate-950/45 backdrop-blur-2xl" />
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-slate-900/20 via-slate-900/10 to-slate-900/30" />
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.28),_transparent_55%),radial-gradient(circle_at_bottom,_rgba(16,185,129,0.25),_transparent_60%)] opacity-90" />
 
       <Card className="relative w-full max-w-4xl mx-auto overflow-hidden border border-white/40 bg-white/85 shadow-2xl backdrop-blur-xl">
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 via-sky-400 to-cyan-400" />
@@ -71,7 +72,7 @@ export function ChallengeIntroCard({ challenge, onStart, onLearnMore, onClose }:
             <aside className="flex flex-col justify-between gap-6 rounded-2xl border border-slate-200/80 bg-white/80 p-6 shadow-lg backdrop-blur">
               <div className="space-y-3">
                 <h4 className="text-lg font-semibold text-slate-900">
-                  Ready to coach Piko?
+                  Ready to coach Pico?
                 </h4>
                 <p className="text-sm leading-relaxed text-slate-600">
                   He listens in real time. Speak naturally, give him tips, and celebrate his progress as each learning goal lights up.

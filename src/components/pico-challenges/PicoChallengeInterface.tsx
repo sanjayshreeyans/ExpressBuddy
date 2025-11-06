@@ -1,6 +1,6 @@
 /**
- * Piko Challenge Interface - Level 1: Ordering Food at a Restaurant
- * Interactive challenge where children teach Piko social skills
+ * Pico Challenge Interface - Level 1: Ordering Food at a Restaurant
+ * Interactive challenge where children teach Pico social skills
  */
 
 import React, { useRef, useState, useEffect, useCallback } from "react";
@@ -43,7 +43,7 @@ type ExtendedFunctionDeclaration = FunctionDeclaration & {
   behavior?: string;
 };
 
-export default function PikoChallengeInterface() {
+export default function PicoChallengeInterface() {
   const navigate = useNavigate();
   const { id: challengeId } = useParams<{ id: string }>();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -67,7 +67,7 @@ export default function PikoChallengeInterface() {
     onAITurnComplete,
     onAITurnStart
   } = useLiveAPIContext();
-  
+
   const { log } = useLoggerStore();
 
   const [avatarState, setAvatarState] = useState<AvatarState>({
@@ -116,20 +116,20 @@ export default function PikoChallengeInterface() {
         }
 
         const loadedChallenge = await challengeManifestService.getChallengeById(actualId || '');
-        
+
         if (!loadedChallenge) {
           setChallengeError(`Challenge "${actualId}" not found`);
           return;
         }
 
-  setChallenge(loadedChallenge);
-  setBackgroundVideo(loadedChallenge.backgroundImage || '/Backgrounds/restaurant/bamboo.jpeg');
-  challengeTodoService.reset_todos();
-  setTodos(challengeTodoService.get_todo_status());
-  setShowIntroCard(true);
-  setChallengeStarted(false);
-  setShowSuccessDialog(false);
-  console.log('✅ Challenge loaded:', loadedChallenge.title);
+        setChallenge(loadedChallenge);
+        setBackgroundVideo(loadedChallenge.backgroundImage || '/Backgrounds/restaurant/bamboo.jpeg');
+        challengeTodoService.reset_todos();
+        setTodos(challengeTodoService.get_todo_status());
+        setShowIntroCard(true);
+        setChallengeStarted(false);
+        setShowSuccessDialog(false);
+        console.log('✅ Challenge loaded:', loadedChallenge.title);
       } catch (error) {
         console.error('❌ Error loading challenge:', error);
         setChallengeError(error instanceof Error ? error.message : 'Failed to load challenge');
@@ -170,7 +170,7 @@ export default function PikoChallengeInterface() {
     }
   }, [setEnableChunking]);
 
-  // System prompt for Piko Challenge - Dynamic based on loaded challenge
+  // System prompt for Pico Challenge - Dynamic based on loaded challenge
   useEffect(() => {
     if (!challengeStarted || !challenge) return; // Don't set prompt until challenge starts and is loaded
 
@@ -213,7 +213,7 @@ export default function PikoChallengeInterface() {
     const currentLanguage = languageCode;
     const languageInstruction = getLanguageInstruction(currentLanguage);
 
-    // Piko Challenge System Prompt - Use the challenge's systemPrompt from manifest
+    // Pico Challenge System Prompt - Use the challenge's systemPrompt from manifest
     const systemPrompt = `
 # LANGUAGE INSTRUCTION
 ${languageInstruction}
@@ -242,7 +242,7 @@ ${challenge.systemPrompt}
           outputAudioTranscription: prevConfig.outputAudioTranscription || {},
         };
 
-        console.log('🎯 Piko Challenge system prompt configured:', {
+        console.log('🎯 Pico Challenge system prompt configured:', {
           language: currentLanguage,
           challenge: challenge.title,
           toolCount: challengeFunctions.length
@@ -328,7 +328,7 @@ ${challenge.systemPrompt}
             console.log(`✅ Marking todo ${todoId} as complete (correct: ${isCorrect})`);
 
             const response = challengeTodoService.mark_todo_complete(todoId, isCorrect);
-            
+
             // Update local state
             setTodos(challengeTodoService.get_todo_status());
 
@@ -337,7 +337,7 @@ ${challenge.systemPrompt}
               console.log('🎉 Challenge complete! All todos marked!');
               setTimeout(() => {
                 setShowSuccessDialog(true);
-              }, 2000); // Delay to let Piko finish speaking
+              }, 2000); // Delay to let Pico finish speaking
             }
 
             result = {
@@ -409,7 +409,7 @@ ${challenge.systemPrompt}
 
   // Challenge intro handlers
   const handleStartChallenge = () => {
-    console.log('🚀 Starting Piko Challenge!');
+    console.log('🚀 Starting Pico Challenge!');
     setShowIntroCard(false);
     setChallengeStarted(true);
   };
@@ -426,7 +426,7 @@ ${challenge.systemPrompt}
 
   // Success dialog handlers
   const handleContinueToLevel2 = () => {
-    navigate('/piko-challenges');
+    navigate('/Pico-challenges');
   };
 
   const handleRestartChallenge = () => {
@@ -467,7 +467,7 @@ ${challenge.systemPrompt}
             {challengeError || 'Challenge not found'}
           </div>
           <button
-            onClick={() => navigate('/piko-challenges')}
+            onClick={() => navigate('/Pico-challenges')}
             style={{
               background: '#4f46e5',
               color: 'white',
@@ -487,7 +487,7 @@ ${challenge.systemPrompt}
   }
 
   return (
-    <div 
+    <div
       className={cn("avatar-interface", {
         connected,
         "video-bg-mode": true
@@ -512,7 +512,7 @@ ${challenge.systemPrompt}
           challenge={challenge}
           onStart={handleStartChallenge}
           onLearnMore={handleLearnMore}
-          onClose={() => navigate('/piko-challenges')}
+          onClose={() => navigate('/Pico-challenges')}
         />
       )}
 
@@ -532,7 +532,7 @@ ${challenge.systemPrompt}
             <ChallengeChecklist todos={todos} />
           )}
 
-          <div 
+          <div
             className="header-section"
             style={{ position: 'relative', zIndex: 101 }}
           >
@@ -542,7 +542,7 @@ ${challenge.systemPrompt}
             </div>
             <div className="header-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <button
-                onClick={() => navigate('/piko-challenges')}
+                onClick={() => navigate('/Pico-challenges')}
                 className="back-to-landing-btn"
                 style={{
                   background: '#16a34a',
@@ -565,7 +565,7 @@ ${challenge.systemPrompt}
             </div>
           </div>
 
-          <div 
+          <div
             className="main-content-area"
             style={{
               position: 'relative',
@@ -594,7 +594,7 @@ ${challenge.systemPrompt}
                 isListening={isAvatarSpeaking}
                 onAvatarStateChange={handleAvatarStateChange}
                 onCurrentSubtitleChange={handleAvatarSubtitleChange}
-                backgroundSrc="" 
+                backgroundSrc=""
                 disableClickInteraction={true}
               />
 
@@ -622,7 +622,7 @@ ${challenge.systemPrompt}
               enableEditingSettings={true}
               disableChunkingToggle={true}
               currentBackground={backgroundVideo}
-              onBackgroundChange={() => {}}
+              onBackgroundChange={() => { }}
             />
           </div>
         </>

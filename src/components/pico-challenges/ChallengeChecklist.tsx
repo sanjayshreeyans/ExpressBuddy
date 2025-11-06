@@ -46,7 +46,7 @@ export function ChallengeChecklist({ todos, className }: ChallengeChecklistProps
   const completionPercentage = Math.round((completedCount / totalCount) * 100);
 
   return (
-    <Card 
+    <Card
       className={`fixed top-40 right-4 z-50 w-80 shadow-lg ${className || ''}`}
       style={{
         backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -61,9 +61,9 @@ export function ChallengeChecklist({ todos, className }: ChallengeChecklistProps
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-bold flex items-center gap-2 text-slate-900">
-            <span>Piko's Learning Goals</span>
+            <span>Pico's Learning Goals</span>
           </CardTitle>
-          <Badge 
+          <Badge
             variant={completionPercentage === 100 ? "default" : "secondary"}
             className="text-sm font-semibold"
           >
@@ -72,7 +72,7 @@ export function ChallengeChecklist({ todos, className }: ChallengeChecklistProps
         </div>
         <div className="mt-2">
           <div className="h-2 w-full bg-gray-300 rounded-full overflow-hidden">
-            <div 
+            <div
               className="h-full bg-green-500 transition-all duration-500 ease-out"
               style={{ width: `${completionPercentage}%` }}
             />
@@ -81,29 +81,27 @@ export function ChallengeChecklist({ todos, className }: ChallengeChecklistProps
       </CardHeader>
       <CardContent className="space-y-2.5">
         {localTodos.map((todo) => (
-          <div 
+          <div
             key={todo.id}
-            className={`group relative flex items-start gap-3.5 p-4 rounded-xl border-2 transition-all duration-300 ${
-              todo.complete 
-                ? 'bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-300 shadow-sm' 
+            className={`group relative flex items-start gap-3.5 p-4 rounded-xl border-2 transition-all duration-300 ${todo.complete
+                ? 'bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-300 shadow-sm'
                 : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-md'
-            }`}
+              }`}
           >
             <div
-              className={`relative flex-shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center mt-0.5 transition-all duration-200 ${
-                todo.complete 
-                  ? 'bg-emerald-500 border-emerald-600 shadow-sm' 
+              className={`relative flex-shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center mt-0.5 transition-all duration-200 ${todo.complete
+                  ? 'bg-emerald-500 border-emerald-600 shadow-sm'
                   : 'bg-white border-slate-300 group-hover:border-emerald-400'
-              }`}
+                }`}
             >
               {todo.complete && (
-                <svg 
-                  className="w-4 h-4 text-white" 
-                  fill="none" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth="3" 
-                  viewBox="0 0 24 24" 
+                <svg
+                  className="w-4 h-4 text-white"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="3"
+                  viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
                   <path d="M5 13l4 4L19 7"></path>
@@ -112,9 +110,8 @@ export function ChallengeChecklist({ todos, className }: ChallengeChecklistProps
             </div>
             <div className="flex-1 min-w-0">
               <div
-                className={`text-sm font-bold leading-snug ${
-                  todo.complete ? 'text-emerald-700 line-through' : 'text-slate-900'
-                }`}
+                className={`text-sm font-bold leading-snug ${todo.complete ? 'text-emerald-700 line-through' : 'text-slate-900'
+                  }`}
               >
                 {todo.text}
               </div>

@@ -1,4 +1,4 @@
-# 🚀 Quick Start: Piko Challenge
+# 🚀 Quick Start: Pico Challenge
 
 ## To Test the Challenge RIGHT NOW:
 
@@ -20,16 +20,16 @@ npm run dev
 
 ### 3. Navigate to Challenge
 ```
-http://localhost:3000/piko-challenge/restaurant-ordering-level1
+http://localhost:3000/Pico-challenge/restaurant-ordering-level1
 ```
 
 ### 4. Test the Experience
 
-1. **Intro Card** should appear with "PIKO NEEDS YOUR HELP!"
+1. **Intro Card** should appear with "Pico NEEDS YOUR HELP!"
 2. Click **START CHALLENGE**
 3. Checklist appears in top-right corner
-4. Piko says: "I'm so nervous! What should I say when the waiter comes?"
-5. **Teach Piko** by speaking:
+4. Pico says: "I'm so nervous! What should I say when the waiter comes?"
+5. **Teach Pico** by speaking:
    - "Say hello to the waiter"
    - "Use the word please"
    - "Tell them what food you want"
@@ -49,7 +49,7 @@ Open browser console (F12) and look for:
 📋 ChallengeChecklist received update
 ```
 
-### Piko not responding?
+### Pico not responding?
 Check that:
 - Microphone permission granted
 - Audio is enabled in browser
@@ -62,15 +62,15 @@ Check that:
 
 ## 📚 Documentation
 
-- **Full Architecture**: `PIKO_CHALLENGES.md`
-- **Implementation Details**: `PIKO_CHALLENGE_IMPLEMENTATION_SUMMARY.md`
-- **Code**: `src/components/piko-challenges/`
+- **Full Architecture**: `Pico_CHALLENGES.md`
+- **Implementation Details**: `Pico_CHALLENGE_IMPLEMENTATION_SUMMARY.md`
+- **Code**: `src/components/Pico-challenges/`
 
 ## 🎯 What Should Happen
 
 When working correctly:
-- ✅ Piko acts confused and nervous
-- ✅ Piko validates child's advice ("Oh! So I should...")
+- ✅ Pico acts confused and nervous
+- ✅ Pico validates child's advice ("Oh! So I should...")
 - ✅ Checklist updates in real-time
 - ✅ All 5 objectives can be completed
 - ✅ Success celebration when done
@@ -78,6 +78,6 @@ When working correctly:
 
 ---
 
-**Route**: `/piko-challenge/restaurant-ordering-level1`  
+**Route**: `/Pico-challenge/restaurant-ordering-level1`  
 **Status**: Ready for testing once background image added  
 **Time to test**: ~5 minutes
