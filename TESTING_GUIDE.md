@@ -26,8 +26,8 @@
 
 5. **Test Real Silence Detection**
    - Connect to Gemini
-   - Start a conversation with Piko
-   - Wait for Piko to finish speaking
+   - Start a conversation with Pico
+   - Wait for Pico to finish speaking
    - Status should show "🔇 Listening... X.Xs"
    - Wait for the threshold time (5-7 seconds)
    - Nudge should automatically trigger

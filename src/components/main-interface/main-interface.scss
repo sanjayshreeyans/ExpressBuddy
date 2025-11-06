@@ -71,12 +71,12 @@
 
 // **LIQUID GLASS MODE**: Only apply to video background mode
 .video-bg-mode .header-section {
-  // **ULTRA TRANSPARENT**: Almost completely see-through (1% opacity instead of 5%)
-  background: rgba(255, 255, 255, 0.01) !important;
+  // **ULTRA TRANSPARENT**: Glassmorphism with blur effect
+  background: rgba(255, 255, 255, 0.15) !important;
   backdrop-filter: blur(12px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
 
   .app-title h1 {
@@ -115,10 +115,11 @@
 
 // **LIQUID GLASS MODE**: Make controls section ultra transparent in video mode
 .video-bg-mode .controls-section {
-  background-color: rgba(255, 255, 255, 0.01) !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
   backdrop-filter: blur(12px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.1) !important;
 }
 
 

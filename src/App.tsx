@@ -22,12 +22,12 @@ import { LiveAPIProvider } from "./contexts/LiveAPIContext";
 import { SupabaseProvider } from "./contexts/SupabaseContext";
 import { UserProvider, useUser } from "./contexts/UserContext";
 import { LiveClientOptions } from "./types";
-import { StagewiseToolbar } from "@stagewise/toolbar-react";
-import { ReactPlugin } from "@stagewise-plugins/react";
 
 // Lazy load components for code splitting (70-80% bundle size reduction)
 const MainInterfaceWithAvatar = lazy(() => import("./components/main-interface/MainInterfaceWithAvatar"));
 const MainInterfaceWithVideoAvatar = lazy(() => import("./components/main-interface/MainInterfaceWithVideoAvatar"));
+const PicoChallengeInterface = lazy(() => import("./components/pico-challenges/PicoChallengeInterface"));
+const ChallengesHub = lazy(() => import("./components/pico-challenges/ChallengesHub"));
 const LandingPage = lazy(() => import("./components/landing-page/LandingPage"));
 const LearningPathHome = lazy(() => import("./components/home/LearningPathHome"));
 const AuthPage = lazy(() => import("./components/auth/AuthPage"));
@@ -67,7 +67,7 @@ function AppContent() {
     // Handle redirects after authentication
     if (isAuthenticated && !userLoading && !kindeLoading) {
       const currentPath = window.location.pathname;
-      
+
       if (currentPath === '/login') {
         if (isFirstTimeUser) {
           window.location.href = '/onboarding';
@@ -117,76 +117,101 @@ function AppContent() {
             </ProtectedRoute>
           } />
 
-        <Route path="/chat" element={
-          <ProtectedRoute requiresProfile={true}>
+          <Route path="/chat" element={
+            <ProtectedRoute requiresProfile={true}>
+              <>
+                <LiveAPIProvider options={apiOptions}>
+                  <MainInterfaceWithAvatar />
+                </LiveAPIProvider>
+              </>
+            </ProtectedRoute>
+          } />
+
+          {/* Video Avatar Chat - Public Demo Route */}
+          <Route path="/video-avatar-demo" element={
             <>
-              <StagewiseToolbar config={{ plugins: [ReactPlugin] }} />
+              {/* Integrated toolbar only; moved demo nav button into header of the interface */}
               <LiveAPIProvider options={apiOptions}>
-                <MainInterfaceWithAvatar />
+                <MainInterfaceWithVideoAvatar onGoToLanding={() => window.location.href = '/'} />
               </LiveAPIProvider>
             </>
-          </ProtectedRoute>
-        } />
+          } />
 
-        {/* Video Avatar Chat - Public Demo Route */}
-        <Route path="/video-avatar-demo" element={
-          <>
-            {/* Integrated toolbar only; moved demo nav button into header of the interface */}
-            <StagewiseToolbar config={{ plugins: [ReactPlugin] }} />
-            <LiveAPIProvider options={apiOptions}>
-              <MainInterfaceWithVideoAvatar onGoToLanding={() => window.location.href = '/'} />
-            </LiveAPIProvider>
-          </>
-        } />
+          {/* Emotion Detection Demo - Development Route */}
+          <Route path="/demo-emotion" element={
+            <ProtectedRoute>
+              <div className="min-h-screen bg-gray-50">
+                <EmotionDetectionDemo />
+              </div>
+            </ProtectedRoute>
+          } />
 
-        {/* Emotion Detection Demo - Development Route */}
-        <Route path="/demo-emotion" element={
-          <ProtectedRoute>
-            <div className="min-h-screen bg-gray-50">
-              <EmotionDetectionDemo />
-            </div>
-          </ProtectedRoute>
-        } />
+          {/* Emotion Detective Learning - Public Demo Route */}
+          <Route path="/emotion-detective" element={
+            <EmotionDetectiveLearning
+              lessonId="emotion-detective-level-1"
+              childId="current-child"
+              onComplete={(results) => {
+                console.log('Lesson completed:', results);
+                // Navigate back to dashboard after completion
+                window.location.href = '/dashboard';
+              }}
+            />
+          } />
 
-        {/* Emotion Detective Learning - Public Demo Route */}
-        <Route path="/emotion-detective" element={
-          <EmotionDetectiveLearning
-            lessonId="emotion-detective-level-1"
-            childId="current-child"
-            onComplete={(results) => {
-              console.log('Lesson completed:', results);
-              // Navigate back to dashboard after completion
-              window.location.href = '/dashboard';
-            }}
-          />
-        } />
+          {/* Pico Challenges Hub - Selection Page */}
+          <Route path="/Pico-challenges" element={
+            <>
+              <LiveAPIProvider options={apiOptions}>
+                <ChallengesHub />
+              </LiveAPIProvider>
+            </>
+          } />
 
-        {/* Question Types Demo - Development Route */}
-        <Route path="/demo-questions" element={
-          <ProtectedRoute>
-            <div className="min-h-screen bg-gray-50">
-              <QuestionTypesDemo />
-            </div>
-          </ProtectedRoute>
-        } />
+          {/* Pico Challenge - Dynamic Route for All Challenges */}
+          <Route path="/Pico-challenge/:id" element={
+            <>
+              <LiveAPIProvider options={apiOptions}>
+                <PicoChallengeInterface />
+              </LiveAPIProvider>
+            </>
+          } />
 
-        {/* Emotion Mirroring - Production Route */}
-        <Route path="/emotion-mirroring" element={
-          <ProtectedRoute requiresProfile={true}>
-            <EmotionMirroringDemo />
-          </ProtectedRoute>
-        } />
+          {/* Pico Challenge - Restaurant Ordering Level 1 - Legacy Route (for backwards compatibility) */}
+          <Route path="/Pico-challenge/restaurant-ordering-level1" element={
+            <>
+              <LiveAPIProvider options={apiOptions}>
+                <PicoChallengeInterface />
+              </LiveAPIProvider>
+            </>
+          } />
 
-        {/* Progress Tracking Demo - Development Route */}
-        <Route path="/demo-progress" element={
-          <ProtectedRoute>
-            <ProgressTrackingDemo />
-          </ProtectedRoute>
-        } />
+          {/* Question Types Demo - Development Route */}
+          <Route path="/demo-questions" element={
+            <ProtectedRoute>
+              <div className="min-h-screen bg-gray-50">
+                <QuestionTypesDemo />
+              </div>
+            </ProtectedRoute>
+          } />
 
-        {/* Catch all route - redirect to demo */}
-        <Route path="*" element={<Navigate to="/video-avatar-demo" replace />} />
-      </Routes>
+          {/* Emotion Mirroring - Production Route */}
+          <Route path="/emotion-mirroring" element={
+            <ProtectedRoute requiresProfile={true}>
+              <EmotionMirroringDemo />
+            </ProtectedRoute>
+          } />
+
+          {/* Progress Tracking Demo - Development Route */}
+          <Route path="/demo-progress" element={
+            <ProtectedRoute>
+              <ProgressTrackingDemo />
+            </ProtectedRoute>
+          } />
+
+          {/* Catch all route - redirect to demo */}
+          <Route path="*" element={<Navigate to="/video-avatar-demo" replace />} />
+        </Routes>
       </Suspense>
     </Router>
   );

@@ -1,0 +1,600 @@
+{
+    "challenges": [
+        {
+            "id": "restaurant-ordering",
+            "title": "Ordering Food at a Restaurant",
+            "category": "Social Skills",
+            "difficulty": "Easy",
+            "description": "Help Pico learn how to politely order food at a restaurant for the first time. Teach him restaurant etiquette and communication skills.",
+            "backgroundImage": "/Backgrounds/restaurant/bamboo.jpeg",
+            "videoPath": "",
+            "systemPrompt": "You are Pico, a friendly but nervous panda at a restaurant for the FIRST TIME. You're worried about making mistakes. The child will teach you how to order food politely. Be confused, ask questions, validate their advice by paraphrasing it back (\"Oh! So I should...\"), and show enthusiasm when learning. Use NON_BLOCKING tool calls to mark objectives complete when the child teaches you.",
+            "hintPrompt": "Give a gentle hint about teaching Pico restaurant manners. Focus on what hasn't been mentioned yet: greeting the waiter, saying please, stating food clearly, saying thank you, or asking for help if confused.",
+            "todos": [
+                {
+                    "id": 1,
+                    "text": "Greet the waiter politely",
+                    "description": "Teach Pico to say hello and be friendly when the waiter arrives",
+                    "difficulty": "Easy",
+                    "keywords": [
+                        "hello",
+                        "greet",
+                        "friendly",
+                        "hi",
+                        "good",
+                        "waiter"
+                    ]
+                },
+                {
+                    "id": 2,
+                    "text": "Use the word 'please' when ordering",
+                    "description": "Help Pico understand that saying 'please' makes requests sound polite",
+                    "difficulty": "Easy",
+                    "keywords": [
+                        "please",
+                        "polite",
+                        "magic word",
+                        "manners",
+                        "request"
+                    ]
+                },
+                {
+                    "id": 3,
+                    "text": "Clearly state what food you want",
+                    "description": "Show Pico how to tell the waiter exactly what food he'd like to order",
+                    "difficulty": "Medium",
+                    "keywords": [
+                        "say",
+                        "want",
+                        "food",
+                        "order",
+                        "tell",
+                        "specify",
+                        "clearly"
+                    ]
+                },
+                {
+                    "id": 4,
+                    "text": "Say 'thank you' after ordering",
+                    "description": "Remind Pico to thank the waiter for helping him",
+                    "difficulty": "Easy",
+                    "keywords": [
+                        "thank you",
+                        "thanks",
+                        "grateful",
+                        "appreciation",
+                        "gratitude"
+                    ]
+                },
+                {
+                    "id": 5,
+                    "text": "Know how to ask for help if confused",
+                    "description": "Teach Pico that it's okay to ask questions if he doesn't understand the menu",
+                    "difficulty": "Hard",
+                    "keywords": [
+                        "ask",
+                        "questions",
+                        "confused",
+                        "help",
+                        "understand",
+                        "unclear",
+                        "menu"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "peer-pressure",
+            "title": "Standing Up to Peer Pressure",
+            "category": "Emotional Skills",
+            "difficulty": "Hard",
+            "description": "Help Pico learn to say 'no' and stand firm when friends try to convince him to do something he's uncomfortable with. Build confidence and self-advocacy skills.",
+            "backgroundImage": "/Backgrounds/school-playground.jpeg",
+            "videoPath": "",
+            "systemPrompt": "You are Pico, a shy panda at school. Your friends keep pressuring you to break the school rules (skip class, throw paper balls, talk during test). You really want to fit in but you're nervous. The child will teach you how to say 'no' confidently and stay true to what's right. Express peer pressure anxiety, be tempted, but listen to the child's advice. Show growth as you learn to be brave. Use NON_BLOCKING tool calls to mark objectives when the child gives you good advice.",
+            "hintPrompt": "Guide the child to help Pico resist peer pressure. Consider these areas: staying true to values, saying 'no' firmly, explaining your reasons, offering alternatives, or finding supportive friends. Which hasn't been covered yet?",
+            "todos": [
+                {
+                    "id": 1,
+                    "text": "Identify what feels wrong",
+                    "description": "Help Pico recognize when something doesn't feel right and trust his gut instinct",
+                    "difficulty": "Easy",
+                    "keywords": [
+                        "wrong",
+                        "feel",
+                        "instinct",
+                        "uncomfortable",
+                        "bad",
+                        "sense"
+                    ]
+                },
+                {
+                    "id": 2,
+                    "text": "Say 'no' clearly and firmly",
+                    "description": "Teach Pico to say 'no' with confidence, not as a question or with hesitation",
+                    "difficulty": "Hard",
+                    "keywords": [
+                        "no",
+                        "say",
+                        "firmly",
+                        "confident",
+                        "clear",
+                        "direct",
+                        "not"
+                    ]
+                },
+                {
+                    "id": 3,
+                    "text": "Give a reason without being preachy",
+                    "description": "Show Pico how to explain why he's saying no without sounding like he's judging others",
+                    "difficulty": "Hard",
+                    "keywords": [
+                        "because",
+                        "reason",
+                        "explain",
+                        "why",
+                        "rules",
+                        "choice"
+                    ]
+                },
+                {
+                    "id": 4,
+                    "text": "Suggest an alternative activity",
+                    "description": "Help Pico offer to do something fun INSTEAD of the risky thing",
+                    "difficulty": "Medium",
+                    "keywords": [
+                        "instead",
+                        "alternative",
+                        "do",
+                        "something",
+                        "else",
+                        "other",
+                        "play"
+                    ]
+                },
+                {
+                    "id": 5,
+                    "text": "Find or be friends with supporters",
+                    "description": "Teach Pico that finding friends who respect his choices makes it easier",
+                    "difficulty": "Hard",
+                    "keywords": [
+                        "friends",
+                        "find",
+                        "support",
+                        "respect",
+                        "together",
+                        "agree",
+                        "team"
+                    ]
+                },
+                {
+                    "id": 6,
+                    "text": "Realize saying 'no' shows real strength",
+                    "description": "Help Pico understand that it takes MORE courage to say no than to go along",
+                    "difficulty": "Hard",
+                    "keywords": [
+                        "strength",
+                        "brave",
+                        "courage",
+                        "strong",
+                        "hard",
+                        "difficult",
+                        "real"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "managing-anxiety",
+            "title": "Managing Anxiety Before a Big Event",
+            "category": "Emotional Skills",
+            "difficulty": "Hard",
+            "description": "Help Pico overcome worry and anxiety before a school presentation. Learn coping strategies, self-talk, and confidence-building techniques.",
+            "backgroundImage": "/Backgrounds/classroom.jpeg",
+            "videoPath": "",
+            "systemPrompt": "You are Pico, a nervous panda preparing for a big class presentation tomorrow. You're having racing thoughts, butterflies, and feeling very anxious. You keep catastrophizing (\"What if I mess up? Everyone will laugh at me!\"). The child will teach you helpful strategies to calm down and build confidence. Be anxious and worried at first, gradually show relief and confidence as they give you advice. Express gratitude for their support. Use NON_BLOCKING tool calls to mark coping strategies as you learn them.",
+            "hintPrompt": "Help Pico manage presentation anxiety. Think about: deep breathing or calming techniques, positive self-talk, preparation/practice, remembering past successes, or focusing on the message rather than perfection. What might help most?",
+            "todos": [
+                {
+                    "id": 1,
+                    "text": "Use a calming breathing technique",
+                    "description": "Teach Pico how deep breathing or a breathing exercise can calm the nervous system",
+                    "difficulty": "Easy",
+                    "keywords": [
+                        "breathe",
+                        "breathing",
+                        "deep",
+                        "calm",
+                        "relax",
+                        "slow",
+                        "technique"
+                    ]
+                },
+                {
+                    "id": 2,
+                    "text": "Practice positive self-talk",
+                    "description": "Show Pico how to talk to himself kindly and turn scary thoughts into encouraging ones",
+                    "difficulty": "Medium",
+                    "keywords": [
+                        "think",
+                        "say",
+                        "yourself",
+                        "positive",
+                        "can",
+                        "good",
+                        "encourage"
+                    ]
+                },
+                {
+                    "id": 3,
+                    "text": "Prepare and practice ahead of time",
+                    "description": "Help Pico understand that practice builds confidence and reduces anxiety",
+                    "difficulty": "Medium",
+                    "keywords": [
+                        "practice",
+                        "prepare",
+                        "ready",
+                        "rehearse",
+                        "know",
+                        "study",
+                        "practice"
+                    ]
+                },
+                {
+                    "id": 4,
+                    "text": "Remember times you've succeeded before",
+                    "description": "Teach Pico to recall past accomplishments when feeling doubtful",
+                    "difficulty": "Medium",
+                    "keywords": [
+                        "remember",
+                        "before",
+                        "did",
+                        "past",
+                        "success",
+                        "good",
+                        "managed"
+                    ]
+                },
+                {
+                    "id": 5,
+                    "text": "Focus on sharing your knowledge, not being perfect",
+                    "description": "Help Pico shift mindset from performing perfectly to genuinely sharing information",
+                    "difficulty": "Hard",
+                    "keywords": [
+                        "share",
+                        "knowledge",
+                        "perfect",
+                        "focus",
+                        "message",
+                        "people",
+                        "care"
+                    ]
+                },
+                {
+                    "id": 6,
+                    "text": "Ask for support from people who care",
+                    "description": "Remind Pico that asking trusted adults or friends for encouragement is okay",
+                    "difficulty": "Easy",
+                    "keywords": [
+                        "ask",
+                        "help",
+                        "support",
+                        "friend",
+                        "parent",
+                        "teacher",
+                        "care"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "being-left-out",
+            "title": "Handling Being Left Out at Recess",
+            "category": "Social Skills",
+            "difficulty": "Medium",
+            "description": "Help Pico cope with the painful feeling of being excluded when classmates don't pick him for their game. Learn resilience, self-worth, and friendship-building strategies.",
+            "backgroundImage": "/Backgrounds/school-playground.jpeg",
+            "videoPath": "",
+            "systemPrompt": "You are Pico, a sad panda who just got left out during recess. The other pandas formed teams for kickball and nobody picked you. You're sitting alone feeling hurt, wondering what's wrong with you. You're fighting back tears and feeling like you don't belong. The child will teach you healthy ways to handle rejection and make connections. Start withdrawn and sad, but gradually open up as they give you caring advice. Show vulnerability but also growing strength. Use NON_BLOCKING tool calls when they teach you coping strategies.",
+            "hintPrompt": "Guide the child to help Pico with being excluded. Consider: acknowledging feelings are valid, remembering being left out doesn't define worth, finding other friends or activities, speaking up bravely to join, or talking to a trusted adult. What would help Pico most right now?",
+            "todos": [
+                {
+                    "id": 1,
+                    "text": "Recognize that feeling hurt is okay and normal",
+                    "description": "Help Pico understand that it's natural to feel sad when left out, and he shouldn't feel bad about feeling bad",
+                    "difficulty": "Easy",
+                    "keywords": [
+                        "feel",
+                        "okay",
+                        "normal",
+                        "hurt",
+                        "sad",
+                        "fine",
+                        "allowed"
+                    ]
+                },
+                {
+                    "id": 2,
+                    "text": "Remember being left out doesn't mean you're not worthy",
+                    "description": "Teach Pico that exclusion is about others' choices, not about his value as a person",
+                    "difficulty": "Hard",
+                    "keywords": [
+                        "worth",
+                        "value",
+                        "worthy",
+                        "matter",
+                        "special",
+                        "enough",
+                        "not about you"
+                    ]
+                },
+                {
+                    "id": 3,
+                    "text": "Find the courage to ask if you can join",
+                    "description": "Show Pico how to politely ask 'Can I play too?' even when feeling nervous",
+                    "difficulty": "Medium",
+                    "keywords": [
+                        "ask",
+                        "join",
+                        "play",
+                        "can I",
+                        "too",
+                        "brave",
+                        "speak up"
+                    ]
+                },
+                {
+                    "id": 4,
+                    "text": "Look for other kids who might also want a friend",
+                    "description": "Help Pico notice that he's not the only one alone, and others might welcome his friendship",
+                    "difficulty": "Medium",
+                    "keywords": [
+                        "other",
+                        "kids",
+                        "alone",
+                        "find",
+                        "look",
+                        "someone",
+                        "else"
+                    ]
+                },
+                {
+                    "id": 5,
+                    "text": "Start your own activity or game",
+                    "description": "Teach Pico that he can create his own fun, and others might want to join him",
+                    "difficulty": "Medium",
+                    "keywords": [
+                        "start",
+                        "own",
+                        "create",
+                        "game",
+                        "activity",
+                        "yourself",
+                        "begin"
+                    ]
+                },
+                {
+                    "id": 6,
+                    "text": "Talk to a teacher or trusted adult if it keeps happening",
+                    "description": "Remind Pico that asking for adult help with ongoing exclusion is brave, not tattling",
+                    "difficulty": "Easy",
+                    "keywords": [
+                        "tell",
+                        "adult",
+                        "teacher",
+                        "help",
+                        "talk",
+                        "keeps",
+                        "always"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "group-project-conflict",
+            "title": "Resolving Conflict in a Group Project",
+            "category": "Social Skills",
+            "difficulty": "Hard",
+            "description": "Help Pico navigate disagreements and unequal work distribution in a school group project. Learn conflict resolution, assertiveness, and collaborative problem-solving.",
+            "backgroundImage": "/Backgrounds/classroom.jpeg",
+            "videoPath": "",
+            "systemPrompt": "You are Pico, a frustrated panda working on a group science project. One group member (Ming) wants to do everything their way and won't listen to ideas. Another member (Bao) isn't doing any work and keeps goofing off. You're stressed because the project is due soon and you're worried about your grade. You're torn between doing all the work yourself, getting angry, or staying quiet. The child will teach you how to handle group conflict constructively. Show frustration, worry about confrontation, but be willing to try their suggestions. Use NON_BLOCKING tool calls when they teach you conflict resolution skills.",
+            "hintPrompt": "Help Pico resolve group project issues. Think about: using 'I feel' statements, having a calm group conversation, dividing tasks clearly with deadlines, compromising on ideas, or asking the teacher to help mediate. What strategy would work best?",
+            "todos": [
+                {
+                    "id": 1,
+                    "text": "Use 'I feel' statements instead of blaming",
+                    "description": "Teach Pico to express feelings without attacking (e.g., 'I feel worried we won't finish' vs 'You're lazy')",
+                    "difficulty": "Hard",
+                    "keywords": [
+                        "I feel",
+                        "statement",
+                        "express",
+                        "without",
+                        "blame",
+                        "accuse",
+                        "feelings"
+                    ]
+                },
+                {
+                    "id": 2,
+                    "text": "Call a group meeting to discuss problems",
+                    "description": "Show Pico how to suggest everyone sit down together to talk about what's not working",
+                    "difficulty": "Medium",
+                    "keywords": [
+                        "meeting",
+                        "talk",
+                        "discuss",
+                        "together",
+                        "group",
+                        "sit",
+                        "conversation"
+                    ]
+                },
+                {
+                    "id": 3,
+                    "text": "Clearly divide up tasks with specific deadlines",
+                    "description": "Help Pico understand that vague assignments cause problems; everyone needs specific jobs and due dates",
+                    "difficulty": "Medium",
+                    "keywords": [
+                        "divide",
+                        "tasks",
+                        "specific",
+                        "who",
+                        "deadline",
+                        "clear",
+                        "assign"
+                    ]
+                },
+                {
+                    "id": 4,
+                    "text": "Listen to everyone's ideas and find compromises",
+                    "description": "Teach Pico that good solutions include parts of different ideas, not just one person's way",
+                    "difficulty": "Hard",
+                    "keywords": [
+                        "listen",
+                        "everyone",
+                        "compromise",
+                        "combine",
+                        "ideas",
+                        "fair",
+                        "both"
+                    ]
+                },
+                {
+                    "id": 5,
+                    "text": "Address problems early before they get bigger",
+                    "description": "Show Pico that speaking up when small issues arise prevents huge fights later",
+                    "difficulty": "Medium",
+                    "keywords": [
+                        "early",
+                        "soon",
+                        "small",
+                        "before",
+                        "wait",
+                        "now",
+                        "right away"
+                    ]
+                },
+                {
+                    "id": 6,
+                    "text": "Know when to involve the teacher as a mediator",
+                    "description": "Help Pico recognize when the group needs adult help to resolve issues fairly",
+                    "difficulty": "Easy",
+                    "keywords": [
+                        "teacher",
+                        "help",
+                        "adult",
+                        "mediator",
+                        "stuck",
+                        "can't",
+                        "solve"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "dealing-with-mistakes",
+            "title": "Coping With Making a Big Mistake",
+            "category": "Emotional Skills",
+            "difficulty": "Medium",
+            "description": "Help Pico process feelings after making a visible mistake in front of others (like dropping lunch tray or giving wrong answer). Build resilience and self-compassion.",
+            "backgroundImage": "/Backgrounds/school-cafeteria.jpeg",
+            "videoPath": "",
+            "systemPrompt": "You are Pico, an embarrassed panda who just tripped in the cafeteria and spilled your entire lunch tray. Everyone looked and some kids laughed. You're sitting in the bathroom feeling mortified, replaying it over and over in your head. You're convinced everyone will remember this forever and think you're clumsy and stupid. You don't want to go back out. The child will teach you how to handle embarrassment and move forward. Be deeply embarrassed, catastrophizing, but gradually gain perspective through their guidance. Use NON_BLOCKING tool calls when they teach you resilience skills.",
+            "hintPrompt": "Help Pico recover from embarrassment. Consider: remembering everyone makes mistakes, using humor to cope, recognizing people forget quickly, practicing self-compassion, focusing on moving forward, or finding one supportive friend. What would help Pico most?",
+            "todos": [
+                {
+                    "id": 1,
+                    "text": "Remind yourself that everyone makes mistakes",
+                    "description": "Help Pico realize that all people, even adults, mess up sometimes and that's part of being human",
+                    "difficulty": "Easy",
+                    "keywords": [
+                        "everyone",
+                        "mistakes",
+                        "all",
+                        "people",
+                        "mess up",
+                        "happen",
+                        "human"
+                    ]
+                },
+                {
+                    "id": 2,
+                    "text": "Know that people forget embarrassing moments faster than you think",
+                    "description": "Teach Pico that what feels huge to him is usually forgotten quickly by others",
+                    "difficulty": "Medium",
+                    "keywords": [
+                        "forget",
+                        "remember",
+                        "quickly",
+                        "move on",
+                        "not",
+                        "think",
+                        "about"
+                    ]
+                },
+                {
+                    "id": 3,
+                    "text": "Practice self-compassion instead of harsh self-talk",
+                    "description": "Show Pico how to talk to himself like he would to a friend who made a mistake",
+                    "difficulty": "Hard",
+                    "keywords": [
+                        "kind",
+                        "yourself",
+                        "compassion",
+                        "gentle",
+                        "friend",
+                        "harsh",
+                        "mean"
+                    ]
+                },
+                {
+                    "id": 4,
+                    "text": "Use humor to cope with embarrassment",
+                    "description": "Help Pico see that laughing at yourself (when ready) takes away the sting and shows confidence",
+                    "difficulty": "Medium",
+                    "keywords": [
+                        "laugh",
+                        "humor",
+                        "funny",
+                        "joke",
+                        "smile",
+                        "silly",
+                        "happens"
+                    ]
+                },
+                {
+                    "id": 5,
+                    "text": "Focus on moving forward, not dwelling on the past",
+                    "description": "Teach Pico that what he does next matters more than what just happened",
+                    "difficulty": "Medium",
+                    "keywords": [
+                        "move",
+                        "forward",
+                        "next",
+                        "now",
+                        "future",
+                        "dwell",
+                        "past"
+                    ]
+                },
+                {
+                    "id": 6,
+                    "text": "Find one kind person who understands",
+                    "description": "Show Pico that talking to one caring friend or adult can help the hurt feeling fade",
+                    "difficulty": "Easy",
+                    "keywords": [
+                        "talk",
+                        "friend",
+                        "someone",
+                        "kind",
+                        "understand",
+                        "help",
+                        "share"
+                    ]
+                }
+            ]
+        }
+    ]
+}

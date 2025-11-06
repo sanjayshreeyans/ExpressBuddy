@@ -23,7 +23,7 @@ const PRESET_CONFIGS = {
   gentle: {
     silenceThresholdSeconds: 15,
     speechVolumeThreshold: 0.03,
-    nudgeMessage: "Piko is here when you're ready to talk. Take your time!",
+    nudgeMessage: "Pico is here when you're ready to talk. Take your time!",
     minTimeBetweenNudges: 45,
   },
   standard: {
@@ -69,7 +69,7 @@ export const SilenceDetectionSettings: React.FC<SilenceDetectionSettingsProps> =
     <div className={cn("silence-settings-overlay", className)}>
       <div className="silence-settings-modal">
         <div className="settings-header">
-          <h2>Piko's Listening Settings</h2>
+          <h2>Pico's Listening Settings</h2>
           <button className="close-button" onClick={onClose}>
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -108,7 +108,7 @@ export const SilenceDetectionSettings: React.FC<SilenceDetectionSettingsProps> =
                       onChange={(e) => onConfigUpdate({ enabled: e.target.checked })}
                     />
                     <span className="toggle-slider"></span>
-                    Help Piko know when to listen or talk
+                    Help Pico know when to listen or talk
                   </label>
                 </div>
               </div>
@@ -117,17 +117,17 @@ export const SilenceDetectionSettings: React.FC<SilenceDetectionSettingsProps> =
               <div className="setting-group">
                 <div className="setting-header">
                   <h3>Quick Presets</h3>
-                  <p>How patient should Piko be?</p>
+                  <p>How patient should Pico be?</p>
                 </div>
                 <div className="preset-buttons">
                   <button
                     className="preset-button"
                     onClick={() => handlePresetSelect('gentle')}
-                    title="Piko will wait a long time for you to talk."
+                    title="Pico will wait a long time for you to talk."
                   >
                     <span className="preset-icon">🐢</span>
                     <span className="preset-name">Patient</span>
-                    <span className="preset-desc">Piko waits a bit</span>
+                    <span className="preset-desc">Pico waits a bit</span>
                   </button>
                   <button
                     className="preset-button"
@@ -136,16 +136,16 @@ export const SilenceDetectionSettings: React.FC<SilenceDetectionSettingsProps> =
                   >
                     <span className="preset-icon">🐼</span>
                     <span className="preset-name">Balanced</span>
-                    <span className="preset-desc">Piko waits a little</span>
+                    <span className="preset-desc">Pico waits a little</span>
                   </button>
                   <button
                     className="preset-button"
                     onClick={() => handlePresetSelect('responsive')}
-                    title="Piko will talk more often to keep the chat going."
+                    title="Pico will talk more often to keep the chat going."
                   >
                     <span className="preset-icon">🐇</span>
                     <span className="preset-name">Chatty</span>
-                    <span className="preset-desc">Piko talks more</span>
+                    <span className="preset-desc">Pico talks more</span>
                   </button>
                 </div>
               </div>
@@ -155,10 +155,10 @@ export const SilenceDetectionSettings: React.FC<SilenceDetectionSettingsProps> =
                 <div className="setting-header">
                   <h3>More Ways to Play</h3>
                 </div>
-                
+
                 <div className="setting-item">
                   <label htmlFor="silence-threshold">
-                    How long Piko waits: {config.silenceThresholdSeconds}s
+                    How long Pico waits: {config.silenceThresholdSeconds}s
                   </label>
                   <input
                     id="silence-threshold"
@@ -198,7 +198,7 @@ export const SilenceDetectionSettings: React.FC<SilenceDetectionSettingsProps> =
 
                 <div className="setting-item">
                   <label htmlFor="nudge-interval">
-                    Time between Piko's questions: {config.minTimeBetweenNudges}s
+                    Time between Pico's questions: {config.minTimeBetweenNudges}s
                   </label>
                   <input
                     id="nudge-interval"
@@ -218,7 +218,7 @@ export const SilenceDetectionSettings: React.FC<SilenceDetectionSettingsProps> =
 
                 <div className="setting-item">
                   <label htmlFor="nudge-message">
-                    What Piko should ask
+                    What Pico should ask
                   </label>
                   <textarea
                     id="nudge-message"
@@ -226,7 +226,7 @@ export const SilenceDetectionSettings: React.FC<SilenceDetectionSettingsProps> =
                     onChange={(e) => onConfigUpdate({ nudgeMessage: e.target.value })}
                     className="textarea-input"
                     rows={3}
-                    placeholder="What should Piko say to start a conversation?"
+                    placeholder="What should Pico say to start a conversation?"
                   />
                 </div>
               </div>
@@ -242,7 +242,7 @@ export const SilenceDetectionSettings: React.FC<SilenceDetectionSettingsProps> =
                   disabled={!config.enabled}
                 >
                   <span className="material-symbols-outlined">send</span>
-                  Ask Piko a Question
+                  Ask Pico a Question
                 </button>
               </div>
             </div>
@@ -257,7 +257,7 @@ export const SilenceDetectionSettings: React.FC<SilenceDetectionSettingsProps> =
                   </div>
                   <div className="card-content">
                     <div className="card-value">{analytics.totalNudges}</div>
-                    <div className="card-label">Piko's Questions</div>
+                    <div className="card-label">Pico's Questions</div>
                   </div>
                 </div>
 
@@ -307,7 +307,7 @@ export const SilenceDetectionSettings: React.FC<SilenceDetectionSettingsProps> =
                   </div>
                   <div className="card-content">
                     <div className="card-value">{formatDuration((Date.now() - analytics.sessionStartTime) / 1000)}</div>
-                    <div className="card-label">Time Spent with Piko</div>
+                    <div className="card-label">Time Spent with Pico</div>
                   </div>
                 </div>
               </div>
