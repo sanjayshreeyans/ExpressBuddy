@@ -137,31 +137,6 @@ function AppContent() {
             </>
           } />
 
-          {/* TTS Quick Demo - Development Route */}
-          <Route path="/demo-tts" element={
-            <ProtectedRoute>
-              <TTSQuickDemo />
-            </ProtectedRoute>
-          } />
-
-          {/* TTS Integration Test - Development Route */}
-          <Route path="/test-tts" element={
-            <ProtectedRoute>
-              <div className="min-h-screen bg-gray-50">
-                <TTSIntegrationTest />
-              </div>
-            </ProtectedRoute>
-          } />
-
-          {/* TTS Viseme Test - Development Route */}
-          <Route path="/test-visemes" element={
-            <ProtectedRoute>
-              <div className="min-h-screen bg-gray-50">
-                <TTSVisemeTest />
-              </div>
-            </ProtectedRoute>
-          } />
-
           {/* Emotion Detection Demo - Development Route */}
           <Route path="/demo-emotion" element={
             <ProtectedRoute>
