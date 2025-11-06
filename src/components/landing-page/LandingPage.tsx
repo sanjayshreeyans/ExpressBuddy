@@ -336,15 +336,8 @@ export default function LandingPage({}: LandingPageProps) {
                 >
                   <div className="text-center space-y-8 p-8 relative z-10">
                     <div className="relative">
-                      <div className="w-64 h-64 lg:w-72 lg:h-72 mx-auto">
-                        <video 
-                          src="/VideoAnims/Pandaalter1_2.webm"
-                          className="w-full h-full object-contain rounded-3xl"
-                          autoPlay
-                          loop
-                          muted
-                          playsInline
-                        />
+                      <div className="w-64 h-64 lg:w-72 lg:h-72 mx-auto bg-gradient-to-br from-sky-100 to-emerald-100 rounded-3xl flex items-center justify-center">
+                        <div className="text-6xl">🐼</div>
                       </div>
                     </div>
                     <div>
