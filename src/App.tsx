@@ -26,8 +26,8 @@ import { LiveClientOptions } from "./types";
 // Lazy load components for code splitting (70-80% bundle size reduction)
 const MainInterfaceWithAvatar = lazy(() => import("./components/main-interface/MainInterfaceWithAvatar"));
 const MainInterfaceWithVideoAvatar = lazy(() => import("./components/main-interface/MainInterfaceWithVideoAvatar"));
-const PicoChallengeInterface = lazy(() => import("./components/Pico-challenges/PicoChallengeInterface"));
-const ChallengesHub = lazy(() => import("./components/Pico-challenges/ChallengesHub"));
+const PicoChallengeInterface = lazy(() => import("./components/pico-challenges/PicoChallengeInterface"));
+const ChallengesHub = lazy(() => import("./components/pico-challenges/ChallengesHub"));
 const LandingPage = lazy(() => import("./components/landing-page/LandingPage"));
 const LearningPathHome = lazy(() => import("./components/home/LearningPathHome"));
 const AuthPage = lazy(() => import("./components/auth/AuthPage"));
