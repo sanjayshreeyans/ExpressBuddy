@@ -35,6 +35,6 @@ ffmpeg -i /home/soham/Documents/ep/ExpressBuddy/public/VideoAnims/peeblestalking
 
 echo "✅ Conversion complete with natural color!"
 echo "ℹ️  SETTINGS:"
-echo "   • Colorkey similarity: 0.3 (preserves subject)"
-echo "   • Hue shift: -2 degrees (neutralizes green tint)"
-echo "   • Saturation: 0.98 (slightly desaturates to reduce green)"
+echo "   • Colorkey similarity: 0.35 (preserves subject)"
+echo "   • Hue shift: -3 degrees (neutralizes green tint)"
+echo "   • Saturation: 0.96 (slightly desaturates to reduce green)"
