@@ -9,6 +9,7 @@ import "./settings-dialog.scss";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import VoiceSelector from "./VoiceSelector";
 import ResponseModalitySelector from "./ResponseModalitySelector";
+import AvatarSelector from "./AvatarSelector";
 import { FunctionDeclaration, LiveConnectConfig, Tool } from "@google/genai";
 
 type FunctionDeclarationsTool = Tool & {
@@ -112,6 +113,8 @@ export default function SettingsDialog() {
           <div className="mode-selectors">
             <ResponseModalitySelector />
             <VoiceSelector />
+            {/* Avatar selector: choose which video-based avatar to use */}
+            <AvatarSelector />
           </div>
 
           <h3>System Instructions</h3>
