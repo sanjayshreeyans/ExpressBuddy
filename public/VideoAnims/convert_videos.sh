@@ -9,7 +9,7 @@
 
 # Convert Pandaalter1_2.mp4
 echo "Converting peeblestalkinggreen2.mp4 to Full HD WebM with precise green removal..."
-ffmpeg -i /home/soham/Documents/ep/ExpressBuddy/public/VideoAnims/peeblestalkinggreen2.mp4 \
+ffmpeg -i ./peeblestalkinggreen2.mp4 \
   -vf "scale=1920:1080,\
        colorkey=0x00ff00:0.35:0.08,\
        hue=h=-3:s=0.96" \
