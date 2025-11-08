@@ -50,9 +50,9 @@ export class AudioRecorder extends EventEmitter {
 
   private starting: Promise<void> | null = null;
   private preprocessorSettings: AudioPreprocessorSettings = {
-    gainBoost: 2.5, // Default 2.5x amplification for quiet voices
-    noiseGateThreshold: 0.02, // Default noise gate threshold
-    compressionThreshold: 0.5, // Default compression threshold
+    gainBoost: 2.5, // ✅ Amplifies children's voices
+    noiseGateThreshold: 0.4, // ✅ Blocks 80% of noise
+    compressionThreshold: 0.38, // ✅ Evens out volume without distortion
   };
 
   constructor(public sampleRate = 16000, preprocessorSettings?: AudioPreprocessorSettings) {

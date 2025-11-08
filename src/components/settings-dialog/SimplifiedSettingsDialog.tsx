@@ -97,8 +97,8 @@ export default function SimplifiedSettingsDialog({
     compressionThreshold: number;
   }>({
     gainBoost: 2.5,
-    noiseGateThreshold: 0.02,
-    compressionThreshold: 0.5,
+    noiseGateThreshold: 0.4,
+    compressionThreshold: 0.38,
   });
   const { gainBoost, noiseGateThreshold, compressionThreshold } = audioSettings;
   const [showAdvancedAudio, setShowAdvancedAudio] = useState(false);
@@ -473,8 +473,8 @@ export default function SimplifiedSettingsDialog({
                   setAudioSettings((prev) => ({
                     ...prev,
                     gainBoost: 2.5,
-                    noiseGateThreshold: 0.02,
-                    compressionThreshold: 0.5,
+                    noiseGateThreshold: 0.4,
+                    compressionThreshold: 0.38,
                   }));
                 }}
                 className="flex-1 bg-teal-500 text-white hover:bg-teal-500/90 shadow-sm"

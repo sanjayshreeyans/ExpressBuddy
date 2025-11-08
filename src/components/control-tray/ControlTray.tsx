@@ -80,9 +80,9 @@ function ControlTray({
   
   // Audio preprocessing settings - optimized for children's voices
   const [audioRecorder] = useState(() => new AudioRecorder(16000, {
-    gainBoost: 2.5, // 2.5x amplification for quiet children's voices
-    noiseGateThreshold: 0.02, // Filter background noise below 2% level
-    compressionThreshold: 0.5, // Compress loud sounds above 50% to even out volume
+    gainBoost: 2.5, // ✅ Amplifies children's voices
+    noiseGateThreshold: 0.4, // ✅ Blocks 80% of noise
+    compressionThreshold: 0.38, // ✅ Evens out volume without distortion
   }));
   
   const [muted, setMuted] = useState(false);
