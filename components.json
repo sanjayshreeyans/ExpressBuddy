@@ -15,6 +15,7 @@
     "utils": "src/lib/utils"
   },
   "registries": {
-    "@shadcn": "https://ui.shadcn.com/r/{name}.json"
+        "@shadcn": "https://ui.shadcn.com/r/{name}.json",
+        "@aceternity": "https://ui.aceternity.com/registry/{name}.json"
   }
 }

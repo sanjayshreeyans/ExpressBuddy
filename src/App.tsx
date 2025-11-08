@@ -78,8 +78,8 @@ function AppContent() {
     }
   }, [isAuthenticated, child, isFirstTimeUser, userLoading, authLoading]);
 
-  // Do not block demo/public routes with auth loading spinners
-  const publicPaths = ['/', '/video-avatar-demo', '/emotion-detective'];
+  // Do not block public routes with auth loading spinners
+  const publicPaths = ['/', '/login', '/video-avatar-demo', '/emotion-detective'];
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
 
   if (!publicPaths.includes(currentPath) && (authLoading || userLoading)) {
@@ -97,8 +97,8 @@ function AppContent() {
     <Router>
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
-          {/* Default route - redirect straight to Video Avatar Demo */}
-          <Route path="/" element={<Navigate to="/video-avatar-demo" replace />} />
+          {/* Default route - Landing Page */}
+          <Route path="/" element={<LandingPage />} />
 
           {/* Authentication - Public Route (kept for completeness) */}
           <Route path="/login" element={<AuthPage />} />
@@ -209,8 +209,8 @@ function AppContent() {
             </ProtectedRoute>
           } />
 
-          {/* Catch all route - redirect to demo */}
-          <Route path="*" element={<Navigate to="/video-avatar-demo" replace />} />
+          {/* Catch all route - redirect to landing page */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
     </Router>
