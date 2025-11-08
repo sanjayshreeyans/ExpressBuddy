@@ -35,7 +35,7 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
 
   const refreshChild = async () => {
     if (user) {
-      const childData = await supabaseService.getChildByKindeUserId(user.id)
+      const childData = await supabaseService.getChildByUserId(user.id)
       setChild(childData)
     }
   }
@@ -80,7 +80,7 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
 
         if (session?.user) {
           // Try to get child data when user signs in
-          const childData = await supabaseService.getChildByKindeUserId(session.user.id)
+          const childData = await supabaseService.getChildByUserId(session.user.id)
           setChild(childData)
         } else {
           setChild(null)

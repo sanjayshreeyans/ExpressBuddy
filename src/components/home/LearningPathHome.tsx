@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
+import { useSupabaseAuth } from '../../contexts/SupabaseAuthContext';
 import { useUser } from '../../contexts/UserContext';
 import { motion } from 'framer-motion';
 import SupabaseTest from '../SupabaseTest';
@@ -63,7 +63,7 @@ export default function LearningPathHome() {
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { logout } = useKindeAuth();
+  const { signOut } = useSupabaseAuth();
   const { child } = useUser();
 
   const handleStartChat = () => {
@@ -78,8 +78,8 @@ export default function LearningPathHome() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut();
     navigate('/');
   };
 

@@ -6,7 +6,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
+import { useSupabaseAuth } from '../../contexts/SupabaseAuthContext';
 import { motion } from 'framer-motion';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -45,7 +45,7 @@ interface LandingPageProps {
 export default function LandingPage({}: LandingPageProps) {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const navigate = useNavigate();
-  const { isAuthenticated } = useKindeAuth();
+  const { isAuthenticated } = useSupabaseAuth();
 
   const handleStartChat = () => {
     if (isAuthenticated) {

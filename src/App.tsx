@@ -17,7 +17,7 @@
 import "./App.scss";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
-import { KindeProvider, useKindeAuth } from "@kinde-oss/kinde-auth-react";
+import { SupabaseAuthProvider, useSupabaseAuth } from "./contexts/SupabaseAuthContext";
 import { LiveAPIProvider } from "./contexts/LiveAPIContext";
 import { SupabaseProvider } from "./contexts/SupabaseContext";
 import { UserProvider, useUser } from "./contexts/UserContext";
@@ -60,12 +60,12 @@ const apiOptions: LiveClientOptions = {
 };
 
 function AppContent() {
-  const { isAuthenticated, isLoading: kindeLoading } = useKindeAuth();
+  const { isAuthenticated, loading: authLoading } = useSupabaseAuth();
   const { child, loading: userLoading, isFirstTimeUser } = useUser();
 
   useEffect(() => {
     // Handle redirects after authentication
-    if (isAuthenticated && !userLoading && !kindeLoading) {
+    if (isAuthenticated && !userLoading && !authLoading) {
       const currentPath = window.location.pathname;
 
       if (currentPath === '/login') {
@@ -76,13 +76,13 @@ function AppContent() {
         }
       }
     }
-  }, [isAuthenticated, child, isFirstTimeUser, userLoading, kindeLoading]);
+  }, [isAuthenticated, child, isFirstTimeUser, userLoading, authLoading]);
 
   // Do not block demo/public routes with auth loading spinners
   const publicPaths = ['/', '/video-avatar-demo', '/emotion-detective'];
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
 
-  if (!publicPaths.includes(currentPath) && (kindeLoading || userLoading)) {
+  if (!publicPaths.includes(currentPath) && (authLoading || userLoading)) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
@@ -219,18 +219,13 @@ function AppContent() {
 
 function App() {
   return (
-    <KindeProvider
-      clientId="0531b02ab7864ba89c419db341727945"
-      domain="https://mybuddy.kinde.com"
-      redirectUri="http://localhost:3000/dashboard"
-      logoutUri="http://localhost:3000"
-    >
+    <SupabaseAuthProvider>
       <SupabaseProvider>
         <UserProvider>
           <AppContent />
         </UserProvider>
       </SupabaseProvider>
-    </KindeProvider>
+    </SupabaseAuthProvider>
   );
 }
 

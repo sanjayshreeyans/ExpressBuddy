@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
+import { useSupabaseAuth } from '../../contexts/SupabaseAuthContext';
 import { useUser } from '../../contexts/UserContext';
 
 interface ProtectedRouteProps {
@@ -9,10 +9,10 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, requiresProfile = false }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading: kindeLoading } = useKindeAuth();
+  const { isAuthenticated, loading: authLoading } = useSupabaseAuth();
   const { child, loading: userLoading, isFirstTimeUser } = useUser();
 
-  const isLoading = kindeLoading || userLoading;
+  const isLoading = authLoading || userLoading;
 
   if (isLoading) {
     return (
