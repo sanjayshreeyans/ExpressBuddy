@@ -1,5 +1,5 @@
-import React from 'react';
-import { MessageCircle, Plane, Puzzle, Smile } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { MessageCircle, Plane, Puzzle, Smile, Sparkles, Heart, Brain } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import { useSupabaseAuth } from '../../contexts/SupabaseAuthContext';
@@ -42,6 +42,27 @@ const featureCards = [
     iconClass: 'bg-[#6246e5]/15 text-[#6246e5]',
     cardClass: 'bg-white text-[#5e6282]',
     headingClass: 'text-[#1e1d4c]',
+  },
+];
+
+const picoFeatures = [
+  {
+    title: 'Always Patient',
+    description: 'Pico never rushes and creates a safe, judgment-free space for learning.',
+    icon: Heart,
+    gradient: 'from-[#ff7d68] to-[#ffae43]',
+  },
+  {
+    title: 'Smart & Adaptive',
+    description: 'Learns from each interaction to personalize the experience for every child.',
+    icon: Brain,
+    gradient: 'from-[#6246e5] to-[#b052f4]',
+  },
+  {
+    title: 'Encouraging Mentor',
+    description: 'Celebrates progress and provides gentle guidance through every challenge.',
+    icon: Sparkles,
+    gradient: 'from-[#f1a501] to-[#ff946d]',
   },
 ];
 
@@ -145,35 +166,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="features" className={`${containerClass} grid gap-6 pb-16 pt-4 lg:grid-cols-3`}>
-          {featureCards.map((card) => (
-            <Card key={card.title} className="relative h-full rounded-[32px] border-none bg-transparent shadow-none">
-              {card.featured && (
-                <span className="pointer-events-none absolute -left-5 bottom-8 h-24 w-24 rounded-[28px] bg-[#df6951] opacity-90" />
-              )}
-              <div
-                className={cn(
-                  'relative z-10 flex h-full flex-col gap-5 rounded-[32px] border border-[#f7f7f7] p-8 shadow-[0_90px_120px_-90px_rgba(24,30,75,0.45)] transition hover:-translate-y-1',
-                  card.cardClass,
-                  card.featured && 'border-none'
-                )}
-              >
-                {card.featured && (
-                  <span className="absolute right-6 top-6 inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-white">
-                    <Plane className="h-6 w-6" />
-                  </span>
-                )}
-                <span className={cn('inline-flex h-14 w-14 items-center justify-center rounded-[18px]', card.iconClass)}>
-                  <card.icon className="h-7 w-7" />
-                </span>
-                <h3 className={cn("font-['Open Sans',sans-serif] text-lg font-semibold", card.headingClass)}>{card.title}</h3>
-                <p className={cn("font-['Poppins',sans-serif] text-sm", card.featured ? 'text-white/90' : 'text-[#5e6282]')}>
-                  {card.description}
-                </p>
-              </div>
-            </Card>
-          ))}
-        </section>
       </main>
 
       <footer id="footer" className="border-t border-slate-200 bg-white py-8">
