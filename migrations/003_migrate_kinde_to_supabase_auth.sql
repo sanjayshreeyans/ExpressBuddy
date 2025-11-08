@@ -1,5 +1,5 @@
 -- Migration: Kinde to Supabase Authentication
--- Description: Renames kinde_user_id to user_id and updates RLS policies
+-- Description: Migrates from Kinde's text-based user_id to Supabase's UUID user_id with proper RLS
 -- Date: 2024-11-08
 -- IMPORTANT: Run this migration BEFORE deploying the code changes
 
@@ -15,171 +15,150 @@ SELECT * FROM children;
 -- SELECT COUNT(*) FROM children_backup_20241108;
 
 -- ============================================================================
--- STEP 2: Rename column in children table
+-- STEP 2: Add new UUID user_id column to children table
 -- ============================================================================
 
--- Rename kinde_user_id to user_id
+-- Add new user_id column as UUID (nullable initially)
 ALTER TABLE children 
-RENAME COLUMN kinde_user_id TO user_id;
+ADD COLUMN user_id UUID;
+
+-- Add comment for clarity
+COMMENT ON COLUMN children.user_id IS 'Supabase Auth user ID - references auth.users(id)';
 
 -- ============================================================================
--- STEP 3: Update Row Level Security (RLS) Policies
+-- STEP 3: Create index on user_id for performance
 -- ============================================================================
 
--- Drop existing policies that reference kinde_user_id
+CREATE INDEX IF NOT EXISTS idx_children_user_id 
+ON children(user_id);
+
+-- ============================================================================
+-- STEP 4: Enable RLS on children table
+-- ============================================================================
+
+-- Enable Row Level Security
+ALTER TABLE children ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================================
+-- STEP 5: Create RLS Policies with proper UUID comparison
+-- ============================================================================
+
+-- Drop existing policies if they exist
 DROP POLICY IF EXISTS "Users can view their own children" ON children;
 DROP POLICY IF EXISTS "Users can create their own children" ON children;
 DROP POLICY IF EXISTS "Users can update their own children" ON children;
 DROP POLICY IF EXISTS "Users can delete their own children" ON children;
 
--- Create new policies with user_id
+-- Policy: Users can view their own child profiles
 CREATE POLICY "Users can view their own children" 
 ON children 
 FOR SELECT 
+TO authenticated
 USING (user_id = auth.uid());
 
+-- Policy: Users can create child profiles
 CREATE POLICY "Users can create their own children" 
 ON children 
 FOR INSERT 
+TO authenticated
 WITH CHECK (user_id = auth.uid());
 
+-- Policy: Users can update their own child profiles
 CREATE POLICY "Users can update their own children" 
 ON children 
 FOR UPDATE 
-USING (user_id = auth.uid());
+TO authenticated
+USING (user_id = auth.uid())
+WITH CHECK (user_id = auth.uid());
 
+-- Policy: Users can delete their own child profiles
 CREATE POLICY "Users can delete their own children" 
 ON children 
 FOR DELETE 
+TO authenticated
 USING (user_id = auth.uid());
 
 -- ============================================================================
--- STEP 4: Update indexes if any exist
+-- STEP 6: Verify RLS is active and policies are created
 -- ============================================================================
 
--- Drop old index if exists
-DROP INDEX IF EXISTS idx_children_kinde_user_id;
-
--- Create new index on user_id for better query performance
-CREATE INDEX IF NOT EXISTS idx_children_user_id 
-ON children(user_id);
-
--- ============================================================================
--- STEP 5: Update other tables that might reference kinde_user_id
--- ============================================================================
-
--- Check if emotion_detective_progress table needs updating
-DO $$ 
-BEGIN
-  IF EXISTS (
-    SELECT 1 
-    FROM information_schema.columns 
-    WHERE table_name = 'emotion_detective_progress' 
-    AND column_name = 'kinde_user_id'
-  ) THEN
-    ALTER TABLE emotion_detective_progress 
-    RENAME COLUMN kinde_user_id TO user_id;
-  END IF;
-END $$;
-
--- Check if conversation_transcripts table needs updating
-DO $$ 
-BEGIN
-  IF EXISTS (
-    SELECT 1 
-    FROM information_schema.columns 
-    WHERE table_name = 'conversation_transcripts' 
-    AND column_name = 'kinde_user_id'
-  ) THEN
-    ALTER TABLE conversation_transcripts 
-    RENAME COLUMN kinde_user_id TO user_id;
-  END IF;
-END $$;
-
--- ============================================================================
--- STEP 6: Verify changes
--- ============================================================================
-
--- List all columns in children table to verify
-SELECT column_name, data_type 
-FROM information_schema.columns 
-WHERE table_name = 'children'
-ORDER BY ordinal_position;
-
--- Verify RLS policies are active
-SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual
-FROM pg_policies
+-- Check RLS status
+SELECT schemaname, tablename, rowsecurity 
+FROM pg_tables 
 WHERE tablename = 'children';
 
 -- ============================================================================
--- ROLLBACK INSTRUCTIONS (in case of issues)
+-- STEP 7: Verify all policies were created correctly
+-- ============================================================================
+
+-- List all RLS policies for children table
+SELECT schemaname, tablename, policyname, permissive, roles, cmd
+FROM pg_policies
+WHERE tablename = 'children'
+ORDER BY policyname;
+
+-- Verify column exists and is UUID type
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_name = 'children'
+ORDER BY ordinal_position;
+
+-- ============================================================================
+-- STEP 8: Important Next Steps (Manual)
+-- ============================================================================
+
+/*
+MANUAL STEPS REQUIRED AFTER MIGRATION:
+
+1. DATA MIGRATION (Run in your application or through Supabase):
+   - For each existing child record with kinde_user_id:
+   - Look up the corresponding Supabase user ID
+   - UPDATE children SET user_id = <supabase_user_id> WHERE kinde_user_id = <kinde_id>
+
+2. CODE UPDATES REQUIRED:
+   - Update src/contexts/UserContext.tsx to use user_id instead of kinde_user_id
+   - Update src/services/supabaseService.ts to reference user_id
+   - Update all components to import from SupabaseAuthContext instead of Kinde
+   - Remove @kinde-oss/kinde-auth-react dependency
+
+3. TESTING:
+   - Test user registration with Supabase Auth
+   - Verify child profile is created with correct user_id
+   - Test RLS policies allow users to see only their own data
+   - Verify session persistence across page refreshes
+
+4. CLEANUP (After successful testing and migration):
+   - Run: ALTER TABLE children DROP COLUMN kinde_user_id;
+   - Drop backup table: DROP TABLE children_backup_20241108;
+
+5. PRODUCTION DEPLOYMENT:
+   - Run this migration in production
+   - Deploy updated application code
+   - Monitor error logs for any RLS policy violations
+   - Keep backup table for 30 days before cleanup
+*/
+
+-- ============================================================================
+-- ROLLBACK INSTRUCTIONS (If needed)
 -- ============================================================================
 
 /*
 -- To rollback this migration:
 
--- 1. Restore column name
-ALTER TABLE children 
-RENAME COLUMN user_id TO kinde_user_id;
-
--- 2. Restore old policies
+-- 1. Drop all new policies
 DROP POLICY IF EXISTS "Users can view their own children" ON children;
 DROP POLICY IF EXISTS "Users can create their own children" ON children;
 DROP POLICY IF EXISTS "Users can update their own children" ON children;
 DROP POLICY IF EXISTS "Users can delete their own children" ON children;
 
-CREATE POLICY "Users can view their own children" 
-ON children 
-FOR SELECT 
-USING (kinde_user_id = auth.uid());
+-- 2. Disable RLS
+ALTER TABLE children DISABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can create their own children" 
-ON children 
-FOR INSERT 
-WITH CHECK (kinde_user_id = auth.uid());
-
-CREATE POLICY "Users can update their own children" 
-ON children 
-FOR UPDATE 
-USING (kinde_user_id = auth.uid());
-
-CREATE POLICY "Users can delete their own children" 
-ON children 
-FOR DELETE 
-USING (kinde_user_id = auth.uid());
-
--- 3. Restore index
+-- 3. Drop new column and index
 DROP INDEX IF EXISTS idx_children_user_id;
-CREATE INDEX IF NOT EXISTS idx_children_kinde_user_id 
-ON children(kinde_user_id);
+ALTER TABLE children DROP COLUMN IF EXISTS user_id;
 
--- 4. Restore data from backup if needed
+-- 4. Restore data from backup if corruption occurred
 -- TRUNCATE children;
 -- INSERT INTO children SELECT * FROM children_backup_20241108;
-*/
-
--- ============================================================================
--- NOTES
--- ============================================================================
-
-/*
-IMPORTANT: After running this migration:
-
-1. Test the following in a staging environment first:
-   - User registration
-   - User login
-   - Child profile creation
-   - Child profile retrieval
-
-2. Verify that auth.uid() in RLS policies returns the correct Supabase user ID
-
-3. Ensure all application code has been updated to use user_id instead of kinde_user_id
-
-4. Monitor logs for any errors related to authentication or database access
-
-5. Keep the backup table (children_backup_20241108) for at least 30 days after 
-   successful migration, then drop it:
-   DROP TABLE children_backup_20241108;
-
-6. Update your application's environment variables to use Supabase credentials
 */
