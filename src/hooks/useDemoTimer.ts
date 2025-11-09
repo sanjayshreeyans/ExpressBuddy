@@ -31,12 +31,17 @@ export function useDemoTimer({
   const [isRunning, setIsRunning] = useState(autoStart);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasExpiredRef = useRef(false);
+  const onExpireRef = useRef(onExpire); // Use ref to avoid re-creating interval on every render
+
+  // Update ref when onExpire changes
+  useEffect(() => {
+    onExpireRef.current = onExpire;
+  }, [onExpire]);
 
   const start = useCallback(() => {
-    if (timeRemaining > 0 && !isExpired) {
-      setIsRunning(true);
-    }
-  }, [timeRemaining, isExpired]);
+    console.log('🎬 Demo timer start() called');
+    setIsRunning(true);
+  }, []);
 
   const pause = useCallback(() => {
     setIsRunning(false);
@@ -56,34 +61,43 @@ export function useDemoTimer({
   }, []);
 
   useEffect(() => {
-    if (isRunning) {
+    console.log('⏱️ useEffect triggered: isRunning=', isRunning, 'intervalRef=', !!intervalRef.current);
+    
+    if (isRunning && !intervalRef.current) {
+      console.log('⏱️ Setting up interval timer from:', timeRemaining);
       intervalRef.current = setInterval(() => {
+        console.log('⏰ Interval tick!');
         setTimeRemaining((prev) => {
-          if (prev <= 1) {
+          const newTime = prev - 1;
+          console.log('⏱️ Timer tick: ', prev, '→', newTime);
+          if (newTime <= 0) {
+            console.log('⏰ Timer expired!');
             setIsRunning(false);
             setIsExpired(true);
             if (!hasExpiredRef.current) {
               hasExpiredRef.current = true;
-              onExpire?.();
+              onExpireRef.current?.();
             }
             return 0;
           }
-          return prev - 1;
+          return newTime;
         });
       }, 1000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      console.log('✅ Interval created:', intervalRef.current);
+    } else if (!isRunning && intervalRef.current) {
+      console.log('🛑 Clearing interval');
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
 
     return () => {
       if (intervalRef.current) {
+        console.log('🧹 Cleanup: clearing interval');
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
-  }, [isRunning, onExpire]);
+  }, [isRunning]);
 
   return {
     timeRemaining,

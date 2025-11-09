@@ -160,11 +160,16 @@ export default function MainInterfaceWithAvatar({ onGoToLanding, showLogout = fa
 
   // **NEW**: Demo timer for unauthenticated users (2 minutes)
   const [showExpirationDialog, setShowExpirationDialog] = useState(false);
+  const timerStartedRef = useRef(false); // Track if timer has been started to prevent multiple starts
   const demoTimer = useDemoTimer({
     durationSeconds: 120, // 2 minutes
     onExpire: () => {
       console.log('⏰ Demo timer expired');
       setShowExpirationDialog(true);
+      // Save demo usage for the day
+      const today = new Date().toDateString();
+      localStorage.setItem('expressBuddy_demo_used_date', today);
+      console.log('📅 Demo usage saved for today:', today);
       // Disconnect the session when timer expires
       if (connected) {
         disconnect();
@@ -173,13 +178,29 @@ export default function MainInterfaceWithAvatar({ onGoToLanding, showLogout = fa
     autoStart: false, // Will start when user connects if not authenticated
   });
 
-  // Start demo timer when unauthenticated user connects
+  // Check if demo was already used today
+  const hasDemoBeenUsedToday = (): boolean => {
+    const today = new Date().toDateString();
+    const lastUsedDate = localStorage.getItem('expressBuddy_demo_used_date');
+    return lastUsedDate === today;
+  };
+
+  // Start demo timer when unauthenticated user connects (only once)
   useEffect(() => {
-    if (!showLogout && connected && !demoTimer.isRunning && !demoTimer.isExpired) {
-      console.log('⏱️ Starting demo timer for unauthenticated user');
+    if (!showLogout && connected && !timerStartedRef.current) {
+      // Check if demo was already used today
+      if (hasDemoBeenUsedToday()) {
+        console.log('⏰ Demo already used today. Please come back tomorrow!');
+        setShowExpirationDialog(true);
+        disconnect();
+        return;
+      }
+
+      console.log('⏱️ Starting demo timer for unauthenticated user (one-time)');
       demoTimer.start();
+      timerStartedRef.current = true; // Mark as started
     }
-  }, [showLogout, connected, demoTimer]);
+  }, [showLogout, connected, disconnect, demoTimer]);
 
   // **NEW**: Register avatar animation callbacks with LiveAPI
   useEffect(() => {
@@ -1544,6 +1565,7 @@ Children feel more understood when you notice what they're showing you - not jus
       <DemoExpirationDialog
         open={showExpirationDialog}
         onClose={() => setShowExpirationDialog(false)}
+        alreadyUsedToday={hasDemoBeenUsedToday()}
       />
     </div>
   );

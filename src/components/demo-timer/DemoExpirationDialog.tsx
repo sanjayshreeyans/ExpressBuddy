@@ -12,12 +12,13 @@ import { Button } from '../ui/button';
 interface DemoExpirationDialogProps {
   open: boolean;
   onClose: () => void;
+  alreadyUsedToday?: boolean;
 }
 
 /**
  * Dialog shown when the demo timer expires for unauthenticated users
  */
-export function DemoExpirationDialog({ open, onClose }: DemoExpirationDialogProps) {
+export function DemoExpirationDialog({ open, onClose, alreadyUsedToday = false }: DemoExpirationDialogProps) {
   const handleEmailClick = () => {
     window.location.href = 'mailto:sanjayshreeyans@gmail.com?subject=ExpressBuddy Demo Request';
   };
@@ -31,18 +32,31 @@ export function DemoExpirationDialog({ open, onClose }: DemoExpirationDialogProp
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-2xl font-['Volkhov',serif] text-[#181e4b]">
-            Thanks for Trying ExpressBuddy! 🎉
+            {alreadyUsedToday ? 'Come Back Tomorrow! 📅' : 'Thanks for Trying ExpressBuddy! 🎉'}
           </DialogTitle>
           <DialogDescription className="text-base font-['Poppins',sans-serif] text-[#5e6282] space-y-4 pt-4">
             <p>
               <strong className="text-[#181e4b]">ExpressBuddy is under research preview.</strong>
             </p>
-            <p>
-              Thank you for trying our demo! We hope you enjoyed meeting Pico and experiencing our AI-powered communication tools for children.
-            </p>
-            <p>
-              If you would like to demo the full product with unlimited access, please:
-            </p>
+            {alreadyUsedToday ? (
+              <>
+                <p>
+                  You've already used your daily demo time today. We limit demo sessions to once per day to manage our research resources.
+                </p>
+                <p>
+                  <strong className="text-[#181e4b]">Please come back tomorrow</strong> for another 2-minute demo, or create a free account for unlimited access!
+                </p>
+              </>
+            ) : (
+              <>
+                <p>
+                  Thank you for trying our demo! We hope you enjoyed meeting Pico and experiencing our AI-powered communication tools for children.
+                </p>
+                <p>
+                  If you would like to demo the full product with unlimited access, please:
+                </p>
+              </>
+            )}
             <ul className="list-disc pl-6 space-y-2">
               <li>Create a free account to continue chatting with Pico</li>
               <li>Or email us at <strong className="text-[#df6951]">sanjayshreeyans@gmail.com</strong> for a full product demo</li>
