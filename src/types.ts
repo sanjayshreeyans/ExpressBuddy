@@ -24,7 +24,10 @@ import {
 /**
  * the options to initiate the client, ensure apiKey is required
  */
-export type LiveClientOptions = GoogleGenAIOptions & { apiKey: string };
+export type LiveClientOptions = GoogleGenAIOptions & { 
+  apiKey: string;
+  userId?: string; // Optional: for tracking transcripts by user
+};
 
 /** log types */
 export type StreamingLog = {

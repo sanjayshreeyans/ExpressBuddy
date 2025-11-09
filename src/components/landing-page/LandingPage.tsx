@@ -72,7 +72,7 @@ export default function LandingPage() {
 
   const handleGetStarted = () => {
     if (isAuthenticated) {
-      navigate('/dashboard');
+      navigate('/video-avatar-demo');
     } else {
       navigate('/login');
     }
@@ -127,7 +127,7 @@ export default function LandingPage() {
                 Pico AI
               </p>
               <h1 className="font-['Volkhov',serif] text-[46px] leading-tight text-[#181e4b] sm:text-[60px] sm:leading-[68px]">
-                Help young voices grow confident every day.
+                Helping young voices grow confident every day.
               </h1>
               <p className="max-w-xl font-['Poppins',sans-serif] text-lg leading-[30px] text-[#5e6282]">
                 Personalized, encouraging AI conversations that make it easy for children to practice social skills.

@@ -16,7 +16,7 @@
 
 import "./App.scss";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useMemo } from "react";
 import { SupabaseAuthProvider, useSupabaseAuth } from "./contexts/SupabaseAuthContext";
 import { LiveAPIProvider } from "./contexts/LiveAPIContext";
 import { SupabaseProvider } from "./contexts/SupabaseContext";
@@ -60,8 +60,14 @@ const apiOptions: LiveClientOptions = {
 };
 
 function AppContent() {
-  const { isAuthenticated, loading: authLoading } = useSupabaseAuth();
+  const { isAuthenticated, loading: authLoading, user } = useSupabaseAuth();
   const { child, loading: userLoading, isFirstTimeUser } = useUser();
+
+  // Create API options with userId when authenticated
+  const authenticatedApiOptions = useMemo(() => ({
+    ...apiOptions,
+    userId: user?.id,
+  }), [user?.id]);
 
   useEffect(() => {
     // Handle redirects after authentication
@@ -69,11 +75,8 @@ function AppContent() {
       const currentPath = window.location.pathname;
 
       if (currentPath === '/login') {
-        if (isFirstTimeUser) {
-          window.location.href = '/onboarding';
-        } else if (child) {
-          window.location.href = '/dashboard';
-        }
+        // Redirect directly to video avatar interface after login
+        window.location.href = '/video-avatar-demo';
       }
     }
   }, [isAuthenticated, child, isFirstTimeUser, userLoading, authLoading]);
@@ -106,28 +109,25 @@ function AppContent() {
 
 
           {/* Protected Routes */}
-          <Route path="/dashboard" element={
-            <ProtectedRoute requiresProfile={true}>
-              <LearningPathHome />
-            </ProtectedRoute>
-          } />
-
           <Route path="/chat" element={
             <ProtectedRoute requiresProfile={true}>
               <>
-                <LiveAPIProvider options={apiOptions}>
+                <LiveAPIProvider options={authenticatedApiOptions}>
                   <MainInterfaceWithAvatar />
                 </LiveAPIProvider>
               </>
             </ProtectedRoute>
           } />
 
-          {/* Video Avatar Chat - Public Demo Route */}
+          {/* Video Avatar Chat - Public Demo Route (uses authenticated options when logged in) */}
           <Route path="/video-avatar-demo" element={
             <>
               {/* Integrated toolbar only; moved demo nav button into header of the interface */}
-              <LiveAPIProvider options={apiOptions}>
-                <MainInterfaceWithVideoAvatar onGoToLanding={() => window.location.href = '/'} />
+              <LiveAPIProvider options={isAuthenticated ? authenticatedApiOptions : apiOptions}>
+                <MainInterfaceWithVideoAvatar 
+                  showLogout={isAuthenticated}
+                  onGoToLanding={() => window.location.href = '/'} 
+                />
               </LiveAPIProvider>
             </>
           } />

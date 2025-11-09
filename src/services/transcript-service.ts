@@ -36,6 +36,7 @@ export class TranscriptService {
   private supabase: SupabaseClient;
   private currentTranscript: TranscriptMessage[] = [];
   private sessionId: string | null = null;
+  private userId: string | null = null;
   private conversationStartTime: number | null = null;
   private supabaseUrl?: string;
   private supabaseAnonKey?: string;
@@ -92,9 +93,10 @@ export class TranscriptService {
   /**
    * Start a new conversation session
    */
-  public startConversation(sessionId: string): void {
-    console.log(`📝 Starting transcript collection for session: ${sessionId}`);
+  public startConversation(sessionId: string, userId?: string): void {
+    console.log(`📝 Starting transcript collection for session: ${sessionId}`, userId ? `(User: ${userId})` : '');
     this.sessionId = sessionId;
+    this.userId = userId || null;
     this.currentTranscript = [];
     this.conversationStartTime = Date.now();
     this.resetBuffers();
@@ -277,6 +279,7 @@ export class TranscriptService {
 
     const conversationData = {
       session_id: this.sessionId,
+      user_id: this.userId,
       created_at: new Date(this.conversationStartTime || now.getTime()).toISOString(),
       ended_at: markEnded ? now.toISOString() : null,
       transcript: this.currentTranscript,
@@ -545,6 +548,7 @@ export class TranscriptService {
   public clearSession(): void {
     console.log('🧹 Clearing transcript session');
     this.sessionId = null;
+    this.userId = null;
     this.currentTranscript = [];
     this.conversationStartTime = null;
     this.resetBuffers();

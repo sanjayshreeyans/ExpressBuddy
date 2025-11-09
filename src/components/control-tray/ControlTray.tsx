@@ -347,7 +347,14 @@ function ControlTray({
           <button
             ref={connectButtonRef}
             className={cn("action-button connect-toggle", { connected })}
-            onClick={connected ? disconnect : connect}
+            onClick={async () => {
+              console.log('🎮 Control button clicked:', connected ? 'disconnect' : 'connect');
+              if (connected) {
+                await disconnect();
+              } else {
+                connect();
+              }
+            }}
           >
             <span className="material-symbols-outlined filled">
               {connected ? "pause" : "play_arrow"}
