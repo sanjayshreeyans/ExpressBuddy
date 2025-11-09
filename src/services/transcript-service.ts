@@ -79,15 +79,24 @@ export class TranscriptService {
 
     if (!supabaseUrl || !supabaseKey) {
       console.warn('⚠️ TranscriptService: Supabase credentials not found. Transcript saving disabled.');
+      // Create dummy client to prevent crashes
+      this.supabase = createClient('https://dummy.supabase.co', 'dummy-key');
     } else {
       this.supabaseUrl = supabaseUrl;
       this.supabaseAnonKey = supabaseKey;
+      console.log('✅ TranscriptService: Supabase credentials loaded');
+      
+      // Create a fresh Supabase client for transcript service
+      // This avoids auth session issues from the shared client
+      // For authenticated users, we'll manually set the auth header
+      this.supabase = createClient(supabaseUrl, supabaseKey, {
+        auth: {
+          persistSession: false, // Don't persist session - avoid 401 errors
+          autoRefreshToken: false, // Don't auto refresh
+          detectSessionInUrl: false // Don't detect session from URL
+        }
+      });
     }
-
-    this.supabase = createClient(
-      supabaseUrl || 'dummy-url',
-      supabaseKey || 'dummy-key'
-    );
   }
 
   /**
@@ -357,15 +366,38 @@ export class TranscriptService {
 
     const saveOperation = (async () => {
       try {
+        // Check if user is authenticated
+        const { data: { session } } = await this.supabase.auth.getSession();
+        const isAuthenticated = session !== null;
+
+        console.log('💾 Attempting to save transcript:', {
+          reason,
+          sessionId: this.sessionId,
+          userId: this.userId,
+          messageCount: this.currentTranscript.length,
+          hasSupabaseCredentials: this.hasSupabaseCredentials(),
+          isAuthenticated,
+          authSession: session ? 'present' : 'none'
+        });
+
+        // Use upsert with proper conflict handling
         const { data, error } = await this.supabase
           .from('conversation_transcripts')
-          .upsert(payload, { onConflict: 'session_id' })
+          .upsert(payload, { 
+            onConflict: 'session_id',
+            ignoreDuplicates: false
+          })
           .select();
 
         if (error) {
           console.error('❌ Supabase error during transcript snapshot save:', {
             error,
-            reason
+            reason,
+            sessionId: this.sessionId,
+            userId: this.userId,
+            isAuthenticated,
+            errorCode: error.code,
+            errorMessage: error.message
           });
           return false;
         }
@@ -374,7 +406,9 @@ export class TranscriptService {
           reason,
           recordId: data?.[0]?.id,
           sessionId: data?.[0]?.session_id,
-          messageCount: data?.[0]?.total_messages
+          messageCount: data?.[0]?.total_messages,
+          userId: this.userId,
+          isAuthenticated
         });
 
         return true;
@@ -411,6 +445,7 @@ export class TranscriptService {
     }
 
     try {
+      // Both authenticated and unauthenticated users can now use merge-duplicates
       const response = await fetch(`${this.supabaseUrl}/rest/v1/conversation_transcripts?on_conflict=session_id`, {
         method: 'POST',
         headers: {
