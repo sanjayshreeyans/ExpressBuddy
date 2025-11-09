@@ -158,11 +158,11 @@ export default function MainInterfaceWithAvatar({ onGoToLanding, showLogout = fa
   // **NEW**: Transcript service for saving conversation transcripts
   const transcriptService = TranscriptService;
 
-  // **NEW**: Demo timer for unauthenticated users (2 minutes)
+  // **NEW**: Demo timer for unauthenticated users (1 minute)
   const [showExpirationDialog, setShowExpirationDialog] = useState(false);
   const timerStartedRef = useRef(false); // Track if timer has been started to prevent multiple starts
   const demoTimer = useDemoTimer({
-    durationSeconds: 120, // 2 minutes
+    durationSeconds: 60, // 1 minute
     onExpire: () => {
       console.log('⏰ Demo timer expired');
       setShowExpirationDialog(true);
@@ -1552,6 +1552,7 @@ Children feel more understood when you notice what they're showing you - not jus
           disableChunkingToggle={true} // Disable viseme/chunking controls for video avatar
           currentBackground={backgroundVideo}
           onBackgroundChange={setBackgroundVideo}
+          demoExpired={!showLogout && (demoTimer.isExpired || hasDemoBeenUsedToday())}
         />
       </div>
 

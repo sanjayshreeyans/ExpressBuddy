@@ -28,11 +28,15 @@ export function DemoExpirationDialog({ open, onClose, alreadyUsedToday = false }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={() => {}}> {/* Make dialog non-dismissible */}
+      <DialogContent 
+        className="sm:max-w-md z-[9999] bg-gradient-to-b from-[#fff1da] to-[#ffe8d6] border-none"
+        onEscapeKeyDown={(e) => e.preventDefault()} // Prevent closing with Escape
+        onPointerDownOutside={(e) => e.preventDefault()} // Prevent closing by clicking outside
+      >
         <DialogHeader>
           <DialogTitle className="text-2xl font-['Volkhov',serif] text-[#181e4b]">
-            {alreadyUsedToday ? 'Come Back Tomorrow! 📅' : 'Thanks for Trying ExpressBuddy! 🎉'}
+            {alreadyUsedToday ? 'Come Back Tomorrow!' : 'Thanks for Trying ExpressBuddy! 🎉'}
           </DialogTitle>
           <DialogDescription className="text-base font-['Poppins',sans-serif] text-[#5e6282] space-y-4 pt-4">
             <p>
@@ -44,7 +48,7 @@ export function DemoExpirationDialog({ open, onClose, alreadyUsedToday = false }
                   You've already used your daily demo time today. We limit demo sessions to once per day to manage our research resources.
                 </p>
                 <p>
-                  <strong className="text-[#181e4b]">Please come back tomorrow</strong> for another 2-minute demo, or create a free account for unlimited access!
+                  <strong className="text-[#181e4b]">Please come back tomorrow</strong> for another 1-minute demo, or create a free account for unlimited access!
                 </p>
               </>
             ) : (
@@ -76,13 +80,6 @@ export function DemoExpirationDialog({ open, onClose, alreadyUsedToday = false }
             className="w-full sm:w-auto border-[#df6951] text-[#df6951] hover:bg-[#df6951] hover:text-white font-['Poppins',sans-serif] rounded-xl"
           >
             Email Us
-          </Button>
-          <Button
-            onClick={onClose}
-            variant="ghost"
-            className="w-full sm:w-auto text-[#5e6282] hover:text-[#181e4b] font-['Poppins',sans-serif]"
-          >
-            Close
           </Button>
         </DialogFooter>
       </DialogContent>

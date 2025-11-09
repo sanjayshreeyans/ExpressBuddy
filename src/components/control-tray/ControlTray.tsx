@@ -36,6 +36,7 @@ export type ControlTrayProps = {
   disableChunkingToggle?: boolean; // Disable chunking controls for video avatar
   currentBackground?: string; // Current background video path
   onBackgroundChange?: (background: string) => void; // Background change handler
+  demoExpired?: boolean; // Demo timer has expired (disable connect button)
 };
 
 type MediaStreamButtonProps = {
@@ -71,6 +72,7 @@ function ControlTray({
   disableChunkingToggle = false, // Default to false for backward compatibility
   currentBackground = '/Backgrounds/AnimatedVideoBackgroundLooping1.mp4',
   onBackgroundChange = () => {},
+  demoExpired = false,
 }: ControlTrayProps) {
   const videoStreams = [useWebcam(), useScreenCapture()];
   const [activeVideoStream, setActiveVideoStream] =
@@ -348,6 +350,10 @@ function ControlTray({
             ref={connectButtonRef}
             className={cn("action-button connect-toggle", { connected })}
             onClick={async () => {
+              if (demoExpired && !connected) {
+                console.log('🚫 Demo expired - connection blocked');
+                return;
+              }
               console.log('🎮 Control button clicked:', connected ? 'disconnect' : 'connect');
               if (connected) {
                 await disconnect();
@@ -355,13 +361,15 @@ function ControlTray({
                 connect();
               }
             }}
+            disabled={demoExpired && !connected}
+            title={demoExpired && !connected ? 'Demo time expired. Please sign up for unlimited access.' : undefined}
           >
             <span className="material-symbols-outlined filled">
               {connected ? "pause" : "play_arrow"}
             </span>
           </button>
         </div>
-        <span className="text-indicator">Streaming</span>
+        <span className="text-indicator">{demoExpired ? 'Demo Expired' : 'Streaming'}</span>
       </div>
       {enableEditingSettings ? (
         <SimplifiedSettingsDialog
