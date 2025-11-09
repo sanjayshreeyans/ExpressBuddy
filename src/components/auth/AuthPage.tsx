@@ -36,12 +36,12 @@ export default function AuthPage() {
   const modeCopy = useMemo(() => {
     return mode === 'login'
       ? {
-          title: 'Welcome back to ExpressBuddy',
+          title: 'Welcome back!',
           description: 'Sign in to keep supporting your child with personalized AI-powered guidance.',
           buttonLabel: 'Sign In',
         }
       : {
-          title: 'Create your ExpressBuddy account',
+          title: 'Lets get started!',
           description: 'Start your trial and unlock tailored learning paths crafted for children with autism and speech delays.',
           buttonLabel: 'Create Account',
         };
@@ -83,19 +83,24 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-16">
-      <div className={containerClass}>
+    <div className="relative min-h-screen bg-white overflow-hidden">
+      {/* Decorative background elements matching landing page */}
+      <div className="absolute -right-24 top-[-120px] h-[420px] w-[420px] rounded-full bg-[#fff1da] blur-[1px]" />
+      <div className="absolute right-16 top-24 h-40 w-40 rounded-full bg-[#f8d698]/70 blur-2xl" />
+      <div className="absolute left-[-10%] bottom-1/4 h-[300px] w-[300px] rounded-full bg-[#ff946d]/20 blur-3xl" />
+      
+      <div className={`${containerClass} py-16 relative z-10`}>
         <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-center">
           <div className="space-y-8">
-            <Badge variant="outline" className="w-fit rounded-full border-teal-200 bg-teal-50 px-3 py-1 text-sm font-medium text-teal-700">
-              Families first
-            </Badge>
-            <div className="space-y-4">
-              <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-                Secure access to ExpressBuddy
+            <p className="font-['Poppins',sans-serif] text-sm font-semibold uppercase tracking-[0.35em] text-[#df6951]">
+              Trusted by Families
+            </p>
+            <div className="space-y-6">
+              <h1 className="font-['Volkhov',serif] text-[42px] leading-tight text-[#181e4b] sm:text-[52px] sm:leading-[60px]">
+                ExpressBuddy
               </h1>
-              <p className="text-lg text-slate-600">
-                ExpressBuddy pairs breakthrough AI with evidence-based therapy practices to build confidence, communication, and social skills tailored to every child.
+              <p className="max-w-xl font-['Poppins',sans-serif] text-lg leading-[30px] text-[#5e6282]">
+                AI-powered learning companion designed to help children build confidence, communication, and social skills through personalized interactions.
               </p>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
@@ -106,7 +111,6 @@ export default function AuthPage() {
                   </span>
                   <div className="space-y-1">
                     <p className="text-sm font-semibold text-slate-700">Private & COPPA compliant</p>
-                    <p className="text-sm text-slate-500">Your child’s data stays secure and in your control.</p>
                   </div>
                 </CardContent>
               </Card>
@@ -117,26 +121,25 @@ export default function AuthPage() {
                   </span>
                   <div className="space-y-1">
                     <p className="text-sm font-semibold text-slate-700">Specialized for neurodivergent learners</p>
-                    <p className="text-sm text-slate-500">Built with clinicians and families to support autism and speech delays.</p>
                   </div>
                 </CardContent>
               </Card>
             </div>
           </div>
 
-          <Card className="mx-auto w-full max-w-md border border-slate-200 bg-white shadow-sm">
-            <CardHeader className="space-y-1">
-              <div className="grid grid-cols-2 gap-2 rounded-lg bg-slate-100 p-1">
+          <Card className="mx-auto w-full max-w-md overflow-hidden rounded-[36px] border-none bg-gradient-to-b from-white via-[#f9f3ff] to-[#ffe8d6] shadow-[0_60px_120px_-80px_rgba(24,30,75,0.55)]">
+            <CardHeader className="space-y-4 p-8">
+              <div className="grid grid-cols-2 gap-2 rounded-[12px] bg-[#f7f7f7] p-1">
                 <Button
                   type="button"
                   variant="ghost"
                   onClick={() => toggleMode('login')}
                   disabled={isSubmitting}
                   className={cn(
-                    'h-10 text-sm font-medium transition',
+                    "h-10 rounded-[8px] font-['Poppins',sans-serif] text-sm font-medium transition",
                     mode === 'login'
-                      ? 'bg-white text-teal-700 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
+                      ? 'bg-white text-[#1e88e5] shadow-sm'
+                      : 'text-[#5e6282] hover:text-[#181e4b]'
                   )}
                 >
                   Sign in
@@ -147,19 +150,19 @@ export default function AuthPage() {
                   onClick={() => toggleMode('signup')}
                   disabled={isSubmitting}
                   className={cn(
-                    'h-10 text-sm font-medium transition',
+                    "h-10 rounded-[8px] font-['Poppins',sans-serif] text-sm font-medium transition",
                     mode === 'signup'
-                      ? 'bg-white text-teal-700 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
+                      ? 'bg-white text-[#1e88e5] shadow-sm'
+                      : 'text-[#5e6282] hover:text-[#181e4b]'
                   )}
                 >
                   Create account
                 </Button>
               </div>
-              <CardTitle className="text-2xl font-semibold text-slate-900">
+              <CardTitle className="font-['Volkhov',serif] text-[28px] leading-tight text-[#181e4b]">
                 {modeCopy.title}
               </CardTitle>
-              <CardDescription className="text-base text-slate-600">
+              <CardDescription className="font-['Poppins',sans-serif] text-base leading-[28px] text-[#5e6282]">
                 {modeCopy.description}
               </CardDescription>
             </CardHeader>
@@ -223,7 +226,7 @@ export default function AuthPage() {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-teal-600 text-white transition hover:bg-teal-700"
+                  className="w-full h-12 rounded-[10px] bg-[#f1a501] font-['Poppins',sans-serif] text-sm font-semibold text-white shadow-[0_22px_40px_-20px_rgba(241,165,1,0.75)] transition hover:bg-[#ffbb37]"
                 >
                   {isSubmitting ? (
                     <span className="flex items-center justify-center gap-2">
@@ -236,12 +239,12 @@ export default function AuthPage() {
                 </Button>
               </form>
             </CardContent>
-            <CardFooter className="flex flex-col gap-2 text-center text-xs text-slate-500">
+            <CardFooter className="flex flex-col gap-2 text-center font-['Poppins',sans-serif] text-xs text-[#5e6282] p-8">
               <p>
                 By continuing you agree to our&nbsp;
                 <button
                   type="button"
-                  className="font-medium text-teal-700 hover:underline"
+                  className="font-medium text-[#1e88e5] hover:underline"
                   onClick={() => window.open('/privacy', '_blank')}
                 >
                   Privacy Policy
@@ -249,7 +252,7 @@ export default function AuthPage() {
                 &nbsp;and&nbsp;
                 <button
                   type="button"
-                  className="font-medium text-teal-700 hover:underline"
+                  className="font-medium text-[#1e88e5] hover:underline"
                   onClick={() => window.open('/terms', '_blank')}
                 >
                   Terms of Service
@@ -261,7 +264,7 @@ export default function AuthPage() {
                   Need an account?{' '}
                   <button
                     type="button"
-                    className="font-medium text-teal-700 hover:underline"
+                    className="font-medium text-[#1e88e5] hover:underline"
                     onClick={() => toggleMode('signup')}
                   >
                     Create one
@@ -272,7 +275,7 @@ export default function AuthPage() {
                   Already registered?{' '}
                   <button
                     type="button"
-                    className="font-medium text-teal-700 hover:underline"
+                    className="font-medium text-[#1e88e5] hover:underline"
                     onClick={() => toggleMode('login')}
                   >
                     Sign in

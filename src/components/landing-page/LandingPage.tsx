@@ -124,7 +124,7 @@ export default function LandingPage() {
           <div className={`${containerClass} grid gap-12 py-16 lg:grid-cols-2 lg:items-center`}>
             <div className="space-y-6">
               <p className="font-['Poppins',sans-serif] text-sm font-semibold uppercase tracking-[0.35em] text-[#df6951]">
-                AI Companion
+                Pico AI
               </p>
               <h1 className="font-['Volkhov',serif] text-[46px] leading-tight text-[#181e4b] sm:text-[60px] sm:leading-[68px]">
                 Help young voices grow confident every day.
