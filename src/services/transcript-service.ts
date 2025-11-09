@@ -84,14 +84,12 @@ export class TranscriptService {
     } else {
       this.supabaseUrl = supabaseUrl;
       this.supabaseAnonKey = supabaseKey;
-      console.log('✅ TranscriptService: Supabase credentials loaded');
       
       // Create a fresh Supabase client for transcript service
-      // This avoids auth session issues from the shared client
-      // For authenticated users, we'll manually set the auth header
+      // This avoids auth session conflicts from the shared client
       this.supabase = createClient(supabaseUrl, supabaseKey, {
         auth: {
-          persistSession: false, // Don't persist session - avoid 401 errors
+          persistSession: false, // Don't persist session
           autoRefreshToken: false, // Don't auto refresh
           detectSessionInUrl: false // Don't detect session from URL
         }
@@ -366,20 +364,6 @@ export class TranscriptService {
 
     const saveOperation = (async () => {
       try {
-        // Check if user is authenticated
-        const { data: { session } } = await this.supabase.auth.getSession();
-        const isAuthenticated = session !== null;
-
-        console.log('💾 Attempting to save transcript:', {
-          reason,
-          sessionId: this.sessionId,
-          userId: this.userId,
-          messageCount: this.currentTranscript.length,
-          hasSupabaseCredentials: this.hasSupabaseCredentials(),
-          isAuthenticated,
-          authSession: session ? 'present' : 'none'
-        });
-
         // Use upsert with proper conflict handling
         const { data, error } = await this.supabase
           .from('conversation_transcripts')
@@ -392,12 +376,7 @@ export class TranscriptService {
         if (error) {
           console.error('❌ Supabase error during transcript snapshot save:', {
             error,
-            reason,
-            sessionId: this.sessionId,
-            userId: this.userId,
-            isAuthenticated,
-            errorCode: error.code,
-            errorMessage: error.message
+            reason
           });
           return false;
         }
@@ -406,9 +385,7 @@ export class TranscriptService {
           reason,
           recordId: data?.[0]?.id,
           sessionId: data?.[0]?.session_id,
-          messageCount: data?.[0]?.total_messages,
-          userId: this.userId,
-          isAuthenticated
+          messageCount: data?.[0]?.total_messages
         });
 
         return true;
