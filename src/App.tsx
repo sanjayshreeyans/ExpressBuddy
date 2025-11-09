@@ -32,7 +32,7 @@ const LandingPage = lazy(() => import("./components/landing-page/LandingPage"));
 const LearningPathHome = lazy(() => import("./components/home/LearningPathHome"));
 const AuthPage = lazy(() => import("./components/auth/AuthPage"));
 const ProtectedRoute = lazy(() => import("./components/auth/ProtectedRoute"));
-const OnboardingPage = lazy(() => import("./components/auth/OnboardingPage"));
+
 const VideoAvatarDemo = lazy(() => import("./components/demo/VideoAvatarDemo"));
 const EmotionDetectionDemo = lazy(() => import("./components/emotion-detective/EmotionDetectionDemo"));
 const EmotionMirroringDemo = lazy(() => import("./components/emotion-detective/EmotionMirroringDemo"));
@@ -103,12 +103,7 @@ function AppContent() {
           {/* Authentication - Public Route (kept for completeness) */}
           <Route path="/login" element={<AuthPage />} />
 
-          {/* Onboarding - Semi-Protected Route (authenticated but no profile) */}
-          <Route path="/onboarding" element={
-            <ProtectedRoute>
-              <OnboardingPage />
-            </ProtectedRoute>
-          } />
+
 
           {/* Protected Routes */}
           <Route path="/dashboard" element={

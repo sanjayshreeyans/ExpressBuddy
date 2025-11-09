@@ -29,15 +29,7 @@ export default function ProtectedRoute({ children, requiresProfile = false }: Pr
     return <Navigate to="/login" replace />;
   }
 
-  // If route requires profile and user is first time, redirect to onboarding
-  if (requiresProfile && isFirstTimeUser) {
-    return <Navigate to="/onboarding" replace />;
-  }
-
-  // If user is on onboarding but already has a profile, redirect to dashboard
-  if (window.location.pathname === '/onboarding' && !isFirstTimeUser && child) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  // No need for onboarding redirect - profile is created during signup
 
   return <>{children}</>;
 }

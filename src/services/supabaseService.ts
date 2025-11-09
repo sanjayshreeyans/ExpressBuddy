@@ -131,9 +131,7 @@ export class SupabaseService {
   }
 
   // Legacy method for backwards compatibility
-  async getChildByKindeUserId(kindeUserId: string): Promise<Child | null> {
-    return this.getChildByUserId(kindeUserId)
-  }
+
 
   async createChild(userId: string, name: string, age: number): Promise<Child | null> {
     try {

@@ -8,7 +8,7 @@ interface SupabaseAuthContextType {
   loading: boolean
   isAuthenticated: boolean
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
-  signUp: (email: string, password: string) => Promise<{ error: AuthError | null }>
+  signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>
 }
@@ -75,12 +75,44 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({ chil
     return { error }
   }
 
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
-    return { error }
+  const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
+    try {
+      // Create auth user with metadata
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+          },
+          emailRedirectTo: `${window.location.origin}/dashboard`
+        }
+      })
+
+      if (error) {
+        console.error('❌ Supabase signup error:', error)
+        return { error }
+      }
+
+      if (!data.user) {
+        console.error('❌ No user returned from signup')
+        return { error: { message: 'Failed to create user account', name: 'SignupError', status: 500 } as AuthError }
+      }
+
+      console.log('✅ User created successfully:', data.user.id)
+      console.log('✅ Child profile will be created automatically via database trigger')
+      console.log('📧 Email confirmation status:', data.user.confirmed_at ? 'Confirmed' : 'Pending')
+
+      // Child profile is now created automatically by database trigger
+      // Trigger fires AFTER INSERT on auth.users and creates the child profile
+      // This ensures RLS policies are properly respected
+
+      return { error: null }
+    } catch (err) {
+      console.error('❌ Exception during signup:', err)
+      return { error: { message: 'An unexpected error occurred', name: 'SignupError', status: 500 } as AuthError }
+    }
   }
 
   const signOut = async () => {

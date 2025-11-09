@@ -22,6 +22,8 @@ export default function AuthPage() {
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -52,6 +54,8 @@ export default function AuthPage() {
     setMode(nextMode);
     setError('');
     setMessage('');
+    setFirstName('');
+    setLastName('');
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -67,11 +71,18 @@ export default function AuthPage() {
           setError(signInError.message || 'We could not sign you in. Please check your credentials.');
         }
       } else {
-        const { error: signUpError } = await signUp(email, password);
+        // Validate first and last name for signup
+        if (!firstName.trim() || !lastName.trim()) {
+          setError('Please enter your first and last name.');
+          setIsSubmitting(false);
+          return;
+        }
+
+        const { error: signUpError } = await signUp(email, password, firstName.trim(), lastName.trim());
         if (signUpError) {
           setError(signUpError.message || 'We could not create your account.');
         } else {
-          setMessage('Account created. Please check your email to verify your address before signing in.');
+          setMessage('Account created successfully! You can now sign in.');
         }
       }
     } catch (err) {
@@ -179,6 +190,38 @@ export default function AuthPage() {
                     <AlertTitle>Check your inbox</AlertTitle>
                     <AlertDescription>{message}</AlertDescription>
                   </Alert>
+                )}
+
+                {/* First and Last Name for Signup */}
+                {mode === 'signup' && (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-2">
+                      <Label htmlFor="firstName">First Name</Label>
+                      <Input
+                        id="firstName"
+                        type="text"
+                        value={firstName}
+                        onChange={(event) => setFirstName(event.target.value)}
+                        placeholder="First name"
+                        autoComplete="given-name"
+                        required
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input
+                        id="lastName"
+                        type="text"
+                        value={lastName}
+                        onChange={(event) => setLastName(event.target.value)}
+                        placeholder="Last name"
+                        autoComplete="family-name"
+                        required
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
                 )}
 
                 <div className="grid gap-2">
