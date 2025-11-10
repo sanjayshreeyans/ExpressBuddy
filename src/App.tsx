@@ -16,8 +16,8 @@
 
 import "./App.scss";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { lazy, Suspense, useEffect } from "react";
-import { KindeProvider, useKindeAuth } from "@kinde-oss/kinde-auth-react";
+import { lazy, Suspense, useEffect, useMemo } from "react";
+import { SupabaseAuthProvider, useSupabaseAuth } from "./contexts/SupabaseAuthContext";
 import { LiveAPIProvider } from "./contexts/LiveAPIContext";
 import { SupabaseProvider } from "./contexts/SupabaseContext";
 import { UserProvider, useUser } from "./contexts/UserContext";
@@ -32,7 +32,7 @@ const LandingPage = lazy(() => import("./components/landing-page/LandingPage"));
 const LearningPathHome = lazy(() => import("./components/home/LearningPathHome"));
 const AuthPage = lazy(() => import("./components/auth/AuthPage"));
 const ProtectedRoute = lazy(() => import("./components/auth/ProtectedRoute"));
-const OnboardingPage = lazy(() => import("./components/auth/OnboardingPage"));
+
 const VideoAvatarDemo = lazy(() => import("./components/demo/VideoAvatarDemo"));
 const EmotionDetectionDemo = lazy(() => import("./components/emotion-detective/EmotionDetectionDemo"));
 const EmotionMirroringDemo = lazy(() => import("./components/emotion-detective/EmotionMirroringDemo"));
@@ -60,29 +60,32 @@ const apiOptions: LiveClientOptions = {
 };
 
 function AppContent() {
-  const { isAuthenticated, isLoading: kindeLoading } = useKindeAuth();
+  const { isAuthenticated, loading: authLoading, user } = useSupabaseAuth();
   const { child, loading: userLoading, isFirstTimeUser } = useUser();
+
+  // Create API options with userId when authenticated
+  const authenticatedApiOptions = useMemo(() => ({
+    ...apiOptions,
+    userId: user?.id,
+  }), [user?.id]);
 
   useEffect(() => {
     // Handle redirects after authentication
-    if (isAuthenticated && !userLoading && !kindeLoading) {
+    if (isAuthenticated && !userLoading && !authLoading) {
       const currentPath = window.location.pathname;
 
       if (currentPath === '/login') {
-        if (isFirstTimeUser) {
-          window.location.href = '/onboarding';
-        } else if (child) {
-          window.location.href = '/dashboard';
-        }
+        // Redirect directly to video avatar interface after login
+        window.location.href = '/video-avatar-demo';
       }
     }
-  }, [isAuthenticated, child, isFirstTimeUser, userLoading, kindeLoading]);
+  }, [isAuthenticated, child, isFirstTimeUser, userLoading, authLoading]);
 
-  // Do not block demo/public routes with auth loading spinners
-  const publicPaths = ['/', '/video-avatar-demo', '/emotion-detective'];
+  // Do not block public routes with auth loading spinners
+  const publicPaths = ['/', '/login', '/video-avatar-demo', '/emotion-detective'];
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
 
-  if (!publicPaths.includes(currentPath) && (kindeLoading || userLoading)) {
+  if (!publicPaths.includes(currentPath) && (authLoading || userLoading)) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
@@ -97,42 +100,34 @@ function AppContent() {
     <Router>
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
-          {/* Default route - redirect straight to Video Avatar Demo */}
-          <Route path="/" element={<Navigate to="/video-avatar-demo" replace />} />
+          {/* Default route - Landing Page */}
+          <Route path="/" element={<LandingPage />} />
 
           {/* Authentication - Public Route (kept for completeness) */}
           <Route path="/login" element={<AuthPage />} />
 
-          {/* Onboarding - Semi-Protected Route (authenticated but no profile) */}
-          <Route path="/onboarding" element={
-            <ProtectedRoute>
-              <OnboardingPage />
-            </ProtectedRoute>
-          } />
+
 
           {/* Protected Routes */}
-          <Route path="/dashboard" element={
-            <ProtectedRoute requiresProfile={true}>
-              <LearningPathHome />
-            </ProtectedRoute>
-          } />
-
           <Route path="/chat" element={
             <ProtectedRoute requiresProfile={true}>
               <>
-                <LiveAPIProvider options={apiOptions}>
+                <LiveAPIProvider options={authenticatedApiOptions}>
                   <MainInterfaceWithAvatar />
                 </LiveAPIProvider>
               </>
             </ProtectedRoute>
           } />
 
-          {/* Video Avatar Chat - Public Demo Route */}
+          {/* Video Avatar Chat - Public Demo Route (uses authenticated options when logged in) */}
           <Route path="/video-avatar-demo" element={
             <>
               {/* Integrated toolbar only; moved demo nav button into header of the interface */}
-              <LiveAPIProvider options={apiOptions}>
-                <MainInterfaceWithVideoAvatar onGoToLanding={() => window.location.href = '/'} />
+              <LiveAPIProvider options={isAuthenticated ? authenticatedApiOptions : apiOptions}>
+                <MainInterfaceWithVideoAvatar 
+                  showLogout={isAuthenticated}
+                  onGoToLanding={() => window.location.href = '/'} 
+                />
               </LiveAPIProvider>
             </>
           } />
@@ -209,8 +204,8 @@ function AppContent() {
             </ProtectedRoute>
           } />
 
-          {/* Catch all route - redirect to demo */}
-          <Route path="*" element={<Navigate to="/video-avatar-demo" replace />} />
+          {/* Catch all route - redirect to landing page */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
     </Router>
@@ -219,18 +214,13 @@ function AppContent() {
 
 function App() {
   return (
-    <KindeProvider
-      clientId="0531b02ab7864ba89c419db341727945"
-      domain="https://mybuddy.kinde.com"
-      redirectUri="http://localhost:3000/dashboard"
-      logoutUri="http://localhost:3000"
-    >
+    <SupabaseAuthProvider>
       <SupabaseProvider>
         <UserProvider>
           <AppContent />
         </UserProvider>
       </SupabaseProvider>
-    </KindeProvider>
+    </SupabaseAuthProvider>
   );
 }
 

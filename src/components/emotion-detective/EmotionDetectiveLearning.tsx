@@ -472,7 +472,7 @@ const EmotionDetectiveLearning: React.FC<EmotionDetectiveLearningProps> = ({
     // Create mock child for development/testing
     const mockChild = {
       id: 'test-child-123',
-      kinde_user_id: 'test-user-123',
+      user_id: 'test-user-123',
       name: 'Test Child',
       age: 8,
       created_at: new Date().toISOString()

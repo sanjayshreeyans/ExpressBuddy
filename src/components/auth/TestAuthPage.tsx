@@ -1,20 +1,22 @@
 /**
  * Test Authentication Page Component
- * Minimal implementation to test Kinde imports
+ * Minimal implementation to test Supabase auth
  */
 
 import React from 'react';
-import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
+import { useSupabaseAuth } from '../../contexts/SupabaseAuthContext';
 import { Button } from '../ui/button';
+import { useNavigate } from 'react-router-dom';
 
 interface TestAuthPageProps {
   onBack: () => void;
 }
 
 export default function TestAuthPage({ onBack }: TestAuthPageProps) {
-  const { login, register, isAuthenticated, isLoading } = useKindeAuth();
+  const { isAuthenticated, loading } = useSupabaseAuth();
+  const navigate = useNavigate();
 
-  if (isLoading) {
+  if (loading) {
     return <div>Loading...</div>;
   }
 
@@ -24,11 +26,8 @@ export default function TestAuthPage({ onBack }: TestAuthPageProps) {
         <h1 className="text-2xl font-bold">Authentication Test</h1>
         
         <div className="space-y-2">
-          <Button onClick={() => login()}>
-            Sign In
-          </Button>
-          <Button onClick={() => register()}>
-            Sign Up
+          <Button onClick={() => navigate('/login')}>
+            Go to Login
           </Button>
           <Button onClick={onBack} variant="outline">
             Back to Landing
