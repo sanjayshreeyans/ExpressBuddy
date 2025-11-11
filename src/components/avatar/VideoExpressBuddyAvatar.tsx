@@ -95,7 +95,9 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
           const onEnded = () => {
             if (video.loop) {
               video.currentTime = 0;
-              video.play().catch(console.error);
+              video.play().catch(err => {
+                console.warn('📹 Video play after ended failed (may need user interaction):', err);
+              });
             }
           };
 
@@ -134,9 +136,12 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
           bgVideo.addEventListener('loadeddata', onBgLoadedData);
           bgVideo.addEventListener('error', onBgError);
 
+          // Try to play background video, but don't fail if it can't autoplay
           bgVideo.play()
             .then(() => console.log('▶️ Background video playing'))
-            .catch(err => console.error('❌ Background video play error:', err));
+            .catch(err => {
+              console.warn('❌ Background video autoplay blocked (may need user interaction):', err);
+            });
 
           cleanupFunctions.push(() => {
             bgVideo.removeEventListener('loadeddata', onBgLoadedData);
@@ -147,18 +152,42 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
         // Start with idle animation
         setCurrentState('idle');
 
-        // Start both videos playing immediately for seamless transitions
+        // Try to start both videos playing for seamless transitions
+        // Handle autoplay failures gracefully for mobile browsers
+        const playVideo = async (video: HTMLVideoElement, name: string) => {
+          try {
+            video.currentTime = 0;
+            await video.play();
+            console.log(`✅ ${name} video playing`);
+          } catch (err: any) {
+            // Autoplay blocked - this is expected on mobile browsers
+            console.warn(`📹 ${name} video autoplay blocked (will retry on user interaction):`, err.name);
+            
+            // Add a one-time click/touch listener to start playback
+            const startPlayback = () => {
+              video.play()
+                .then(() => console.log(`✅ ${name} video started after user interaction`))
+                .catch(e => console.error(`❌ ${name} video play error:`, e));
+              
+              // Clean up listeners after first interaction
+              document.removeEventListener('click', startPlayback);
+              document.removeEventListener('touchstart', startPlayback);
+            };
+            
+            document.addEventListener('click', startPlayback, { once: true });
+            document.addEventListener('touchstart', startPlayback, { once: true });
+          }
+        };
+
         if (idleVideoRef.current) {
-          idleVideoRef.current.currentTime = 0;
-          await idleVideoRef.current.play();
+          await playVideo(idleVideoRef.current, 'Idle');
         }
 
         if (talkingVideoRef.current) {
-          talkingVideoRef.current.currentTime = 0;
-          await talkingVideoRef.current.play();
+          await playVideo(talkingVideoRef.current, 'Talking');
         }
 
-        console.log('📹 Both videos initialized and playing continuously');
+        console.log('📹 Videos initialized');
 
         // Mark initialization as complete after a short delay
         setTimeout(() => {
@@ -217,7 +246,9 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
           console.log('📹 Avatar visible, resuming videos');
           videos.forEach(video => {
             if (video && video.paused) {
-              video.play().catch(console.error);
+              video.play().catch(err => {
+                console.warn('📹 Video resume failed (may need user interaction):', err.name);
+              });
             }
           });
         }
@@ -240,10 +271,14 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
     try {
       // Keep both videos playing continuously
       if (idleVideoRef.current.paused) {
-        await idleVideoRef.current.play();
+        await idleVideoRef.current.play().catch(err => {
+          console.warn('📹 Idle video play failed (may need user interaction):', err.name);
+        });
       }
       if (talkingVideoRef.current.paused) {
-        await talkingVideoRef.current.play();
+        await talkingVideoRef.current.play().catch(err => {
+          console.warn('📹 Talking video play failed (may need user interaction):', err.name);
+        });
       }
 
       console.log('📹 Transitioned to idle animation (seamless)');
@@ -259,10 +294,14 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
     try {
       // Keep both videos playing continuously
       if (talkingVideoRef.current.paused) {
-        await talkingVideoRef.current.play();
+        await talkingVideoRef.current.play().catch(err => {
+          console.warn('📹 Talking video play failed (may need user interaction):', err.name);
+        });
       }
       if (idleVideoRef.current.paused) {
-        await idleVideoRef.current.play();
+        await idleVideoRef.current.play().catch(err => {
+          console.warn('📹 Idle video play failed (may need user interaction):', err.name);
+        });
       }
 
       console.log('📹 Transitioned to talking animation (seamless)');
@@ -421,6 +460,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
         loop
         muted
         playsInline
+        autoPlay
         preload="auto"
         disablePictureInPicture
         disableRemotePlayback
@@ -444,6 +484,7 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
         loop
         muted
         playsInline
+        autoPlay
         preload="auto"
         disablePictureInPicture
         disableRemotePlayback
