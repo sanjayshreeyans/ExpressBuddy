@@ -70,7 +70,6 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
   const animationFrameRef = useRef<number>(0);
   const intersectionObserverRef = useRef<IntersectionObserver | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const isInitializingRef = useRef<boolean>(true); // Prevent pausing during initialization
 
   // Video source paths - using WebM with alpha channel for GPU-accelerated transparency
   const idleVideoSrc = '/VideoAnims/Pandaalter1_2.webm';
@@ -160,12 +159,6 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
 
         console.log('📹 Both videos initialized and playing continuously');
 
-        // Mark initialization as complete after a short delay
-        setTimeout(() => {
-          isInitializingRef.current = false;
-          console.log('✅ Video initialization complete, IntersectionObserver active');
-        }, 500);
-
         // Store cleanup functions for unmount
         return () => {
           cleanupFunctions.forEach(cleanup => cleanup());
@@ -174,7 +167,6 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
       } catch (err) {
         console.error('📹 Error initializing videos:', err);
         setError('Failed to initialize avatar animations.');
-        isInitializingRef.current = false; // Reset flag on error too
       }
     };
 
@@ -200,12 +192,6 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
 
     intersectionObserverRef.current = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
-        // Skip intersection changes during initialization to prevent play/pause conflicts
-        if (isInitializingRef.current) {
-          console.log('📹 Skipping intersection handling during initialization');
-          return;
-        }
-
         const videos = [idleVideoRef.current, talkingVideoRef.current, backgroundVideoRef.current].filter(Boolean);
 
         if (!entry.isIntersecting) {

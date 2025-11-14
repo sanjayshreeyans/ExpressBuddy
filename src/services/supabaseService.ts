@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 // Types for your database tables
 export interface Child {
   id: string
-  user_id: string
+  kinde_user_id: string
   name: string
   age: number
   created_at: string
@@ -111,12 +111,12 @@ export interface LessonSession {
 // Service class for database operations
 export class SupabaseService {
   // Children operations
-  async getChildByUserId(userId: string): Promise<Child | null> {
+  async getChildByKindeUserId(kindeUserId: string): Promise<Child | null> {
     try {
       const { data, error } = await supabase
         .from('children')
         .select('*')
-        .eq('user_id', userId)
+        .eq('kinde_user_id', kindeUserId)
         .single()
 
       if (error) {
@@ -125,19 +125,16 @@ export class SupabaseService {
       }
       return data
     } catch (err) {
-      console.error('Error in getChildByUserId:', err)
+      console.error('Error in getChildByKindeUserId:', err)
       return null
     }
   }
 
-  // Legacy method for backwards compatibility
-
-
-  async createChild(userId: string, name: string, age: number): Promise<Child | null> {
+  async createChild(kindeUserId: string, name: string, age: number): Promise<Child | null> {
     try {
       const { data, error } = await supabase
         .from('children')
-        .insert({ user_id: userId, name, age })
+        .insert({ kinde_user_id: kindeUserId, name, age })
         .select()
         .single()
 

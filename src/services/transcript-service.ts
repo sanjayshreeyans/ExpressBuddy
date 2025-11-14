@@ -36,7 +36,6 @@ export class TranscriptService {
   private supabase: SupabaseClient;
   private currentTranscript: TranscriptMessage[] = [];
   private sessionId: string | null = null;
-  private userId: string | null = null;
   private conversationStartTime: number | null = null;
   private supabaseUrl?: string;
   private supabaseAnonKey?: string;
@@ -79,31 +78,23 @@ export class TranscriptService {
 
     if (!supabaseUrl || !supabaseKey) {
       console.warn('⚠️ TranscriptService: Supabase credentials not found. Transcript saving disabled.');
-      // Create dummy client to prevent crashes
-      this.supabase = createClient('https://dummy.supabase.co', 'dummy-key');
     } else {
       this.supabaseUrl = supabaseUrl;
       this.supabaseAnonKey = supabaseKey;
-      
-      // Create a fresh Supabase client for transcript service
-      // This avoids auth session conflicts from the shared client
-      this.supabase = createClient(supabaseUrl, supabaseKey, {
-        auth: {
-          persistSession: false, // Don't persist session
-          autoRefreshToken: false, // Don't auto refresh
-          detectSessionInUrl: false // Don't detect session from URL
-        }
-      });
     }
+
+    this.supabase = createClient(
+      supabaseUrl || 'dummy-url',
+      supabaseKey || 'dummy-key'
+    );
   }
 
   /**
    * Start a new conversation session
    */
-  public startConversation(sessionId: string, userId?: string): void {
-    console.log(`📝 Starting transcript collection for session: ${sessionId}`, userId ? `(User: ${userId})` : '');
+  public startConversation(sessionId: string): void {
+    console.log(`📝 Starting transcript collection for session: ${sessionId}`);
     this.sessionId = sessionId;
-    this.userId = userId || null;
     this.currentTranscript = [];
     this.conversationStartTime = Date.now();
     this.resetBuffers();
@@ -286,7 +277,6 @@ export class TranscriptService {
 
     const conversationData = {
       session_id: this.sessionId,
-      user_id: this.userId,
       created_at: new Date(this.conversationStartTime || now.getTime()).toISOString(),
       ended_at: markEnded ? now.toISOString() : null,
       transcript: this.currentTranscript,
@@ -364,13 +354,9 @@ export class TranscriptService {
 
     const saveOperation = (async () => {
       try {
-        // Use upsert with proper conflict handling
         const { data, error } = await this.supabase
           .from('conversation_transcripts')
-          .upsert(payload, { 
-            onConflict: 'session_id',
-            ignoreDuplicates: false
-          })
+          .upsert(payload, { onConflict: 'session_id' })
           .select();
 
         if (error) {
@@ -422,7 +408,6 @@ export class TranscriptService {
     }
 
     try {
-      // Both authenticated and unauthenticated users can now use merge-duplicates
       const response = await fetch(`${this.supabaseUrl}/rest/v1/conversation_transcripts?on_conflict=session_id`, {
         method: 'POST',
         headers: {
@@ -560,7 +545,6 @@ export class TranscriptService {
   public clearSession(): void {
     console.log('🧹 Clearing transcript session');
     this.sessionId = null;
-    this.userId = null;
     this.currentTranscript = [];
     this.conversationStartTime = null;
     this.resetBuffers();

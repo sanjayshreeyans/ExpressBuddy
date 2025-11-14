@@ -74,7 +74,6 @@
 
 import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSupabaseAuth } from "../../contexts/SupabaseAuthContext";
 import cn from "classnames";
 import ControlTray from "../control-tray/ControlTray";
 import { VideoExpressBuddyAvatar } from "../avatar/VideoExpressBuddyAvatar";
@@ -87,10 +86,6 @@ import { AvatarState } from "../../types/avatar";
 import { NudgeIndicator } from "../nudge-indicator/NudgeIndicator";
 // **NEW**: Import transcript service for saving conversation transcripts
 import TranscriptService from "../../services/transcript-service";
-// **NEW**: Import demo timer components
-import { useDemoTimer } from "../../hooks/useDemoTimer";
-import { DemoTimerDisplay } from "../demo-timer/DemoTimerDisplay";
-import { DemoExpirationDialog } from "../demo-timer/DemoExpirationDialog";
 import "./main-interface.scss";
 import "../../styles/hint-animations.css";
 import {
@@ -118,12 +113,10 @@ type ExtendedFunctionDeclaration = FunctionDeclaration & {
 
 interface MainInterfaceWithAvatarProps {
   onGoToLanding?: () => void;
-  showLogout?: boolean;
 }
 
-export default function MainInterfaceWithAvatar({ onGoToLanding, showLogout = false }: MainInterfaceWithAvatarProps) {
+export default function MainInterfaceWithAvatar({ onGoToLanding }: MainInterfaceWithAvatarProps) {
   const navigate = useNavigate();
-  const { signOut } = useSupabaseAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
 
@@ -139,7 +132,6 @@ export default function MainInterfaceWithAvatar({ onGoToLanding, showLogout = fa
     isHintIndicatorVisible,
     sendHintToGemini,
     setEnableChunking,
-    disconnect, // **NEW**: Add disconnect for demo timer expiration
     // **NEW**: Avatar animation callbacks
     onAITurnComplete,
     onAITurnStart
@@ -157,50 +149,6 @@ export default function MainInterfaceWithAvatar({ onGoToLanding, showLogout = fa
 
   // **NEW**: Transcript service for saving conversation transcripts
   const transcriptService = TranscriptService;
-
-  // **NEW**: Demo timer for unauthenticated users (1 minute)
-  const [showExpirationDialog, setShowExpirationDialog] = useState(false);
-  const timerStartedRef = useRef(false); // Track if timer has been started to prevent multiple starts
-  const demoTimer = useDemoTimer({
-    durationSeconds: 60, // 1 minute
-    onExpire: () => {
-      console.log('⏰ Demo timer expired');
-      setShowExpirationDialog(true);
-      // Save demo usage for the day
-      const today = new Date().toDateString();
-      localStorage.setItem('expressBuddy_demo_used_date', today);
-      console.log('📅 Demo usage saved for today:', today);
-      // Disconnect the session when timer expires
-      if (connected) {
-        disconnect();
-      }
-    },
-    autoStart: false, // Will start when user connects if not authenticated
-  });
-
-  // Check if demo was already used today
-  const hasDemoBeenUsedToday = (): boolean => {
-    const today = new Date().toDateString();
-    const lastUsedDate = localStorage.getItem('expressBuddy_demo_used_date');
-    return lastUsedDate === today;
-  };
-
-  // Start demo timer when unauthenticated user connects (only once)
-  useEffect(() => {
-    if (!showLogout && connected && !timerStartedRef.current) {
-      // Check if demo was already used today
-      if (hasDemoBeenUsedToday()) {
-        console.log('⏰ Demo already used today. Please come back tomorrow!');
-        setShowExpirationDialog(true);
-        disconnect();
-        return;
-      }
-
-      console.log('⏱️ Starting demo timer for unauthenticated user (one-time)');
-      demoTimer.start();
-      timerStartedRef.current = true; // Mark as started
-    }
-  }, [showLogout, connected, disconnect, demoTimer]);
 
   // **NEW**: Register avatar animation callbacks with LiveAPI
   useEffect(() => {
@@ -1403,8 +1351,7 @@ Children feel more understood when you notice what they're showing you - not jus
         >
           {/* Demo navigation buttons group */}
           <div className="demo-nav-group" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {/* Only show Back to Home and Emotion Detective buttons in public demo mode (not authenticated) */}
-            {onGoToLanding && !showLogout && (
+            {onGoToLanding && (
               <button
                 onClick={onGoToLanding}
                 className="back-to-landing-btn"
@@ -1426,63 +1373,27 @@ Children feel more understood when you notice what they're showing you - not jus
               </button>
             )}
 
-            {/* Logout button for authenticated users */}
-            {showLogout && (
-              <button
-                onClick={async () => {
-                  await signOut();
-                  navigate('/');
-                }}
-                className="logout-btn"
-                style={{
-                  background: '#dc2626',
-                  color: 'white',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseOver={(e) => (e.currentTarget.style.background = '#b91c1c')}
-                onMouseOut={(e) => (e.currentTarget.style.background = '#dc2626')}
-              >
-                Log Out
-              </button>
-            )}
-
-            {/* Only show Emotion Detective button in public demo mode (not authenticated) */}
-            {!showLogout && (
-              <button
-                onClick={() => navigate('/emotion-detective')}
-                className="go-emotion-detective-btn"
-                style={{
-                  background: '#2563eb',
-                  color: 'white',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseOver={(e) => (e.currentTarget.style.background = '#1d4ed8')}
-                onMouseOut={(e) => (e.currentTarget.style.background = '#2563eb')}
-              >
-                Go to Emotion Detective
-              </button>
-            )}
+            {/* New: Emotion Detective CTA inside header (no overlap) */}
+            <button
+              onClick={() => navigate('/emotion-detective')}
+              className="go-emotion-detective-btn"
+              style={{
+                background: '#2563eb',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.background = '#1d4ed8')}
+              onMouseOut={(e) => (e.currentTarget.style.background = '#2563eb')}
+            >
+              Go to Emotion Detective
+            </button>
           </div>
-
-          {/* Demo timer display for unauthenticated users */}
-          {!showLogout && connected && !demoTimer.isExpired && (
-            <DemoTimerDisplay
-              timeRemaining={demoTimer.timeRemaining}
-              formatTime={demoTimer.formatTime}
-            />
-          )}
 
           {/* Keep connection status on the right */}
           <div className="connection-status" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1552,7 +1463,6 @@ Children feel more understood when you notice what they're showing you - not jus
           disableChunkingToggle={true} // Disable viseme/chunking controls for video avatar
           currentBackground={backgroundVideo}
           onBackgroundChange={setBackgroundVideo}
-          demoExpired={!showLogout && (demoTimer.isExpired || hasDemoBeenUsedToday())}
         />
       </div>
 
@@ -1560,13 +1470,6 @@ Children feel more understood when you notice what they're showing you - not jus
       <NudgeIndicator
         visible={isHintIndicatorVisible}
         message="Pico has a helpful hint for you!"
-      />
-
-      {/* **NEW**: Demo Expiration Dialog for unauthenticated users */}
-      <DemoExpirationDialog
-        open={showExpirationDialog}
-        onClose={() => setShowExpirationDialog(false)}
-        alreadyUsedToday={hasDemoBeenUsedToday()}
       />
     </div>
   );

@@ -5,14 +5,14 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSupabaseAuth } from '../../contexts/SupabaseAuthContext';
+import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
 import { motion } from 'framer-motion';
 import { Button } from '../ui/button';
 import { Heart, Play } from 'lucide-react';
 
 export default function SimpleLanding() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useSupabaseAuth();
+  const { isAuthenticated } = useKindeAuth();
 
   const handleSignIn = () => {
     navigate('/login');

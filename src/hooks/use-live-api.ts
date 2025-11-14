@@ -641,9 +641,8 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     // **NEW**: Start transcript session when successfully connected
     if (!TranscriptService.hasActiveSession()) {
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const userId = options.userId;
-      TranscriptService.startConversation(sessionId, userId);
-      console.log("📝 Started transcript collection for session:", sessionId, userId ? `(User: ${userId})` : '');
+      TranscriptService.startConversation(sessionId);
+      console.log("📝 Started transcript collection for session:", sessionId);
     }
 
     // **NEW**: Start keep-alive mechanism to prevent WebSocket timeout

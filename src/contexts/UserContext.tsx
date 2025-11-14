@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { useSupabaseAuth } from './SupabaseAuthContext'
+import { useKindeAuth } from '@kinde-oss/kinde-auth-react'
 import { supabaseService } from '../services/supabaseService'
 import type { Child } from '../services/supabaseService'
 
@@ -26,7 +26,7 @@ interface UserProviderProps {
 }
 
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
-  const { user, isAuthenticated, loading: authLoading } = useSupabaseAuth()
+  const { user, isAuthenticated, isLoading: kindeLoading } = useKindeAuth()
   const [child, setChild] = useState<Child | null>(null)
   const [loading, setLoading] = useState(true)
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false)
@@ -34,7 +34,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const refreshChild = async () => {
     if (user?.id) {
       try {
-        const childData = await supabaseService.getChildByUserId(user.id)
+        const childData = await supabaseService.getChildByKindeUserId(user.id)
         setChild(childData)
         
         // If user is authenticated but no child record exists, they're a first-time user
@@ -73,7 +73,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   useEffect(() => {
     const initializeUser = async () => {
-      if (!authLoading) {
+      if (!kindeLoading) {
         if (isAuthenticated && user?.id) {
           await refreshChild()
         } else {
@@ -85,11 +85,11 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     }
 
     initializeUser()
-  }, [isAuthenticated, user?.id, authLoading])
+  }, [isAuthenticated, user?.id, kindeLoading])
 
   const value: UserContextType = {
     child,
-    loading: loading || authLoading,
+    loading: loading || kindeLoading,
     isFirstTimeUser,
     createChildProfile,
     refreshChild,
