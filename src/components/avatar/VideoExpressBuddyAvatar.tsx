@@ -36,6 +36,7 @@
  */
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useLiveAPIContext } from '../../contexts/LiveAPIContext';
 import { AvatarState, PlaybackState } from '../../types/avatar';
 
 interface VideoExpressBuddyAvatarProps {
@@ -71,9 +72,19 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
   const intersectionObserverRef = useRef<IntersectionObserver | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Video source paths - using WebM with alpha channel for GPU-accelerated transparency
-  const idleVideoSrc = '/VideoAnims/Pandaalter1_2.webm';
-  const talkingVideoSrc = '/VideoAnims/PandaTalkingAnim.webm';
+  // Read avatar selection from live config (set via SettingsDialog -> AvatarSelector)
+  const { config } = useLiveAPIContext();
+  const avatarName = (config as any)?.avatar?.name || (config as any)?.avatarName || 'panda';
+
+  // Video source paths - choose based on selected avatar
+  let idleVideoSrc = '/VideoAnims/Pandaalter1_2.webm';
+  let talkingVideoSrc = '/VideoAnims/PandaTalkingAnim.webm';
+
+  if (avatarName === 'pebbles') {
+    // Files added to public/VideoAnims by author
+    idleVideoSrc = '/VideoAnims/pebblesIdledinal.webm';
+    talkingVideoSrc = '/VideoAnims/pebblestalking.webm';
+  }
 
   // Initialize videos on mount
   useEffect(() => {
@@ -179,6 +190,25 @@ export const VideoExpressBuddyAvatar: React.FC<VideoExpressBuddyAvatarProps> = (
       cleanup.then(cleanupFn => cleanupFn?.());
     };
   }, []);
+
+  // If avatar selection changes at runtime, update video srcs and attempt to reload/play
+  useEffect(() => {
+    try {
+      if (idleVideoRef.current) {
+        idleVideoRef.current.src = idleVideoSrc;
+        // load new source and try to play for seamless transitions
+        idleVideoRef.current.load();
+        idleVideoRef.current.play().catch(() => {});
+      }
+      if (talkingVideoRef.current) {
+        talkingVideoRef.current.src = talkingVideoSrc;
+        talkingVideoRef.current.load();
+        talkingVideoRef.current.play().catch(() => {});
+      }
+    } catch (err) {
+      console.warn('Failed to update avatar video sources on avatar change', err);
+    }
+  }, [idleVideoSrc, talkingVideoSrc]);
 
   // Visibility-based resource management for Chromebooks/mobile
   useEffect(() => {

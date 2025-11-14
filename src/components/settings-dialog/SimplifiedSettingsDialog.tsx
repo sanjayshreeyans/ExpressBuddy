@@ -87,6 +87,7 @@ export default function SimplifiedSettingsDialog({
   const [selectedVoice, setSelectedVoice] = useState<string>("Puck");
   const [selectedLanguage, setSelectedLanguage] = useState<string>("en-US");
   const [selectedBackground, setSelectedBackground] = useState<string>(currentBackground);
+  const [selectedAvatar, setSelectedAvatar] = useState<string>("panda");
   const [availableBackgrounds, setAvailableBackgrounds] = useState<BackgroundOption[]>([]);
   const [isUserChangingSettings, setIsUserChangingSettings] = useState(false);
 
@@ -252,10 +253,12 @@ export default function SimplifiedSettingsDialog({
 
     const voice = config.speechConfig?.voiceConfig?.prebuiltVoiceConfig?.voiceName || "Puck";
     const lang = (config as any)?.speechConfig?.language_code || "en-US";
+    const avatarFromConfig = (config as any)?.avatar?.name || (config as any)?.avatarName || 'panda';
 
     console.log('🔄 Syncing UI from config:', { voice, lang });
     setSelectedVoice(voice);
     setSelectedLanguage(lang);
+    setSelectedAvatar(avatarFromConfig);
   }, [config, isUserChangingSettings]);
 
   // Reset user changing flag when dialog closes
@@ -336,6 +339,30 @@ export default function SimplifiedSettingsDialog({
       setSelectedBackground(background.path);
       onBackgroundChange(background.path);
     }
+  };
+
+  // Update avatar selection
+  const handleAvatarChange = (avatarId: string) => {
+    setIsUserChangingSettings(true);
+    setSelectedAvatar(avatarId);
+
+    try {
+      localStorage.setItem("expresbuddy_preferred_avatar", avatarId);
+      console.log('💾 Saved avatar preference to storage:', avatarId);
+    } catch (err) {
+      console.error('❌ Error saving avatar to storage:', err);
+    }
+
+    const newConfig: any = {
+      ...config,
+      avatar: {
+        ...((config as any).avatar || {}),
+        name: avatarId,
+      },
+    };
+
+    console.log('🖼️ Changing avatar to:', avatarId);
+    setConfig(newConfig);
   };
 
   const handleApply = () => {
@@ -424,6 +451,38 @@ export default function SimplifiedSettingsDialog({
             {connected && (
               <p className="text-sm text-muted-foreground">
                 Disconnect to change voice
+              </p>
+            )}
+          </div>
+
+          {/* Avatar Selection */}
+          <div className="space-y-3">
+            <Label htmlFor="avatar-select" className="text-base font-semibold">
+              Avatar (Video)
+            </Label>
+            <Select
+              value={selectedAvatar}
+              onValueChange={handleAvatarChange}
+              disabled={connected}
+            >
+              <SelectTrigger id="avatar-select" className="w-full bg-white" style={{ backgroundColor: 'white' }}>
+                <SelectValue placeholder="Select an avatar" />
+              </SelectTrigger>
+              <SelectContent
+                className="bg-white"
+                style={{ backgroundColor: 'white', zIndex: 10001 }}
+              >
+                <SelectItem key="panda" value="panda" className="bg-white hover:bg-gray-100" style={{ backgroundColor: 'white' }}>
+                  Piko (Panda)
+                </SelectItem>
+                <SelectItem key="pebbles" value="pebbles" className="bg-white hover:bg-gray-100" style={{ backgroundColor: 'white' }}>
+                  Pebbles
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            {connected && (
+              <p className="text-sm text-muted-foreground">
+                Disconnect to change avatar
               </p>
             )}
           </div>
